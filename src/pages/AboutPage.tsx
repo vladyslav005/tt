@@ -33,7 +33,7 @@ const staggerContainer = {
 
 export function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/40">
+    <div className="pt-16 min-h-screen bg-gradient-to-b from-background to-muted/40">
       {/* Hero Section */}
       <motion.section
         className="container mx-auto px-4 py-16 md:py-24 max-w-4xl text-center"
@@ -57,7 +57,7 @@ export function AboutPage() {
 
       {/* Project Overview Section */}
       <motion.section
-        className="container mx-auto px-4 py-12 max-w-6xl"
+        className="container mx-auto px-4 py-8 max-w-6xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}

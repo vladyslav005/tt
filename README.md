@@ -1,4 +1,4 @@
-*You can track project development and ongoing results on [this link](https://tt-woad.vercel.app/about).*
+*You can track project development and ongoing results on [this link](https://tt-woad.vercel.app/).*
 
 # Specification and Design of an Interactive Visualization Tool for Typing, Evaluation, and Proofs
 

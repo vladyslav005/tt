@@ -10,6 +10,7 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import {NavLink} from "react-router-dom";
+import {useTheme} from "next-themes";
 
 type NavItem = {
   label: string;
@@ -26,10 +27,11 @@ export function Topbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { setTheme } = useTheme()
+
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
-    localStorage.setItem("theme", isDarkMode ? "light" : "dark");
+    setTheme( isDarkMode ? "light" : "dark");
   };
 
   useEffect(() => {
