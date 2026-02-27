@@ -24,7 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 
-src/shared/core/antlr/
+#src/shared/core/antlr/
 src/shared/core/main.ts
 !src/shared/core/antlr/Lambda.g4
 

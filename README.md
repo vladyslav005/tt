@@ -1,3 +1,5 @@
+*You can track project development and ongoing results on [this link]().*
+
 # Specification and Design of an Interactive Visualization Tool for Typing, Evaluation, and Proofs
 
 ## 1. Vision and User-Centered Perspective
