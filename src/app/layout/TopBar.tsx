@@ -18,7 +18,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: 'Editor', href: '/main' },
-  { label: 'About', href: '/landing' },
+  { label: 'About', href: '/about' },
 ];
 
 export function Topbar() {
