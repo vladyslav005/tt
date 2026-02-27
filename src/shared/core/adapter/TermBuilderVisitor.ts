@@ -1,6 +1,4 @@
-// infrastructure/antlr/TermBuilderVisitor.ts
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
-import type {Term} from "@/shared/core/domain";
 import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
 import {
   type ApplicationContext,
@@ -8,11 +6,12 @@ import {
   ParenthesesContext,
   VariableContext
 } from "@/shared/core/antlr/LambdaParser.ts";
+import type {Abs, App, Lit, Term, Var} from "@/shared/core/domain/ast";
 
 export class TermBuilderVisitor
   extends LambdaVisitor<Term> {
 
-  visitApplication = (ctx: ApplicationContext): Term => {
+  visitApplication = (ctx: ApplicationContext): App => {
     return {
       kind: "App",
       func: this.visit(ctx.term(0)),
@@ -20,18 +19,16 @@ export class TermBuilderVisitor
     }
   }
 
-  visitLambdaAbstraction = (ctx: LambdaAbstractionContext): Term => {
+  visitLambdaAbstraction = (ctx: LambdaAbstractionContext): Abs => {
     return {
       kind: "Abs",
       param: ctx.ID().getText(),
-      paramType: ctx.type_()
-        ? new TypeBuilderVisitor().visit(ctx.type_())
-        : undefined,
+      paramType: new TypeBuilderVisitor().visit(ctx.type_()),
       body: this.visit(ctx.term())
     }
   }
 
-  visitVariable = (ctx: VariableContext): Term => {
+  visitVariable = (ctx: VariableContext): Var => {
     return {
       kind: "Var",
       name: ctx.ID().getText()
@@ -42,7 +39,7 @@ export class TermBuilderVisitor
     return this.visit(ctx.term())
   }
 
-  visitLiteral = (ctx: LiteralContext): Term => {
+  visitLiteral = (ctx: LiteralContext): Lit => {
     return {
       kind: "Lit",
       value: ctx.getText()

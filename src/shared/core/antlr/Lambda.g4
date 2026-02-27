@@ -7,19 +7,19 @@ expression
 
 globalDecl
     : ID COLON type SEMI                      # GlobalVariableDeclaration
-    | ID EQ term (COLON type)? SEMI           # GlobalFunctionDeclaration
+    | ID EQ term COLON type SEMI           # GlobalFunctionDeclaration
     ;
 
 term
     : term term                                                         # Application
-    | LAMBDA ID (COLON type)? DOT term                                               # LambdaAbstraction
+    | LAMBDA ID COLON type DOT term                                               # LambdaAbstraction
     | ID                                                                             # Variable
     | LPAREN term RPAREN                                                             # Parentheses
     | constant                                                                       # Literal
     ;
 
 type
-    : (GREEK | ID | 'Nat' | 'Bool' | 'Unit')                # TypeIdentifier
+    : (GREEK | ID | 'Nat' | 'Bool' | 'Unit')                     # TypeIdentifier
     | <assoc=right> type ARROW type                              # FunctionType
     | LPAREN type RPAREN                                         # ParenType
     ;

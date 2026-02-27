@@ -1,4 +1,4 @@
-import type {Program} from "@/shared/core/domain";
+import type {Program} from "@/shared/core/domain/ast";
 import type {ExprContext} from "@/shared/core/antlr/LambdaParser.ts";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {GlobalDeclVisitor} from "@/shared/core/adapter/GlobalDeclVisitor.ts";
@@ -16,6 +16,6 @@ export class ProgramBuilderVisitor extends LambdaVisitor<Program> {
       ? new TermBuilderVisitor().visit(ctx.term())
       : undefined
 
-    return { globals, term }
+    return { kind: "Program", globals, term }
   }
 }

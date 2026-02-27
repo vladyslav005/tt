@@ -28,7 +28,7 @@ Each of these representations is not independent, but rather a **different view 
 
 ---
 
-## 3. Term Input Modalities
+## 3. AST Input Modalities
 
 The system allows multiple ways of defining a lambda calculus term. These modalities are interchangeable and synchronized.
 

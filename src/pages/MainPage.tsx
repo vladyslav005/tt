@@ -2,7 +2,7 @@
 export function MainPage() {
   return (
     <div className="">
-      Main Page
+      <div className="mt-20">Main Page</div>
     </div>
   )
 }
