@@ -1,4 +1,4 @@
-import {AlertCircle, BookType, Droplet, FileQuestionMark} from 'lucide-react';
+import {AlertCircle, FileQuestionMark} from 'lucide-react';
 
 export function NotFoundPage() {
 

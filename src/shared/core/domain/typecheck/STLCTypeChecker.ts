@@ -14,11 +14,11 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
     const bodyProof: ProofTree = this.visit(node.body);
     this.context.delete(node.param);
 
-    const returnProof : ProofTree = {
-        rule: "Abs",
-        premises: [bodyProof],
-        term: node,
-        type: bodyProof.type
+    const returnProof: ProofTree = {
+      rule: "Abs",
+      premises: [bodyProof],
+      term: node,
+      type: bodyProof.type
     } as ProofTree;
 
     return returnProof
@@ -29,7 +29,7 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
     const funcProof: ProofTree = this.visit(node.func);
     const argProof: ProofTree = this.visit(node.arg);
 
-    let returnProof : ProofTree = {
+    let returnProof: ProofTree = {
       rule: Rule.App,
       premises: [funcProof, argProof],
       term: node,
@@ -61,7 +61,7 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
   }
 
   protected visitTermDecl(node: GlobalDecl): ProofTree {
-    const valueProof : ProofTree = this.visit(node.value)
+    const valueProof: ProofTree = this.visit(node.value)
     if (!typeEquals(valueProof.type, node.type)) {
       throw new Error(`Type error in declaration of ${node.name}: expected type ${node.type}, got ${valueProof.type}`);
     }
@@ -76,22 +76,22 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
   }
 
   protected visitVar(node: Var): ProofTree {
-      const varType = this.context.get(node.name);
-      let returnProof : ProofTree = {
-        rule: Rule.Var,
-        term: node,
-        type: undefined as any,
-        gamma: this.context.copy(),
-        premises: []
-      }
+    const varType = this.context.get(node.name);
+    let returnProof: ProofTree = {
+      rule: Rule.Var,
+      term: node,
+      type: undefined as any,
+      gamma: this.context.copy(),
+      premises: []
+    }
 
-      if (!varType) {
-        console.error(`Type error: variable ${node.name} not found in context`);
-        returnProof.error = `Type error: variable ${node.name} not found in context`;
-        return returnProof;
-      }
-
-      returnProof.type = varType;
+    if (!varType) {
+      console.error(`Type error: variable ${node.name} not found in context`);
+      returnProof.error = `Type error: variable ${node.name} not found in context`;
       return returnProof;
+    }
+
+    returnProof.type = varType;
+    return returnProof;
   }
 }
