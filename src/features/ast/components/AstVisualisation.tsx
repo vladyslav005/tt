@@ -17,7 +17,7 @@ export function AstVisualisation({
   // useEffect(() => {
   //   // setProof(typecheckTerm(parseTerm(termText ?? "")))
   // })
-
+  console.warn(ast)
   return (
     <div className={cn(className, "border rounded-lg shadow-md p-4 m-4")}>
       <pre>

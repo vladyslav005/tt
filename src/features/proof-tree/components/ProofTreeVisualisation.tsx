@@ -2,6 +2,8 @@ import {cn} from "@/shared/lib/utils.ts";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {useProofHooks} from "@/shared/hooks/processProofHooks.ts";
 import {ProofTreeComponentUsingCss} from "@/features/proof-tree/components/proof-tree-using-css/ProofTreeTex.tsx";
+import {useEffect, useState} from "react";
+import type {TexTree} from "@/shared/presentation/texTree.ts";
 
 interface ProofTreeVisualisationProps {
   className?: string;

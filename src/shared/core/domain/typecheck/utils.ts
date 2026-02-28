@@ -5,7 +5,7 @@ export function typeEquals(a: Type, b: Type): boolean {
 
   switch (a.kind) {
     case "TyVar":
-      return true;
+      return a.name === (b as any).name;
 
     case "TyArrow":
       return (

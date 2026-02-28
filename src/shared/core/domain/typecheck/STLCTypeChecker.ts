@@ -22,10 +22,10 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     const returnProof: ProofTree = {
       rule: "Abs",
-      premises: [bodyProof],
       term: node,
       type: abstractionType,
-      gamma: this.context.serializeGamma()
+      gamma: this.context.serializeGamma(),
+      premises: [bodyProof]
     } as ProofTree;
 
     if (!typeEquals(abstractionType, node.type)) {
@@ -44,10 +44,10 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     let returnProof: ProofTree = {
       rule: Rule.App,
-      premises: [funcProof, argProof],
       term: node,
       type: undefined as any,
       gamma: this.context.serializeGamma(),
+      premises: [funcProof, argProof],
       error: error
     };
 
@@ -62,7 +62,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     if (!typeEquals((funcProof.type as TyArrow).from, argProof.type)) {
       console.error(`Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`);
-      returnProof.error = `Type error: expected a function type, got ${funcType.to}`;
+      returnProof.error = `Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`;
     }
 
     return returnProof
@@ -71,6 +71,8 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   protected visitProgram(node: Program): ProofTree {
     this.context.clear();
     node.globals.forEach((g) => this.visit(g));
+
+    if (!node.term) throw new Error("Type AST is empty");
     return node.term ? this.visit(node.term) : {} as ProofTree;
   }
 

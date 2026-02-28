@@ -55,7 +55,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       case "Lit":
         return term.value.toString()
       case "App":
-        return `${this.termToTex(term.arg)}\\ ${this.termToTex(term.func)}`
+        return `${this.termToTex(term.func)}\\ ${this.termToTex(term.arg)}`
     }
   }
 

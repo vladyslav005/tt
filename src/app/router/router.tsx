@@ -3,7 +3,7 @@ import {MainPage} from "../../pages/MainPage.tsx";
 import {AppLayout} from "../layout/AppLayout.tsx";
 import {NotFoundPage} from "@/pages/NotFoundPage.tsx";
 import {AboutPage} from "@/pages/AboutPage.tsx";
-import {ErrorPage} from "@/pages/ErrorPage.tsx";
+// import {ErrorPage} from "@/pages/ErrorPage.tsx";
 
 
 
