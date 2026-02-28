@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Generated from ./src/shared/core/antlr/Lambda.g4 by ANTLR 4.13.2
 // noinspection ES6UnusedImports,JSUnusedGlobalSymbols,JSUnusedLocalSymbols
-// @ts-nocheck
+
 import {
 	ATN,
 	ATNDeserializer, DecisionState, DFA, FailedPredicateException,
@@ -229,7 +229,7 @@ export default class LambdaParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 51;
+			this.state = 53;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case 10:
@@ -249,7 +249,11 @@ export default class LambdaParser extends Parser {
 				this.state = 42;
 				this.match(LambdaParser.DOT);
 				this.state = 43;
-				this.term(4);
+				this.term(0);
+				this.state = 44;
+				this.match(LambdaParser.COLON);
+				this.state = 45;
+				this.type_(0);
 				}
 				break;
 			case 14:
@@ -257,7 +261,7 @@ export default class LambdaParser extends Parser {
 				localctx = new VariableContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 45;
+				this.state = 47;
 				this.match(LambdaParser.ID);
 				}
 				break;
@@ -266,11 +270,11 @@ export default class LambdaParser extends Parser {
 				localctx = new ParenthesesContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 46;
-				this.match(LambdaParser.LPAREN);
-				this.state = 47;
-				this.term(0);
 				this.state = 48;
+				this.match(LambdaParser.LPAREN);
+				this.state = 49;
+				this.term(0);
+				this.state = 50;
 				this.match(LambdaParser.RPAREN);
 				}
 				break;
@@ -286,7 +290,7 @@ export default class LambdaParser extends Parser {
 				localctx = new LiteralContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 50;
+				this.state = 52;
 				this.constant();
 				}
 				break;
@@ -294,7 +298,7 @@ export default class LambdaParser extends Parser {
 				throw new NoViableAltException(this);
 			}
 			this._ctx.stop = this._input.LT(-1);
-			this.state = 57;
+			this.state = 59;
 			this._errHandler.sync(this);
 			_alt = this._interp.adaptivePredict(this._input, 4, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
@@ -307,16 +311,16 @@ export default class LambdaParser extends Parser {
 					{
 					localctx = new ApplicationContext(this, new TermContext(this, _parentctx, _parentState));
 					this.pushNewRecursionContext(localctx, _startState, LambdaParser.RULE_term);
-					this.state = 53;
+					this.state = 55;
 					if (!(this.precpred(this._ctx, 5))) {
 						throw this.createFailedPredicateException("this.precpred(this._ctx, 5)");
 					}
-					this.state = 54;
+					this.state = 56;
 					this.term(6);
 					}
 					}
 				}
-				this.state = 59;
+				this.state = 61;
 				this._errHandler.sync(this);
 				_alt = this._interp.adaptivePredict(this._input, 4, this._ctx);
 			}
@@ -356,7 +360,7 @@ export default class LambdaParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 66;
+			this.state = 68;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case 1:
@@ -369,7 +373,7 @@ export default class LambdaParser extends Parser {
 				this._ctx = localctx;
 				_prevctx = localctx;
 
-				this.state = 61;
+				this.state = 63;
 				_la = this._input.LA(1);
 				if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 49166) !== 0))) {
 				this._errHandler.recoverInline(this);
@@ -385,11 +389,11 @@ export default class LambdaParser extends Parser {
 				localctx = new ParenTypeContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 62;
-				this.match(LambdaParser.LPAREN);
-				this.state = 63;
-				this.type_(0);
 				this.state = 64;
+				this.match(LambdaParser.LPAREN);
+				this.state = 65;
+				this.type_(0);
+				this.state = 66;
 				this.match(LambdaParser.RPAREN);
 				}
 				break;
@@ -397,7 +401,7 @@ export default class LambdaParser extends Parser {
 				throw new NoViableAltException(this);
 			}
 			this._ctx.stop = this._input.LT(-1);
-			this.state = 73;
+			this.state = 75;
 			this._errHandler.sync(this);
 			_alt = this._interp.adaptivePredict(this._input, 6, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
@@ -410,18 +414,18 @@ export default class LambdaParser extends Parser {
 					{
 					localctx = new FunctionTypeContext(this, new TypeContext(this, _parentctx, _parentState));
 					this.pushNewRecursionContext(localctx, _startState, LambdaParser.RULE_type);
-					this.state = 68;
+					this.state = 70;
 					if (!(this.precpred(this._ctx, 2))) {
 						throw this.createFailedPredicateException("this.precpred(this._ctx, 2)");
 					}
-					this.state = 69;
+					this.state = 71;
 					this.match(LambdaParser.ARROW);
-					this.state = 70;
+					this.state = 72;
 					this.type_(2);
 					}
 					}
 				}
-				this.state = 75;
+				this.state = 77;
 				this._errHandler.sync(this);
 				_alt = this._interp.adaptivePredict(this._input, 6, this._ctx);
 			}
@@ -449,7 +453,7 @@ export default class LambdaParser extends Parser {
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 76;
+			this.state = 78;
 			_la = this._input.LA(1);
 			if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 66552) !== 0))) {
 			this._errHandler.recoverInline(this);
@@ -499,30 +503,30 @@ export default class LambdaParser extends Parser {
 		return true;
 	}
 
-	public static readonly _serializedATN: number[] = [4,1,26,79,2,0,7,0,2,
+	public static readonly _serializedATN: number[] = [4,1,26,81,2,0,7,0,2,
 	1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,5,0,12,8,0,10,0,12,0,15,9,0,1,0,1,0,1,
 	0,3,0,20,8,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,
-	1,36,8,1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,3,2,52,
-	8,2,1,2,1,2,5,2,56,8,2,10,2,12,2,59,9,2,1,3,1,3,1,3,1,3,1,3,1,3,3,3,67,
-	8,3,1,3,1,3,1,3,5,3,72,8,3,10,3,12,3,75,9,3,1,4,1,4,1,4,0,2,4,6,5,0,2,4,
-	6,8,0,2,2,0,1,3,14,15,2,0,3,9,16,16,82,0,13,1,0,0,0,2,35,1,0,0,0,4,51,1,
-	0,0,0,6,66,1,0,0,0,8,76,1,0,0,0,10,12,3,2,1,0,11,10,1,0,0,0,12,15,1,0,0,
-	0,13,11,1,0,0,0,13,14,1,0,0,0,14,19,1,0,0,0,15,13,1,0,0,0,16,17,3,4,2,0,
-	17,18,5,22,0,0,18,20,1,0,0,0,19,16,1,0,0,0,19,20,1,0,0,0,20,21,1,0,0,0,
-	21,22,5,0,0,1,22,1,1,0,0,0,23,24,5,14,0,0,24,25,5,20,0,0,25,26,3,6,3,0,
-	26,27,5,22,0,0,27,36,1,0,0,0,28,29,5,14,0,0,29,30,5,11,0,0,30,31,3,4,2,
-	0,31,32,5,20,0,0,32,33,3,6,3,0,33,34,5,22,0,0,34,36,1,0,0,0,35,23,1,0,0,
-	0,35,28,1,0,0,0,36,3,1,0,0,0,37,38,6,2,-1,0,38,39,5,10,0,0,39,40,5,14,0,
-	0,40,41,5,20,0,0,41,42,3,6,3,0,42,43,5,21,0,0,43,44,3,4,2,4,44,52,1,0,0,
-	0,45,52,5,14,0,0,46,47,5,23,0,0,47,48,3,4,2,0,48,49,5,24,0,0,49,52,1,0,
-	0,0,50,52,3,8,4,0,51,37,1,0,0,0,51,45,1,0,0,0,51,46,1,0,0,0,51,50,1,0,0,
-	0,52,57,1,0,0,0,53,54,10,5,0,0,54,56,3,4,2,6,55,53,1,0,0,0,56,59,1,0,0,
-	0,57,55,1,0,0,0,57,58,1,0,0,0,58,5,1,0,0,0,59,57,1,0,0,0,60,61,6,3,-1,0,
-	61,67,7,0,0,0,62,63,5,23,0,0,63,64,3,6,3,0,64,65,5,24,0,0,65,67,1,0,0,0,
-	66,60,1,0,0,0,66,62,1,0,0,0,67,73,1,0,0,0,68,69,10,2,0,0,69,70,5,18,0,0,
-	70,72,3,6,3,2,71,68,1,0,0,0,72,75,1,0,0,0,73,71,1,0,0,0,73,74,1,0,0,0,74,
-	7,1,0,0,0,75,73,1,0,0,0,76,77,7,1,0,0,77,9,1,0,0,0,7,13,19,35,51,57,66,
-	73];
+	1,36,8,1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,
+	2,3,2,54,8,2,1,2,1,2,5,2,58,8,2,10,2,12,2,61,9,2,1,3,1,3,1,3,1,3,1,3,1,
+	3,3,3,69,8,3,1,3,1,3,1,3,5,3,74,8,3,10,3,12,3,77,9,3,1,4,1,4,1,4,0,2,4,
+	6,5,0,2,4,6,8,0,2,2,0,1,3,14,15,2,0,3,9,16,16,84,0,13,1,0,0,0,2,35,1,0,
+	0,0,4,53,1,0,0,0,6,68,1,0,0,0,8,78,1,0,0,0,10,12,3,2,1,0,11,10,1,0,0,0,
+	12,15,1,0,0,0,13,11,1,0,0,0,13,14,1,0,0,0,14,19,1,0,0,0,15,13,1,0,0,0,16,
+	17,3,4,2,0,17,18,5,22,0,0,18,20,1,0,0,0,19,16,1,0,0,0,19,20,1,0,0,0,20,
+	21,1,0,0,0,21,22,5,0,0,1,22,1,1,0,0,0,23,24,5,14,0,0,24,25,5,20,0,0,25,
+	26,3,6,3,0,26,27,5,22,0,0,27,36,1,0,0,0,28,29,5,14,0,0,29,30,5,11,0,0,30,
+	31,3,4,2,0,31,32,5,20,0,0,32,33,3,6,3,0,33,34,5,22,0,0,34,36,1,0,0,0,35,
+	23,1,0,0,0,35,28,1,0,0,0,36,3,1,0,0,0,37,38,6,2,-1,0,38,39,5,10,0,0,39,
+	40,5,14,0,0,40,41,5,20,0,0,41,42,3,6,3,0,42,43,5,21,0,0,43,44,3,4,2,0,44,
+	45,5,20,0,0,45,46,3,6,3,0,46,54,1,0,0,0,47,54,5,14,0,0,48,49,5,23,0,0,49,
+	50,3,4,2,0,50,51,5,24,0,0,51,54,1,0,0,0,52,54,3,8,4,0,53,37,1,0,0,0,53,
+	47,1,0,0,0,53,48,1,0,0,0,53,52,1,0,0,0,54,59,1,0,0,0,55,56,10,5,0,0,56,
+	58,3,4,2,6,57,55,1,0,0,0,58,61,1,0,0,0,59,57,1,0,0,0,59,60,1,0,0,0,60,5,
+	1,0,0,0,61,59,1,0,0,0,62,63,6,3,-1,0,63,69,7,0,0,0,64,65,5,23,0,0,65,66,
+	3,6,3,0,66,67,5,24,0,0,67,69,1,0,0,0,68,62,1,0,0,0,68,64,1,0,0,0,69,75,
+	1,0,0,0,70,71,10,2,0,0,71,72,5,18,0,0,72,74,3,6,3,2,73,70,1,0,0,0,74,77,
+	1,0,0,0,75,73,1,0,0,0,75,76,1,0,0,0,76,7,1,0,0,0,77,75,1,0,0,0,78,79,7,
+	1,0,0,79,9,1,0,0,0,7,13,19,35,53,59,68,75];
 
 	private static __ATN: ATN;
 	public static get _ATN(): ATN {
@@ -706,11 +710,17 @@ export class LambdaAbstractionContext extends TermContext {
 	public ID(): TerminalNode {
 		return this.getToken(LambdaParser.ID, 0);
 	}
-	public COLON(): TerminalNode {
-		return this.getToken(LambdaParser.COLON, 0);
+	public COLON_list(): TerminalNode[] {
+	    	return this.getTokens(LambdaParser.COLON);
 	}
-	public type_(): TypeContext {
-		return this.getTypedRuleContext(TypeContext, 0) as TypeContext;
+	public COLON(i: number): TerminalNode {
+		return this.getToken(LambdaParser.COLON, i);
+	}
+	public type__list(): TypeContext[] {
+		return this.getTypedRuleContexts(TypeContext) as TypeContext[];
+	}
+	public type_(i: number): TypeContext {
+		return this.getTypedRuleContext(TypeContext, i) as TypeContext;
 	}
 	public DOT(): TerminalNode {
 		return this.getToken(LambdaParser.DOT, 0);

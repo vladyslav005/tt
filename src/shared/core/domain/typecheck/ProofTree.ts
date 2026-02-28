@@ -1,12 +1,11 @@
 import type {Term, Type} from "@/shared/core/domain/ast";
-import type {Gamma} from "@/shared/core/domain/typecheck/Gamma.ts";
 
 export interface ProofTree {
   rule: Rule
   premises: ProofTree[]
   term: Term
   type: Type
-  gamma: Gamma
+  gamma: Record<string, Type>
   error?: string
 }
 

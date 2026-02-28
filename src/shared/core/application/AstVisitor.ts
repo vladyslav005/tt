@@ -1,6 +1,6 @@
 import type {Abs, App, ASTNode, GlobalDecl, Program, Var} from "@/shared/core/domain/ast";
 
-export abstract class Visitor<R> {
+export abstract class AstVisitor<R> {
 
   visit(node: ASTNode): R {
     switch (node.kind) {

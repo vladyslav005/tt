@@ -1,11 +1,11 @@
-import {Visitor} from "@/shared/core/application/Visitor.ts";
+import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
 import type {Abs, App, GlobalDecl, Program, TyArrow, Var} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/domain/typecheck/Gamma.ts";
-import {typeEquals} from "@/shared/core/domain/typecheck/utils.ts";
+import {typeEquals, typeToString} from "@/shared/core/domain/typecheck/utils.ts";
 import {type ProofTree, Rule} from "@/shared/core/domain/typecheck/ProofTree.ts";
 
 
-export class SLTLCTypeChecker extends Visitor<ProofTree> {
+export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   private context: Gamma = new Gamma();
 
@@ -14,12 +14,24 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
     const bodyProof: ProofTree = this.visit(node.body);
     this.context.delete(node.param);
 
+    const abstractionType: TyArrow = {
+      kind: "TyArrow",
+      from: node.paramType,
+      to: bodyProof.type
+    }
+
     const returnProof: ProofTree = {
       rule: "Abs",
       premises: [bodyProof],
       term: node,
-      type: bodyProof.type
+      type: abstractionType,
+      gamma: this.context.serializeGamma()
     } as ProofTree;
+
+    if (!typeEquals(abstractionType, node.type)) {
+      console.error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`);
+      returnProof.error = `Type error in abstraction: expected type ${node.type}, got ${bodyProof.type}`;
+    }
 
     return returnProof
   }
@@ -29,17 +41,18 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
     const funcProof: ProofTree = this.visit(node.func);
     const argProof: ProofTree = this.visit(node.arg);
 
+
     let returnProof: ProofTree = {
       rule: Rule.App,
       premises: [funcProof, argProof],
       term: node,
       type: undefined as any,
-      gamma: this.context.copy(),
+      gamma: this.context.serializeGamma(),
       error: error
     };
 
     if (funcProof.type.kind !== "TyArrow") {
-      console.error(`Type error: expected a function type, got ${funcProof.type.kind}`);
+      console.error(`Type error: expected a function type, got ${typeToString(funcProof.type)}`);
       returnProof.error = `Type error: expected a function type, got ${funcProof.type.kind}`;
       return returnProof;
     }
@@ -47,8 +60,8 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
     const funcType = funcProof.type as TyArrow;
     returnProof.type = funcType.to;
 
-    if (typeEquals((funcProof.type as TyArrow).to, argProof.type)) {
-      console.error(`Type error: expected a function type, got ${funcType.to}`);
+    if (!typeEquals((funcProof.type as TyArrow).from, argProof.type)) {
+      console.error(`Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`);
       returnProof.error = `Type error: expected a function type, got ${funcType.to}`;
     }
 
@@ -56,6 +69,7 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
   }
 
   protected visitProgram(node: Program): ProofTree {
+    this.context.clear();
     node.globals.forEach((g) => this.visit(g));
     return node.term ? this.visit(node.term) : {} as ProofTree;
   }
@@ -77,11 +91,12 @@ export class SLTLCTypeChecker extends Visitor<ProofTree> {
 
   protected visitVar(node: Var): ProofTree {
     const varType = this.context.get(node.name);
+
     let returnProof: ProofTree = {
       rule: Rule.Var,
       term: node,
       type: undefined as any,
-      gamma: this.context.copy(),
+      gamma: this.context.serializeGamma(),
       premises: []
     }
 

@@ -14,3 +14,15 @@ export function typeEquals(a: Type, b: Type): boolean {
       );
   }
 }
+
+export function typeToString(a: Type): string {
+  switch (a.kind) {
+    case "TyVar":
+      return a.name;
+
+    case "TyArrow":
+      const fromStr = typeToString(a.from);
+      const toStr = typeToString(a.to);
+      return `(${fromStr} -> ${toStr})`;
+  }
+}

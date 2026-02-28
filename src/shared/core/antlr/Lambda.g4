@@ -11,8 +11,8 @@ globalDecl
     ;
 
 term
-    : term term                                                         # Application
-    | LAMBDA ID COLON type DOT term                                               # LambdaAbstraction
+    : term term                                                                      # Application
+    | LAMBDA ID COLON type DOT term COLON type                                       # LambdaAbstraction
     | ID                                                                             # Variable
     | LPAREN term RPAREN                                                             # Parentheses
     | constant                                                                       # Literal

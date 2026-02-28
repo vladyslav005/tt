@@ -1,11 +1,13 @@
+import {AntlrParserAdapter} from "@/shared/core/adapter/AntlrParserAdapter.ts";
+import {SLTLCTypeChecker} from "@/shared/core/domain/typecheck/STLCTypeChecker.ts";
+import {TexMapper} from "@/shared/presentation/TexMapper.ts";
 
 
 export function makeDependencies() {
   return {
-    // locations: new EntityRepoHttp(client),
-    // dataEntry: new DataEntryRepoHttp(client),
-    // report: new ReportRepoHttp(client),
-    // predict: new PredictRepoHttp(client),
+    parser: new AntlrParserAdapter(),
+    typeCheckerSLTC: new SLTLCTypeChecker(),
+    texMapper: new TexMapper(),
   } as const;
 }
 

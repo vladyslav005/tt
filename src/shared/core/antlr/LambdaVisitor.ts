@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Generated from ./src/shared/core/antlr/Lambda.g4 by ANTLR 4.13.2
-// @ts-nocheck
+
 import {ParseTreeVisitor} from 'antlr4';
 
 

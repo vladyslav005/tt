@@ -23,8 +23,9 @@ export class TermBuilderVisitor
     return {
       kind: "Abs",
       param: ctx.ID().getText(),
-      paramType: new TypeBuilderVisitor().visit(ctx.type_()),
-      body: this.visit(ctx.term())
+      paramType: new TypeBuilderVisitor().visit(ctx.type_(0)),
+      body: this.visit(ctx.term()),
+      type: new TypeBuilderVisitor().visit(ctx.type_(1))
     }
   }
 

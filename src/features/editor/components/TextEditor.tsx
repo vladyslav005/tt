@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSetUpEditor } from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
+import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
 
 export interface TextEditorProps {
   /**
@@ -126,7 +127,8 @@ export function TextEditor({
   }), [readOnly, options]);
 
   return (
-    <div className={cn(className, "dark:slate-950")}>
+    <div className={cn(className, "relative dark:bg-slate-950 border rounded-lg shadow-md")}>
+      <TypeCheckButton></TypeCheckButton>
       <Editor
         height={height}
         theme={monacoTheme}

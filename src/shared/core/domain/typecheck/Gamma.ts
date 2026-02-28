@@ -35,6 +35,14 @@ export class Gamma {
     return newGamma
   }
 
+  clear(): void {
+    this.hash.clear()
+  }
+
+  serializeGamma(): Record<string, Type> {
+    return Object.fromEntries(this.hash.entries())
+  }
+
   toString(): string {
     return `{ ${[...this.hash.entries()].map(([k, v]) => `${k}: ${v}`).join(", ")} }`
   }
