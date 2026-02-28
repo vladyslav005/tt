@@ -1,6 +1,6 @@
-import Editor, { useMonaco, type OnMount, type OnChange } from '@monaco-editor/react';
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSetUpEditor } from "@/features/editor/hooks/setUpEditor.ts";
+import Editor, {type OnChange, type OnMount, useMonaco} from '@monaco-editor/react';
+import {useEffect, useMemo, useRef, useState} from "react";
+import {useSetUpEditor} from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
@@ -48,19 +48,19 @@ export interface TextEditorProps {
 }
 
 export function TextEditor({
-  defaultValue = "// Write your lambda expression here",
-  value,
-  language = "lambda",
-  height = "90vh",
-  onChange,
-  onMount,
-  readOnly = false,
-  className,
-  options = {},
-}: TextEditorProps) {
+                             defaultValue = "// Write your lambda expression here",
+                             value,
+                             language = "lambda",
+                             height = "90vh",
+                             onChange,
+                             onMount,
+                             readOnly = false,
+                             className,
+                             options = {},
+                           }: TextEditorProps) {
   const monaco = useMonaco();
-  const { setUpMonacoLanguage } = useSetUpEditor();
-  const { theme: appTheme } = useTheme();
+  const {setUpMonacoLanguage} = useSetUpEditor();
+  const {theme: appTheme} = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const editorRef = useRef<any>(null);
 

@@ -1,5 +1,4 @@
-
-import { useRouteError } from "react-router-dom";
+import {useRouteError} from "react-router-dom";
 import {Card, CardContent, CardFooter} from "@/shared/components/ui/card.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 

@@ -3,12 +3,11 @@ import {Topbar} from "@/app/layout/TopBar.tsx";
 import {Footer} from "@/app/layout/Footer.tsx";
 
 
-
 export function AppLayout() {
   return (
     <div className="">
       <Topbar></Topbar>
-      <Outlet />
+      <Outlet/>
       <Footer></Footer>
     </div>
   );

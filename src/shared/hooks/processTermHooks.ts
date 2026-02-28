@@ -7,16 +7,16 @@ import {cleanErrors, pushProcessingError, setAst, setProof} from "@/shared/ui-st
 //TODO: retrieve type errors and parsing errors, to be able to display them in different sections of the UI
 
 export function useTermHooks() {
-  const { parser, typeCheckerSLTC } = useDependencies();
+  const {parser, typeCheckerSLTC} = useDependencies();
   const dispatch = useAppDispatch()
 
 
   function parseTerm(term: string): Program {
-      return parser.parseExpression(term)
+    return parser.parseExpression(term)
   }
 
   function typecheckTerm(ast: Program): ProofTree {
-      return typeCheckerSLTC.visit(ast);
+    return typeCheckerSLTC.visit(ast);
   }
 
   function parseAndTypeCheck(term: string): void {

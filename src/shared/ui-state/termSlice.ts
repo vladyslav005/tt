@@ -1,12 +1,12 @@
 // src/store/counterSlice.ts
-import { createSlice } from "@reduxjs/toolkit";
+import {createSlice} from "@reduxjs/toolkit";
 import type {Program} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
 
 interface TermState {
   termText: string | undefined;
   processingErrors?: Error[];
-  ast : Program | undefined;
+  ast: Program | undefined;
   proof: ProofTree | undefined;
 }
 
@@ -25,7 +25,7 @@ const counterSlice = createSlice({
       state.termText = action.payload;
     },
 
-    setProof: (state, action: { payload: ProofTree | undefined}) => {
+    setProof: (state, action: { payload: ProofTree | undefined }) => {
       state.proof = action.payload;
     },
 

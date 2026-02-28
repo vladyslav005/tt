@@ -1,6 +1,3 @@
-
-
-
 export function useSetUpEditor() {
 
   function setUpMonacoLanguage(monaco: any) {

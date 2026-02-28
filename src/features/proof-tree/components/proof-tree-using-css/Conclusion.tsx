@@ -11,14 +11,14 @@ interface ConclusionCenterProps {
 export const Conclusion = (props: ConclusionCenterProps) => {
 
   return (
-      <div className={`conclusion-center ${props.isItLeaf} ${props.isItRoot} flex items-center`}
-           // onMouseEnter={handleMouseEnter}
-           // onMouseLeave={handleMouseLeave}
+    <div className={`conclusion-center ${props.isItLeaf} ${props.isItRoot} flex items-center`}
+      // onMouseEnter={handleMouseEnter}
+      // onMouseLeave={handleMouseLeave}
 
-      >
-          <MathJax className="">
-            {`\\[ ${props.node.judgement} \\]`}
-          </MathJax>
-      </div>
+    >
+      <MathJax className="">
+        {`\\[ ${props.node.judgement} \\]`}
+      </MathJax>
+    </div>
   )
 }

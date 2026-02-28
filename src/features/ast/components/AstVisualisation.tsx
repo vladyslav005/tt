@@ -6,10 +6,10 @@ export interface AstVisualisationProps {
 }
 
 export function AstVisualisation({
-  className
-}: AstVisualisationProps ) {
+                                   className
+                                 }: AstVisualisationProps) {
 
-  const ast = useAppSelector( (state) => state.term.ast);
+  const ast = useAppSelector((state) => state.term.ast);
 
   // const [proof, setProof] = useState<ProofTree>()
   // const  { parseTerm, typecheckTerm } = useTermHooks()

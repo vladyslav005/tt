@@ -8,9 +8,9 @@ export function NotFoundPage() {
         {/* Animated Water Droplet Icon */}
         <div className="flex justify-center">
           <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse"/>
             <div className="relative w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center">
-              <FileQuestionMark className="w-16 h-16 text-primary animate-bounce" />
+              <FileQuestionMark className="w-16 h-16 text-primary animate-bounce"/>
             </div>
           </div>
         </div>
@@ -29,11 +29,11 @@ export function NotFoundPage() {
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
           Looks like this page is not correctly typed.
         </p>
-        
+
         {/* Help Message */}
         <div className="pt-8 border-t border-border">
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <AlertCircle className="w-4 h-4" />
+            <AlertCircle className="w-4 h-4"/>
             <span>
               Need help? Contact{' '}
               <a href="mailto:support@aquaphage.com" className="text-primary hover:underline">

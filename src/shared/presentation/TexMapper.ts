@@ -20,6 +20,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       children: node.premises.map(child => this.visit(child))
     }
   }
+
   protected visitVar(node: ProofTree): TexTree {
     return {
       judgement: this.judgementToTex(node),

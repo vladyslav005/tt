@@ -15,7 +15,6 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitApp(node)
 
 
-
       default:
         throw new Error("Unknown AST node")
     }

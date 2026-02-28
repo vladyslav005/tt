@@ -9,11 +9,11 @@ export interface TypeCheckButtonProps {
 }
 
 export function TypeCheckButton({
-  onClick,
-  className
-}: TypeCheckButtonProps) {
+                                  onClick,
+                                  className
+                                }: TypeCheckButtonProps) {
   const termText = useAppSelector((state) => state.term.termText);
-  const { parseAndTypeCheck } = useTermHooks()
+  const {parseAndTypeCheck} = useTermHooks()
 
   const handleClick = () => {
     if (onClick) {

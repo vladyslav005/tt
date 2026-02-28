@@ -1,26 +1,12 @@
-import { motion } from "framer-motion";
-import {
-  CheckCircle2,
-  FileCode,
-  Layers,
-  Network,
-  Play,
-  Sparkles,
-  Terminal,
-} from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card";
+import {motion} from "framer-motion";
+import {CheckCircle2, FileCode, Layers, Network, Play, Sparkles, Terminal,} from "lucide-react";
+import {Button} from "@/shared/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/shared/components/ui/card";
 
 const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
+  initial: {opacity: 0, y: 20},
+  animate: {opacity: 1, y: 0},
+  transition: {duration: 0.5},
 };
 
 const staggerContainer = {
@@ -41,7 +27,8 @@ export function AboutPage() {
         animate="animate"
         variants={fadeInUp}
       >
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <h1
+          className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           About This Project
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
@@ -50,7 +37,7 @@ export function AboutPage() {
           tree visualization for academic and research purposes.
         </p>
         <Button size="lg" className="rounded-2xl shadow-lg">
-          <FileCode className="mr-2 h-5 w-5" />
+          <FileCode className="mr-2 h-5 w-5"/>
           View Documentation
         </Button>
       </motion.section>
@@ -58,9 +45,9 @@ export function AboutPage() {
       {/* Project Overview Section */}
       <motion.section
         className="container mx-auto px-4 py-8 max-w-6xl"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
+        initial={{opacity: 0}}
+        animate={{opacity: 1}}
+        transition={{delay: 0.2, duration: 0.5}}
       >
         <Card className="shadow-xl hover:shadow-2xl transition-shadow duration-300">
           <CardHeader>
@@ -115,7 +102,7 @@ export function AboutPage() {
                 >
                   <div className="flex-shrink-0">
                     <div className="p-3 rounded-xl bg-muted group-hover:bg-primary/10 transition-colors duration-300">
-                      <feature.icon className="h-6 w-6 text-primary" />
+                      <feature.icon className="h-6 w-6 text-primary"/>
                     </div>
                   </div>
                   <div>
@@ -136,9 +123,9 @@ export function AboutPage() {
       {/* Architecture Section */}
       <motion.section
         className="container mx-auto px-4 py-12 max-w-6xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
+        initial={{opacity: 0, y: 20}}
+        animate={{opacity: 1, y: 0}}
+        transition={{delay: 0.4, duration: 0.5}}
       >
         <h2 className="text-3xl font-bold mb-8 text-center">Architecture</h2>
         <div className="grid md:grid-cols-2 gap-8">
@@ -149,20 +136,21 @@ export function AboutPage() {
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { step: "Parser", desc: "ANTLR-based lexer & parser" },
-                  { step: "AST", desc: "Abstract syntax tree construction" },
+                  {step: "Parser", desc: "ANTLR-based lexer & parser"},
+                  {step: "AST", desc: "Abstract syntax tree construction"},
                   {
                     step: "Type Checker",
                     desc: "STLC rules & inference engine",
                   },
-                  { step: "Proof Tree", desc: "Derivation tree generation" },
-                  { step: "UI", desc: "Interactive visualization layer" },
+                  {step: "Proof Tree", desc: "Derivation tree generation"},
+                  {step: "UI", desc: "Interactive visualization layer"},
                 ].map((item, idx) => (
                   <div
                     key={idx}
                     className="flex items-center gap-3 group cursor-default"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
                       {idx + 1}
                     </div>
                     <div>
@@ -180,7 +168,7 @@ export function AboutPage() {
           <Card className="shadow-lg bg-muted/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
-                <Terminal className="h-5 w-5" />
+                <Terminal className="h-5 w-5"/>
                 Code Preview
               </CardTitle>
             </CardHeader>
@@ -208,9 +196,9 @@ export function AboutPage() {
       {/* Technology Stack Section */}
       <motion.section
         className="container mx-auto px-4 py-12 pb-20 max-w-6xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
+        initial={{opacity: 0, y: 20}}
+        animate={{opacity: 1, y: 0}}
+        transition={{delay: 0.6, duration: 0.5}}
       >
         <h2 className="text-3xl font-bold mb-8 text-center">
           Technology Stack
@@ -250,11 +238,12 @@ export function AboutPage() {
           ].map((tech, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 + idx * 0.1, duration: 0.3 }}
+              initial={{opacity: 0, scale: 0.9}}
+              animate={{opacity: 1, scale: 1}}
+              transition={{delay: 0.7 + idx * 0.1, duration: 0.3}}
             >
-              <Card className="h-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-default">
+              <Card
+                className="h-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-default">
                 <CardHeader>
                   <div className="text-4xl mb-2">{tech.icon}</div>
                   <CardTitle className="text-lg">{tech.title}</CardTitle>
