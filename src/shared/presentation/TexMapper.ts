@@ -5,6 +5,14 @@ import type {Term, Type} from "@/shared/core/domain/ast";
 
 export class TexMapper extends ProofTreeVisitor<TexTree> {
 
+
+  visit(node: ProofTree): TexTree {
+    const tex = super.visit(node)
+    if (node.error)
+      tex.error = node.error;
+    return tex;
+  }
+
   protected visitAbs(node: ProofTree): TexTree {
     return {
       judgement: this.judgementToTex(node),

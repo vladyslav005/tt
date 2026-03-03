@@ -7,6 +7,7 @@ export function useSetUpEditor() {
       "as", "case", "of", "if", "then", "else", "inl", "inr", "nil",
       "isnil", "head", "tail", "cons", "typedef", "fix"
     ];
+
     monaco.languages.setMonarchTokensProvider("lambda", {
       keywords,
       tokenizer: {

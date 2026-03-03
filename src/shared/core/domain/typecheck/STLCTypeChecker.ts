@@ -5,6 +5,8 @@ import {typeEquals, typeToString} from "@/shared/core/domain/typecheck/utils.ts"
 import {type ProofTree, Rule} from "@/shared/core/domain/typecheck/ProofTree.ts";
 
 
+// TODO: HANDLE PARSE ERRORS AND SAFE PIPELINE
+
 export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   private context: Gamma = new Gamma();
@@ -97,7 +99,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     let returnProof: ProofTree = {
       rule: Rule.Var,
       term: node,
-      type: undefined as any,
+      type: "undefined" as any,
       gamma: this.context.serializeGamma(),
       premises: []
     }

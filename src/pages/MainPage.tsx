@@ -18,6 +18,7 @@ export function MainPage() {
         language="lambda"
         onChange={(value) => {
           dispatch(setTermText(value));
+          console.log("Editor content changed:", value);
         }}
       />
 

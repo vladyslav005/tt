@@ -1,15 +1,16 @@
 import type {Program} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
-import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
+import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {cleanErrors, pushProcessingError, setAst, setProof} from "@/shared/ui-state/termSlice.ts";
 
 //TODO: retrieve type errors and parsing errors, to be able to display them in different sections of the UI
 
 export function useTermHooks() {
   const {parser, typeCheckerSLTC} = useDependencies();
-  const dispatch = useAppDispatch()
 
+  const dispatch = useAppDispatch()
+  const termText = useAppSelector((state) => state.term.termText);
 
   function parseTerm(term: string): Program {
     return parser.parseExpression(term)
@@ -19,7 +20,10 @@ export function useTermHooks() {
     return typeCheckerSLTC.visit(ast);
   }
 
-  function parseAndTypeCheck(term: string): void {
+  function parseAndTypeCheck(termOverride?: string): void {
+    const term = termOverride ?? termText;
+    if (!term) return
+
     let ast: Program | undefined = undefined
     let proof: ProofTree | undefined = undefined
 

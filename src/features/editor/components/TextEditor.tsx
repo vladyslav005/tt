@@ -4,6 +4,7 @@ import {useSetUpEditor} from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
+import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
 
 export interface TextEditorProps {
   /**
@@ -59,24 +60,22 @@ export function TextEditor({
                              options = {},
                            }: TextEditorProps) {
   const monaco = useMonaco();
-  const {setUpMonacoLanguage} = useSetUpEditor();
-  const {theme: appTheme} = useTheme();
+  const { parseAndTypeCheck } = useTermHooks();
+  const { setUpMonacoLanguage } = useSetUpEditor();
+  const { theme: appTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const editorRef = useRef<any>(null);
 
-  // Determine the Monaco theme based on app theme
   const monacoTheme = useMemo(() => {
-    if (!appTheme) return "lambda-theme"; // Default to light if theme not ready
+    if (!appTheme) return "lambda-theme";
 
     if (appTheme === "system") {
-      // Check system preference
       const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       return isDark ? "lambda-theme-dark" : "lambda-theme";
     }
     return appTheme === "dark" ? "lambda-theme-dark" : "lambda-theme";
   }, [appTheme]);
 
-  // Set up Monaco language and themes
   useEffect(() => {
     if (monaco && !isMonacoReady) {
       console.log('Monaco instance loaded - setting up language and themes');
@@ -101,6 +100,20 @@ export function TextEditor({
     // Set the theme immediately after mount
     console.log('Editor mounted - setting initial theme:', monacoTheme);
     monaco.editor.setTheme(monacoTheme);
+
+    editor.addAction({
+      id: 'my-unique-id',
+      label: 'My Custom Action',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter
+      ],
+      precondition: 'editorTextFocus',
+      run: () => {
+        const currentValue = editor.getValue();
+        parseAndTypeCheck(currentValue);
+      }
+    });
 
     // Call user's onMount callback if provided
     if (onMount) {
