@@ -24,13 +24,13 @@ export function MainPage() {
       />
 
       <div className="mt-12"></div>
-      <ProofTreeVisualisation/>
+      <ProofTreeVisualisation className="p-4 m-4"/>
 
       <div className="mt-12"></div>
-      <AstVisualisation/>
+      <AstVisualisation className="p-4 m-4"/>
 
       <div className="mt-12"></div>
-      <ErrorOutput/>
+      <ErrorOutput className="p-4 m-4"/>
     </div>
   )
 }

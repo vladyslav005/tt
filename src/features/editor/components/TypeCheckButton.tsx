@@ -1,6 +1,7 @@
 import {cn} from "@/shared/lib/utils.ts";
 import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {Play} from "lucide-react";
 
 export interface TypeCheckButtonProps {
   onClick?: () => void;
@@ -24,8 +25,13 @@ export function TypeCheckButton({
   return (
     <Button
       onClick={handleClick}
-      className={cn(className, "absolute z-20 right-10 bottom-10 px-4 py-2 rounded hover:shadow-2xl transition-colors duration-300")}
+      className={cn(
+        "absolute z-20 right-4 bottom-4 shadow-lg hover:shadow-xl transition-all duration-300 gap-2",
+        className
+      )}
+      size="lg"
     >
+      <Play className="h-4 w-4" />
       Type Check
     </Button>
   );

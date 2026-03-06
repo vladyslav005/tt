@@ -5,6 +5,10 @@ import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
 import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
+import { motion } from "framer-motion";
+import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
+import {Terminal} from "lucide-react";
 
 export interface TextEditorProps {
   /**
@@ -140,20 +144,44 @@ export function TextEditor({
   }), [readOnly, options]);
 
   return (
-    <div className={cn(className, "relative dark:bg-slate-950 border rounded-lg shadow-md")}>
-      <TypeCheckButton></TypeCheckButton>
-      <Editor
-        height={height}
-        theme={monacoTheme}
-        defaultValue={defaultValue}
-        value={value}
-        defaultLanguage={language}
-        language={language}
-        onChange={onChange}
-        beforeMount={handleBeforeMount}
-        onMount={handleEditorMount}
-        options={editorOptions}
-      />
-    </div>
+    <motion.div
+      className={cn(className)}
+      initial="initial"
+      animate="animate"
+      variants={fadeInUp}
+    >
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-500">
+              <Terminal className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl">Lambda Expression Editor</CardTitle>
+              <CardDescription>
+                Write and test your lambda calculus expressions
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="relative rounded-xl overflow-hidden border">
+            <TypeCheckButton />
+            <Editor
+              height={height}
+              theme={monacoTheme}
+              defaultValue={defaultValue}
+              value={value}
+              defaultLanguage={language}
+              language={language}
+              onChange={onChange}
+              beforeMount={handleBeforeMount}
+              onMount={handleEditorMount}
+              options={editorOptions}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
