@@ -53,7 +53,7 @@ export interface TextEditorProps {
 }
 
 export function TextEditor({
-                             defaultValue = "// Write your lambda expression here",
+                             defaultValue = "// Write your lambda expression here a : T; (λ x : T . (x) : T -> T) a;",
                              value,
                              language = "lambda",
                              height = "90vh",

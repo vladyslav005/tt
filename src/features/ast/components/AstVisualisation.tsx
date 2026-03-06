@@ -4,6 +4,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/share
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Layers} from "lucide-react";
+import {Ast} from "@/features/ast/components/ast/Ast.tsx";
 
 export interface AstVisualisationProps {
   className?: string;
@@ -27,7 +28,7 @@ export function AstVisualisation({
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-500">
-              <Layers className="h-5 w-5" />
+              <Layers className="h-5 w-5"/>
             </div>
             <div>
               <CardTitle className="text-2xl">Abstract Syntax Tree</CardTitle>
@@ -41,10 +42,22 @@ export function AstVisualisation({
         </CardHeader>
         <CardContent>
           {hasAst ? (
-            <div className="p-4 rounded-xl bg-muted/50 border overflow-x-auto">
-              <pre className="text-xs text-foreground/80">
-                {JSON.stringify(ast, null, 2)}
-              </pre>
+            <div>
+              <Ast AST={ast}/>
+
+              <details className="group">
+                <summary
+                  className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+                  <span className="inline-flex items-center gap-2">
+                    View Raw AST- Data (DEBUG)
+                  </span>
+                </summary>
+                <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+                  <pre className="text-xs overflow-x-auto text-foreground/80">
+                    {JSON.stringify(ast, null, 2)}
+                  </pre>
+                </div>
+              </details>
             </div>
           ) : (
             <div className="p-6 text-center rounded-xl bg-muted/30 border">

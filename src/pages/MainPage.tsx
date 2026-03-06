@@ -13,7 +13,7 @@ export function MainPage() {
     <div className="">
       <div className="mt-32"></div>
       <TextEditor
-        defaultValue="// Write your lambda expression here"
+        defaultValue="a : T; (λ x : T . (x) : T -> T) a;"
         className="p-4 m-4"
         height="200px"
         language="lambda"
