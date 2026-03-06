@@ -3,6 +3,7 @@ import {ProofTreeVisualisation} from "@/features/proof-tree/components/ProofTree
 import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {AstVisualisation} from "@/features/ast/components/AstVisualisation.tsx";
+import {ErrorOutput} from "@/features/error-output/components/ErrorOutput.tsx";
 
 export function MainPage() {
 
@@ -27,6 +28,9 @@ export function MainPage() {
 
       <div className="mt-12"></div>
       <AstVisualisation/>
+
+      <div className="mt-12"></div>
+      <ErrorOutput/>
     </div>
   )
 }

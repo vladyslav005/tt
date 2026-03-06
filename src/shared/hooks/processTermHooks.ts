@@ -2,7 +2,7 @@ import type {Program} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import {cleanErrors, pushProcessingError, setAst, setProof} from "@/shared/ui-state/termSlice.ts";
+import {clean, pushProcessingError, setAst, setProof} from "@/shared/ui-state/termSlice.ts";
 
 //TODO: retrieve type errors and parsing errors, to be able to display them in different sections of the UI
 
@@ -27,7 +27,7 @@ export function useTermHooks() {
     let ast: Program | undefined = undefined
     let proof: ProofTree | undefined = undefined
 
-    dispatch(cleanErrors())
+    dispatch(clean())
 
     try {
       ast = parser.parseExpression(term);
@@ -42,8 +42,10 @@ export function useTermHooks() {
     }
 
     try {
-      if (!ast) return
+      if (!ast || !ast.term) return
       proof = typeCheckerSLTC.visit(ast);
+
+      typeCheckerSLTC.getErrors().map(e => dispatch(pushProcessingError(e)));
 
       dispatch(setProof(proof));
 

@@ -41,8 +41,10 @@ const counterSlice = createSlice({
       state.processingErrors?.push(action.payload);
     },
 
-    cleanErrors: (state) => {
-      state.processingErrors = undefined;
+    clean: (state) => {
+      state.processingErrors = [];
+      state.ast = undefined;
+      state.proof = undefined;
     }
   },
 });
@@ -52,6 +54,6 @@ export const {
   setProof,
   setAst,
   pushProcessingError,
-  cleanErrors
+  clean
 } = counterSlice.actions;
 export default counterSlice.reducer;

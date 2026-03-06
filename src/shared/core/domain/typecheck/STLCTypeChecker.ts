@@ -10,6 +10,20 @@ import {type ProofTree, Rule} from "@/shared/core/domain/typecheck/ProofTree.ts"
 export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   private context: Gamma = new Gamma();
+  private errorBuffer: Error[] = [];
+
+  public getErrors(): Error[] {
+    return this.errorBuffer;
+  }
+
+  protected visitProgram(node: Program): ProofTree {
+    this.context.clear();
+    this.errorBuffer = [];
+    node.globals.forEach((g) => this.visit(g));
+
+    if (!node.term) throw new Error("Type AST is empty");
+    return this.visit(node.term);
+  }
 
   protected visitAbs(node: Abs): ProofTree {
     this.context.add(node.param, node.paramType);
@@ -32,6 +46,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     if (!typeEquals(abstractionType, node.type)) {
       console.error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`);
+      this.errorBuffer.push(new Error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`));
       returnProof.error = `Type error in abstraction: expected type ${node.type}, got ${bodyProof.type}`;
     }
 
@@ -42,7 +57,6 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     let error: string | undefined = undefined;
     const funcProof: ProofTree = this.visit(node.func);
     const argProof: ProofTree = this.visit(node.arg);
-
 
     let returnProof: ProofTree = {
       rule: Rule.App,
@@ -55,6 +69,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     if (funcProof.type.kind !== "TyArrow") {
       console.error(`Type error: expected a function type, got ${typeToString(funcProof.type)}`);
+      this.errorBuffer.push(new Error(`Type error: expected a function type, got ${typeToString(funcProof.type)}`));
       returnProof.error = `Type error: expected a function type, got ${funcProof.type.kind}`;
       return returnProof;
     }
@@ -64,18 +79,11 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     if (!typeEquals((funcProof.type as TyArrow).from, argProof.type)) {
       console.error(`Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`);
+      this.errorBuffer.push(new Error(`Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`));
       returnProof.error = `Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`;
     }
 
     return returnProof
-  }
-
-  protected visitProgram(node: Program): ProofTree {
-    this.context.clear();
-    node.globals.forEach((g) => this.visit(g));
-
-    if (!node.term) throw new Error("Type AST is empty");
-    return node.term ? this.visit(node.term) : {} as ProofTree;
   }
 
   protected visitTermDecl(node: GlobalDecl): ProofTree {
@@ -107,6 +115,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     if (!varType) {
       console.error(`Type error: variable ${node.name} not found in context`);
       returnProof.error = `Type error: variable ${node.name} not found in context`;
+      this.errorBuffer.push(new Error(`Type error: variable ${node.name} not found in context`));
       return returnProof;
     }
 
