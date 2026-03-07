@@ -5,9 +5,10 @@ import {ProofTreeComponentUsingCss} from "@/features/proof-tree/components/proof
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
-import {Network, ZoomIn, ZoomOut, Crosshair} from "lucide-react";
+import {Network, ZoomIn, ZoomOut, Crosshair, Maximize2, Minimize2} from "lucide-react";
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {useRef, useState, useEffect} from "react";
 
 
 interface ProofTreeVisualisationProps {
@@ -19,12 +20,40 @@ export function ProofTreeVisualisation({
                                        }: ProofTreeVisualisationProps) {
   const proof = useAppSelector((state) => state.term.proof);
   const {toTexTree} = useProofHooks()
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const texTree = proof ? toTexTree(proof) : null;
   const hasProof = proof !== null && proof !== undefined;
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.error('Error toggling fullscreen:', err);
+    }
+  };
+
   return (
     <motion.div
+      ref={containerRef}
       className={cn(className, "h-full max-w-full overflow-hidden")}
       initial="initial"
       animate="animate"
@@ -32,18 +61,29 @@ export function ProofTreeVisualisation({
     >
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col overflow-hidden">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Network className="h-5 w-5" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <Network className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Proof Tree</CardTitle>
+                <CardDescription>
+                  {hasProof
+                    ? "Type derivation tree visualization"
+                    : "No proof tree available"}
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-2xl">Proof Tree</CardTitle>
-              <CardDescription>
-                {hasProof
-                  ? "Type derivation tree visualization"
-                  : "No proof tree available"}
-              </CardDescription>
-            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggleFullscreen}
+              className="shrink-0"
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">

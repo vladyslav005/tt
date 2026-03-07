@@ -11,10 +11,10 @@ export function MainPage() {
 
   return (
     <div className="">
-      <div className="mt-32"></div>
+      <div className="mt-28"></div>
       <TextEditor
+        className="flex-2 p-4 m-4"
         defaultValue="a : T; (λ x : T . (x) : T -> T) a;"
-        className="p-4 m-4"
         height="400px"
         language="lambda"
         onChange={(value) => {
@@ -23,13 +23,16 @@ export function MainPage() {
         }}
       />
 
+      <ErrorOutput className="flex-1 max-h-[400px]  h-full p-4 m-4"/>
 
-      <div className="mt-12 flex">
+
+
+
+      <div className="mt-4 flex">
         <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>
         <AstVisualisation className="flex-1 p-4 m-4 "/>
       </div>
 
-      <ErrorOutput className="p-4 m-4"/>
     </div>
   )
 }
