@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import type { VarDeclNodeData } from "./types";
+import type { VarDeclNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import { typeToString } from "@/shared/core/domain/typecheck/utils.ts";
 
 export function VarDeclFlowNode({

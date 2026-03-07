@@ -1,6 +1,6 @@
 import { useDependencies } from "@/app/providers/di/DependencyProvider";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import type {AstFlowGraph} from "@/features/ast/components/ast/flow/types.ts";
+import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 
 export function useMapAstToFlow() {
     const { flowMapper } = useDependencies();

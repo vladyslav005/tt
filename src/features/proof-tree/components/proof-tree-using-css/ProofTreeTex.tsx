@@ -23,7 +23,7 @@ export function ProofTreeComponentUsingCss(
           {node.children.map((premise, index) => (
             <>
               <ProofTreeComponentUsingCss
-                key={`${premise.rule}-${premise.judgement}`}
+                key={`${premise.id}-${index}`}
                 root={false}
                 node={premise}/>
               {node.children !== undefined && index !== node.children.length - 1 && (

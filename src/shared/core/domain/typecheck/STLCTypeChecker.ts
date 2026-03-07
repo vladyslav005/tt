@@ -1,5 +1,5 @@
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
-import type {Abs, App, GlobalDecl, Lit, Program, TyArrow, Var} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, TyArrow, Var} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/domain/typecheck/Gamma.ts";
 import {typeEquals, typeToString} from "@/shared/core/domain/typecheck/utils.ts";
 import {type ProofTree, Rule} from "@/shared/core/domain/typecheck/ProofTree.ts";
@@ -14,6 +14,13 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   public getErrors(): Error[] {
     return this.errorBuffer;
+  }
+
+
+  visit(node: ASTNode): ProofTree {
+    const proof = super.visit(node);
+    proof.id = node.id;
+    return proof;
   }
 
   protected visitProgram(node: Program): ProofTree {

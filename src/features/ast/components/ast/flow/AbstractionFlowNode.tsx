@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import type { AbstractionNodeData } from "./types";
+import type { AbstractionNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import {typeToString} from "@/shared/core/domain/typecheck/utils.ts";
 
 export function AbstractionFlowNode({

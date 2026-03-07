@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import type { LiteralNodeData } from "./types";
+import type { LiteralNodeData } from "../../../../../shared/presentation/flow/types.ts";
 
 export function LiteralFlowNode({
                                   data,

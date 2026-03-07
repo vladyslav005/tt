@@ -77,7 +77,7 @@ export function AstVisualisation({
           {hasAst ? (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
-                <Ast AST={ast}/>
+                <Ast AST={ast} fullScreen={isFullscreen}/>
               </div>
               <details className="group">
                 <summary

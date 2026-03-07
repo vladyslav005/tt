@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import type { VariableNodeData } from "./types";
+import type { VariableNodeData } from "../../../../../shared/presentation/flow/types.ts";
 
 export function VariableFlowNode({
                                    data,

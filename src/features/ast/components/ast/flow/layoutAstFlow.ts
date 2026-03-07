@@ -1,6 +1,6 @@
 import dagre from "@dagrejs/dagre";
 import type { Edge } from "@xyflow/react";
-import type { AstFlowNode } from "./types";
+import type { AstFlowNode } from "../../../../../shared/presentation/flow/types.ts";
 
 const NODE_WIDTH = 320;
 const NODE_HEIGHT = 300;

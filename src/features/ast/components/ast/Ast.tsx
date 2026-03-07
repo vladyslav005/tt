@@ -2,7 +2,7 @@ import type {Program} from "@/shared/core/domain/ast";
 import {useCallback, useState, useEffect} from "react";
 import {applyEdgeChanges, applyNodeChanges, addEdge, ReactFlow, Background, Controls, MiniMap, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
-import type {AstFlowGraph} from "@/features/ast/components/ast/flow/types.ts";
+import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
 import {VariableFlowNode} from "@/features/ast/components/ast/flow/VariableFlowNode.tsx";
 import {ApplicationFlowNode} from "@/features/ast/components/ast/flow/ApplicationFlowNode.tsx";
@@ -16,6 +16,7 @@ import {layoutAstFlow} from "@/features/ast/components/ast/flow/layoutAstFlow.ts
 
 export interface AstProps {
   AST: Program,
+  fullScreen?: boolean,
 }
 
 const nodeTypes: NodeTypes = {
@@ -29,7 +30,8 @@ const nodeTypes: NodeTypes = {
 } as NodeTypes;
 
 export function Ast({
-  AST
+  AST,
+  fullScreen = false,
 } : AstProps) {
 
   const { mapAstToFlow } = useMapAstToFlow()
@@ -75,7 +77,7 @@ export function Ast({
   );
 
   return (
-    <div style={{ width: '100%', height: '600px' }}>
+    <div style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }}>
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}

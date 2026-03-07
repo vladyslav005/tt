@@ -6,7 +6,7 @@ import {
   ParenthesesContext,
   VariableContext
 } from "@/shared/core/antlr/LambdaParser.ts";
-import type {Abs, App, Lit, Term, Var} from "@/shared/core/domain/ast";
+import type {Abs, App, Lit, Term, TyArrow, Var} from "@/shared/core/domain/ast";
 
 export class TermBuilderVisitor
   extends LambdaVisitor<Term> {
@@ -25,9 +25,9 @@ export class TermBuilderVisitor
       kind: "Abs",
       id: crypto.randomUUID(),
       param: ctx.ID().getText(),
-      paramType: new TypeBuilderVisitor().visit(ctx.type_(0)),
+      paramType: new TypeBuilderVisitor().visit(ctx.type_()),
       body: this.visit(ctx.term()),
-      type: new TypeBuilderVisitor().visit(ctx.type_(1))
+      type: {} as TyArrow // TODO: handle this properly
     }
   }
 

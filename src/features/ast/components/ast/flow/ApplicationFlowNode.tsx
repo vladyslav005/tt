@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import type { ApplicationNodeData } from "./types.ts";
+import type { ApplicationNodeData } from "../../../../../shared/presentation/flow/types.ts";
 
 export function ApplicationFlowNode({
                                       // data,

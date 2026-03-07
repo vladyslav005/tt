@@ -1,7 +1,7 @@
 import type {Edge} from "@xyflow/react";
 import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, Var,} from "@/shared/core/domain/ast";
 import {AstVisitor} from "@/shared/core/application/AstVisitor";
-import type {AstFlowGraph, AstFlowNode} from "@/features/ast/components/ast/flow/types.ts";
+import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types.ts";
 
 export class AstFlowMapper extends AstVisitor<void> {
   private nodes: AstFlowNode[] = [];

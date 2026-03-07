@@ -3,6 +3,7 @@ import type {Term, Type} from "@/shared/core/domain/ast";
 export interface ProofTree {
   rule: Rule
   premises: ProofTree[]
+  id?: string
   term: Term
   type: Type
   gamma: Record<string, Type>

@@ -10,6 +10,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     const tex = super.visit(node)
     if (node.error)
       tex.error = node.error;
+    tex.id = node.id;
     return tex;
   }
 
