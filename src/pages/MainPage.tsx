@@ -15,7 +15,7 @@ export function MainPage() {
       <TextEditor
         defaultValue="a : T; (λ x : T . (x) : T -> T) a;"
         className="p-4 m-4"
-        height="200px"
+        height="400px"
         language="lambda"
         onChange={(value) => {
           dispatch(setTermText(value));
@@ -23,13 +23,12 @@ export function MainPage() {
         }}
       />
 
-      <div className="mt-12"></div>
-      <ProofTreeVisualisation className="p-4 m-4"/>
 
-      <div className="mt-12"></div>
-      <AstVisualisation className="p-4 m-4"/>
+      <div className="mt-12 flex">
+        <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>
+        <AstVisualisation className="flex-1 p-4 m-4 "/>
+      </div>
 
-      <div className="mt-12"></div>
       <ErrorOutput className="p-4 m-4"/>
     </div>
   )

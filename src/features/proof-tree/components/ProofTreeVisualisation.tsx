@@ -25,12 +25,12 @@ export function ProofTreeVisualisation({
 
   return (
     <motion.div
-      className={cn(className)}
+      className={cn(className, "h-full max-w-full overflow-hidden")}
       initial="initial"
       animate="animate"
       variants={fadeInUp}
     >
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col overflow-hidden">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -46,18 +46,19 @@ export function ProofTreeVisualisation({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-hidden">
           {hasProof ? (
-            <div className="space-y-6">
-              <div className="relative min-h-25 rounded-xl bg-muted/30 border overflow-hidden">
+            <div className="w-full h-full  flex flex-col space-y-4">
+              <div className="flex-1 w-full relative  rounded-xl bg-muted/30 border overflow-hidden">
                 <TransformWrapper
                   initialScale={1}
-                  minScale={0.5}
+                  minScale={0.1}
                   maxScale={3}
                   centerOnInit={true}
                   wheel={{step: 0.1}}
                   doubleClick={{mode: "reset"}}
                   panning={{velocityDisabled: true}}
+                  limitToBounds={false}
                 >
                   {({zoomIn, zoomOut, resetTransform}) => (
                     <>
@@ -98,9 +99,10 @@ export function ProofTreeVisualisation({
 
                       <TransformComponent
                         wrapperClass="!w-full !h-full"
-                        contentClass="!w-full !h-full"
+                        contentClass="!w-full !h-full !flex !items-center !justify-center"
+                        wrapperStyle={{ width: '100%', height: '100%', overflow: 'hidden', minHeight: '600px' }}
                       >
-                        <div className="flex items-center justify-center min-h-100 p-6 w-full">
+                        <div className="flex items-center justify-center p-6">
                           {texTree && <ProofTreeComponentUsingCss node={texTree}/>}
                         </div>
                       </TransformComponent>

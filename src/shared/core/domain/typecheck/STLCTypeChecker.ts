@@ -46,11 +46,11 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       premises: [bodyProof]
     } as ProofTree;
 
-    if (!typeEquals(abstractionType, node.type)) {
-      console.error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`);
-      this.errorBuffer.push(new Error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`));
-      returnProof.error = `Type error in abstraction: expected type ${node.type}, got ${bodyProof.type}`;
-    }
+    // if (!typeEquals(abstractionType, node.type)) {
+    //   console.error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`);
+    //   this.errorBuffer.push(new Error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`));
+    //   returnProof.error = `Type error in abstraction: expected type ${node.type}, got ${bodyProof.type}`;
+    // }
 
     return returnProof
   }

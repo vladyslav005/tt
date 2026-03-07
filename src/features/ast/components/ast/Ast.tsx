@@ -75,20 +75,34 @@ export function Ast({
   );
 
   return (
-    <div style={{ width: '100%', height: '50vh' }}>
+    <div style={{ width: '100%', height: '620px' }}>
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
+        minZoom={0.1}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         onConnect={onConnect}
         fitView
       >
-
         <Background />
-        <Controls />
-        <MiniMap />
+        <Controls
+          className="bg-background! border-border! [&_button]:bg-card! [&_button]:border-border! [&_button]:text-foreground! [&_button:hover]:bg-accent!"
+        />
+        <MiniMap
+          className="bg-background! border-border!"
+          nodeColor={(node) => {
+            if (node.type === 'program') return 'hsl(var(--primary))';
+            if (node.type === 'funDecl') return 'hsl(142, 71%, 45%)';
+            if (node.type === 'varDecl') return 'hsl(189, 85%, 44%)';
+            if (node.type === 'abstraction') return 'hsl(270, 55%, 55%)';
+            if (node.type === 'application') return 'hsl(217, 91%, 60%)';
+            if (node.type === 'variable') return 'hsl(142, 71%, 45%)';
+            if (node.type === 'literal') return 'hsl(38, 92%, 50%)';
+            return 'hsl(var(--muted))';
+          }}
+        />
       </ReactFlow>
     </div>
   );
