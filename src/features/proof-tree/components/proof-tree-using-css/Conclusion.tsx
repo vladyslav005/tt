@@ -1,4 +1,4 @@
-import type {TexTree} from "@/shared/presentation/texTree.ts";
+import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {MathJax} from "better-react-mathjax";
 import "./ProofTree.css"
 import {cn} from "@/shared/lib/utils.ts";

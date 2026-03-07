@@ -16,6 +16,6 @@ export class ProgramBuilderVisitor extends LambdaVisitor<Program> {
       ? new TermBuilderVisitor().visit(ctx.term())
       : undefined
 
-    return { kind: "Program", globals, term }
+    return {id: crypto.randomUUID(), kind: "Program", globals, term }
   }
 }

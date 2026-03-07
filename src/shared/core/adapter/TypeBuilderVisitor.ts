@@ -9,15 +9,16 @@ export class TypeBuilderVisitor
     const text = ctx.getText()
 
     if (text === "Nat" || text === "Bool" || text === "Unit") {
-      return { kind: "TyVar", name: text as any }
+      return { kind: "TyVar", id: crypto.randomUUID(), name: text as any }
     }
 
-    return { kind: "TyVar", name: text }
+    return { kind: "TyVar", id: crypto.randomUUID(), name: text }
   }
 
   visitFunctionType = (ctx: FunctionTypeContext): Type => {
     return {
       kind: "TyArrow",
+      id: crypto.randomUUID(),
       from: this.visit(ctx.type_(0)),
       to: this.visit(ctx.type_(1))
     }

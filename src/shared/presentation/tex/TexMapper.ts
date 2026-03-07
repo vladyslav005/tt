@@ -1,5 +1,5 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
-import type {TexTree} from "@/shared/presentation/texTree.ts";
+import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
 import type {Term, Type} from "@/shared/core/domain/ast";
 
@@ -15,7 +15,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitAbs(node: ProofTree): TexTree {
     return {
-      judgement: this.judgementToTex(node),
+      judgement: TexMapper.judgementToTex(node),
       rule: "T-Abs",
       children: node.premises.map(child => this.visit(child))
     }
@@ -23,7 +23,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitApp(node: ProofTree): TexTree {
     return {
-      judgement: this.judgementToTex(node),
+      judgement: TexMapper.judgementToTex(node),
       rule: "T-App",
       children: node.premises.map(child => this.visit(child))
     }
@@ -31,7 +31,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitVar(node: ProofTree): TexTree {
     return {
-      judgement: this.judgementToTex(node),
+      judgement: TexMapper.judgementToTex(node),
       rule: "T-Var",
       children: [this.variableMembershipTex(node)]
     }
@@ -39,7 +39,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
-    const variableType = this.typeToTex(node.type)
+    const variableType = TexMapper.typeToTex(node.type)
 
     return {
       judgement: `${variableName} : ${variableType} \\in \\Gamma`,
@@ -47,7 +47,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  private judgementToTex(node: ProofTree): string {
+  static  judgementToTex(node: ProofTree): string {
     const gamma = this.gammaToTex(node.gamma)
     const term = this.termToTex(node.term)
     const type = this.typeToTex(node.type)
@@ -55,7 +55,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return `${gamma} \\vdash ${term} : ${type}`
   }
 
-  private termToTex(term: Term): string {
+  static termToTex(term: Term): string {
     switch (term.kind) {
       case "Var":
         return term.name
@@ -68,7 +68,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  private gammaToTex(gamma: Record<string, Type>): string {
+  static  gammaToTex(gamma: Record<string, Type>): string {
     const entries = Object.entries(gamma);
 
     if (entries.length === 0) {
@@ -85,7 +85,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return `\\Gamma = \\{ ${formatted.join(", ")} \\}`;
   }
 
-  private typeToTex(type: Type): string {
+  static  typeToTex(type: Type): string {
     switch (type.kind) {
       case "TyVar":
         return `${type.name}`

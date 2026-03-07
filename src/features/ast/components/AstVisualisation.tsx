@@ -49,7 +49,7 @@ export function AstVisualisation({
                 <summary
                   className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                   <span className="inline-flex items-center gap-2">
-                    View Raw AST- Data (DEBUG)
+                    View Raw AST Data (DEBUG)
                   </span>
                 </summary>
                 <div className="mt-3 p-4 rounded-xl bg-muted/50 border">

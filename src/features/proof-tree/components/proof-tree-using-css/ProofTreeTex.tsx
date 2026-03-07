@@ -1,4 +1,4 @@
-import type {TexTree} from "@/shared/presentation/texTree.ts";
+import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {Conclusion} from "@/features/proof-tree/components/proof-tree-using-css/Conclusion.tsx";
 import "./ProofTree.css"
 

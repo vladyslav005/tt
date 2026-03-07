@@ -14,6 +14,7 @@ export class TermBuilderVisitor
   visitApplication = (ctx: ApplicationContext): App => {
     return {
       kind: "App",
+      id: crypto.randomUUID(),
       func: this.visit(ctx.term(0)),
       arg: this.visit(ctx.term(1))
     }
@@ -22,6 +23,7 @@ export class TermBuilderVisitor
   visitLambdaAbstraction = (ctx: LambdaAbstractionContext): Abs => {
     return {
       kind: "Abs",
+      id: crypto.randomUUID(),
       param: ctx.ID().getText(),
       paramType: new TypeBuilderVisitor().visit(ctx.type_(0)),
       body: this.visit(ctx.term()),
@@ -32,6 +34,8 @@ export class TermBuilderVisitor
   visitVariable = (ctx: VariableContext): Var => {
     return {
       kind: "Var",
+      id: crypto.randomUUID(),
+
       name: ctx.ID().getText()
     }
   }
@@ -43,6 +47,7 @@ export class TermBuilderVisitor
   visitLiteral = (ctx: LiteralContext): Lit => {
     return {
       kind: "Lit",
+      id: crypto.randomUUID(),
       value: ctx.getText()
     }
   }

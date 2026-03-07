@@ -1,5 +1,5 @@
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
-import type {Abs, App, GlobalDecl, Program, TyArrow, Var} from "@/shared/core/domain/ast";
+import type {Abs, App, GlobalDecl, Lit, Program, TyArrow, Var} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/domain/typecheck/Gamma.ts";
 import {typeEquals, typeToString} from "@/shared/core/domain/typecheck/utils.ts";
 import {type ProofTree, Rule} from "@/shared/core/domain/typecheck/ProofTree.ts";
@@ -32,6 +32,8 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     const abstractionType: TyArrow = {
       kind: "TyArrow",
+      id: crypto.randomUUID(),
+
       from: node.paramType,
       to: bodyProof.type
     }
@@ -121,5 +123,23 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
     returnProof.type = varType;
     return returnProof;
+  }
+
+  protected visitLit(node: Lit): ProofTree {
+    // Literals have a base type - we'll infer it based on the value
+    // For now, we'll use a generic "Nat" type for numeric literals
+    const litType = {
+      kind: "TyVar" as const,
+      id: crypto.randomUUID(),
+      name: "Nat" // Could be extended to handle different literal types
+    };
+
+    return {
+      rule: "Lit" as any,
+      term: node,
+      type: litType,
+      gamma: this.context.serializeGamma(),
+      premises: []
+    };
   }
 }

@@ -9,6 +9,8 @@ import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
 import {Terminal} from "lucide-react";
+import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
+import {setTermText} from "@/shared/ui-state/termSlice.ts";
 
 export interface TextEditorProps {
   /**
@@ -69,6 +71,7 @@ export function TextEditor({
   const { theme: appTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const editorRef = useRef<any>(null);
+  const dispatch = useAppDispatch()
 
   const monacoTheme = useMemo(() => {
     if (!appTheme) return "lambda-theme";
@@ -105,6 +108,8 @@ export function TextEditor({
     console.log('Editor mounted - setting initial theme:', monacoTheme);
     monaco.editor.setTheme(monacoTheme);
 
+    dispatch(setTermText(defaultValue))
+
     editor.addAction({
       id: 'my-unique-id',
       label: 'My Custom Action',
@@ -119,7 +124,6 @@ export function TextEditor({
       }
     });
 
-    // Call user's onMount callback if provided
     if (onMount) {
       onMount(editor, monaco);
     }

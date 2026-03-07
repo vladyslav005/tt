@@ -1,4 +1,4 @@
-import type {Abs, App, ASTNode, GlobalDecl, Program, Var} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, Var} from "@/shared/core/domain/ast";
 
 export abstract class AstVisitor<R> {
 
@@ -15,6 +15,8 @@ export abstract class AstVisitor<R> {
         return this.visitAbs(node)
       case "App":
         return this.visitApp(node)
+      case "Lit":
+        return this.visitLit(node)
 
       /* ===== Declarations ===== */
       case "FunDecl":
@@ -23,7 +25,7 @@ export abstract class AstVisitor<R> {
         return this.visitTypeDecl(node)
 
       default:
-        throw new Error("Unknown AST node")
+        throw new Error("Unknown AST node " + node.kind)
     }
   }
 
@@ -33,6 +35,8 @@ export abstract class AstVisitor<R> {
   protected abstract visitAbs(node: Abs): R
 
   protected abstract visitApp(node: App): R
+
+  protected abstract visitLit(node: Lit): R
 
 
   /* ===== Decls ===== */

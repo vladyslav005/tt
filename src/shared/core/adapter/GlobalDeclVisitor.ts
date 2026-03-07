@@ -12,6 +12,7 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
   visitGlobalVariableDeclaration = (ctx: GlobalVariableDeclarationContext ): GlobalDecl => {
     return {
       kind: "VarDecl",
+      id: crypto.randomUUID(),
       name: ctx.ID().getText(),
       value: {} as Term,
       type: new TypeBuilderVisitor().visit(ctx.type_())
@@ -21,6 +22,7 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
   visitGlobalFunctionDeclaration = (ctx: GlobalFunctionDeclarationContext): GlobalDecl => {
     return {
       kind: "FunDecl",
+      id: crypto.randomUUID(),
       name: ctx.ID().getText(),
       value: new TermBuilderVisitor().visit(ctx.term()),
       type: new TypeBuilderVisitor().visit(ctx.type_())
