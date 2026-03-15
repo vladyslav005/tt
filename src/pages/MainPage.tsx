@@ -4,6 +4,7 @@ import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {AstVisualisation} from "@/features/ast/components/AstVisualisation.tsx";
 import {ErrorOutput} from "@/features/error-output/components/ErrorOutput.tsx";
+import {AstEditorContainer} from "@/features/ast/components/ast-editor/AstEditorContainer.tsx";
 
 export function MainPage() {
 
@@ -23,6 +24,8 @@ export function MainPage() {
           console.log("Editor content changed:", value);
         }}
       />
+      <AstEditorContainer className="p-4 m-4"></AstEditorContainer>
+
 
       <ErrorOutput className="flex-1 h-full p-4 m-4"/>
 

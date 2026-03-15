@@ -1,6 +1,6 @@
 import dagre from "@dagrejs/dagre";
 import type { Edge } from "@xyflow/react";
-import type { AstFlowNode } from "../../../../../shared/presentation/flow/types.ts";
+import type { AstFlowNode } from "@/shared/presentation/flow/types.ts";
 
 const NODE_WIDTH = 320;
 const NODE_HEIGHT = 300;
@@ -20,6 +20,7 @@ export function layoutAstFlow(
     marginx: 20,
     marginy: 20,
   });
+
 
   for (const node of nodes) {
     graph.setNode(node.id, {

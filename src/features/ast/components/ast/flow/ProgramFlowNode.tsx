@@ -30,7 +30,7 @@ export function ProgramFlowNode({
       </div>
 
       <div className="mt-4 space-y-3">
-        {data.term.globals.length > 0 && (
+
           <div className="relative rounded-lg border-2 border-primary/20 bg-primary/5 p-2">
             <div className="mb-2 text-center text-xs font-medium text-primary">
               Declarations ↓
@@ -50,21 +50,21 @@ export function ProgramFlowNode({
               ))}
             </div>
           </div>
-        )}
 
-        {data.term.term && (
-          <div className="relative rounded-lg border-2 border-green-500/20 bg-green-500/5 p-2">
-            <div className="text-center text-xs font-medium text-green-600 dark:text-green-400">
-              Main Term ↓
-            </div>
-            <Handle
-              type="source"
-              position={Position.Bottom}
-              id="term"
-              className="!w-3 !h-3 !bg-green-500 !border-2 !border-green-300"
-            />
+
+        <div className="relative rounded-lg border-2 border-green-500/20 bg-green-500/5 p-2">
+          <div className="text-center text-xs font-medium text-green-600 dark:text-green-400">
+            Main Term ↓
           </div>
-        )}
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="term"
+            className="!w-3 !h-3 !bg-green-500 !border-2 !border-green-300"
+            onConnect={data.onConnectTerm}
+
+          />
+        </div>
       </div>
     </div>
   );

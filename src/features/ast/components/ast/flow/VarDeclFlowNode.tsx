@@ -41,6 +41,7 @@ export function VarDeclFlowNode({
         type="source"
         position={Position.Bottom}
         id="value"
+        onConnect={(params) => console.log('handle onConnect', params)}
         className="!w-3 !h-3 !bg-cyan-500 !border-2 !border-cyan-300"
       />
     </div>

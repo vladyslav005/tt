@@ -11,7 +11,7 @@ import {FunDeclFlowNode} from "@/features/ast/components/ast/flow/FunDeclFlowNod
 import {VarDeclFlowNode} from "@/features/ast/components/ast/flow/VarDeclFlowNode.tsx";
 import {LiteralFlowNode} from "@/features/ast/components/ast/flow/LiteralFlowNode.tsx";
 import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
-import {layoutAstFlow} from "@/features/ast/components/ast/flow/layoutAstFlow.ts";
+import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
 
 
 export interface AstProps {
@@ -19,7 +19,7 @@ export interface AstProps {
   fullScreen?: boolean,
 }
 
-const nodeTypes: NodeTypes = {
+export const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
   varDecl: VarDeclFlowNode,
@@ -33,7 +33,6 @@ export function Ast({
   AST,
   fullScreen = false,
 } : AstProps) {
-
   const { mapAstToFlow } = useMapAstToFlow()
   const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [], edges: [] });
 
@@ -85,7 +84,8 @@ export function Ast({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        onConnect={onConnect}
+        // onConnect={onConnect}
+        nodesConnectable={true}
         fitView
       >
         <Background />
