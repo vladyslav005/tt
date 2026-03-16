@@ -36,7 +36,7 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.pushNode(node);
 
     // Visit global declarations
-    node.globals.forEach((decl, index) => {
+    node.globals.forEach((decl) => {
       this.visit(decl);
       this.pushEdge({
         id: `e-${node.id}-global-${decl.id}`,
@@ -44,9 +44,7 @@ export class AstFlowMapper extends AstVisitor<void> {
         sourceHandle: `global-decl`,
         target: decl.id,
       });
-  });
-
-
+    });
   }
 
   protected visitVar(node: Var): void {

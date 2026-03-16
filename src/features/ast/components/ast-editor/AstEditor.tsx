@@ -1,6 +1,16 @@
 import type {Program} from "@/shared/core/domain/ast";
-import {useCallback, useState, useEffect} from "react";
-import {applyEdgeChanges, applyNodeChanges, addEdge, ReactFlow, Background, Controls, MiniMap, type NodeTypes} from "@xyflow/react";
+import {useCallback, useState, useEffect, useRef} from "react";
+import {
+  applyEdgeChanges,
+  applyNodeChanges,
+  addEdge,
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  type NodeTypes,
+  type Connection,
+} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
@@ -18,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select.tsx";
+import {graphToAst} from "@/features/ast/hooks/graphToAst";
 
 export interface AstProps {
   AST: Program,
@@ -36,10 +47,10 @@ export const nodeTypes: NodeTypes = {
 } as NodeTypes;
 
 export function AstEditor({
-                      AST,
-                      fullScreen = false,
-                      setAST,
-                    } : AstProps) {
+  AST,
+  fullScreen = false,
+  setAST,
+}: AstProps) {
   const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [{
       id:"origin",
       type: "program",
@@ -50,6 +61,14 @@ export function AstEditor({
     }
   ], edges: [] });
   const [newNodeType_, setNewNodeType] = useState<keyof typeof nodeTypes>("variable");
+  const pendingAstRef = useRef<Program | null>(null);
+
+  // Emit AST updates after graph state changes
+  useEffect(() => {
+    if (!pendingAstRef.current) return;
+    setAST(pendingAstRef.current);
+    pendingAstRef.current = null;
+  }, [graph, setAST]);
 
   // Update graph when AST changes
   useEffect(() => {
@@ -77,30 +96,42 @@ export function AstEditor({
   );
 
   const onConnect = useCallback(
-    (params: any) => {
+    (params: Connection) => {
+      setGraph((prevGraph) => {
+        const sourceNode = prevGraph.nodes.find((n) => n.id === params.source);
+        const targetNode = prevGraph.nodes.find((n) => n.id === params.target);
 
-      const id = params.source
-
-      const target = graph.nodes.find(node => node.id === params.target);
-
-
-      switch (params.sourceHandle) {
-        case "term": {
-          TERM = find term with id(AST)
-          TERM.term = target?.data.term
-
-          setAST(AST)
+        // Basic sanity
+        if (!sourceNode || !targetNode || !params.sourceHandle) {
+          return prevGraph;
         }
-      }
 
-      setGraph((prevGraph) => ({
-        ...prevGraph,
-        edges: addEdge(params, prevGraph.edges),
-      }));
+        // Validation: globals can only connect to declarations (VarDecl/FunDecl)
+        if (params.sourceHandle === "global-decl") {
+          const targetKind = (targetNode.data as any)?.term?.kind;
+          const isDecl = targetKind === "VarDecl" || targetKind === "FunDecl";
+          if (!isDecl) {
+            console.warn("Invalid connection: globals must connect to declarations", params);
+            return prevGraph;
+          }
+        }
 
-      console.log("Connected:", params);
+        // allow multiple globals on the same handle, but keep single edges for structural handles
+        const isMultiHandle = params.sourceHandle === "global-decl";
+        const nextEdges = isMultiHandle
+          ? prevGraph.edges
+          : prevGraph.edges.filter(
+              (e) => !(e.source === params.source && e.sourceHandle === params.sourceHandle),
+            );
 
+        const withNew = addEdge(params, nextEdges);
+        const nextGraph = { ...prevGraph, edges: withNew };
 
+        // queue AST update (don't call setAST here)
+        pendingAstRef.current = graphToAst(nextGraph);
+
+        return nextGraph;
+      });
     },
     [],
   );

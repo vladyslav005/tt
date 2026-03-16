@@ -1,6 +1,6 @@
 import type {Program} from "@/shared/core/domain/ast";
 import {useCallback, useState, useEffect} from "react";
-import {applyEdgeChanges, applyNodeChanges, addEdge, ReactFlow, Background, Controls, MiniMap, type NodeTypes} from "@xyflow/react";
+import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, Controls, MiniMap, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
@@ -65,16 +65,6 @@ export function Ast({
     [],
   );
 
-  const onConnect = useCallback(
-    (params: any) => {
-      setGraph((prevGraph) => ({
-        ...prevGraph,
-        edges: addEdge(params, prevGraph.edges),
-      }));
-    },
-    [],
-  );
-
   return (
     <div style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }}>
       <ReactFlow
@@ -84,7 +74,6 @@ export function Ast({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        // onConnect={onConnect}
         nodesConnectable={true}
         fitView
       >

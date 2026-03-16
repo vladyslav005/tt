@@ -1,4 +1,4 @@
-import type {Connection, Edge, Node} from "@xyflow/react";
+import type {Edge, Node} from "@xyflow/react";
 import type {
   Abs,
   App,
