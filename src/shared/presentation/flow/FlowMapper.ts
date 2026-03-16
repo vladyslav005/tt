@@ -41,7 +41,7 @@ export class AstFlowMapper extends AstVisitor<void> {
       this.pushEdge({
         id: `e-${node.id}-global-${decl.id}`,
         source: node.id,
-        sourceHandle: `global-${index}`,
+        sourceHandle: `global-decl`,
         target: decl.id,
       });
   });

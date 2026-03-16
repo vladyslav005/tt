@@ -1,5 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import type { ProgramNodeData } from "../../../../../shared/presentation/flow/types.ts";
+import {LimitedHandle} from "@/features/ast/components/ast/flow/LimitedHandle.tsx";
 
 export function ProgramFlowNode({
                                   data,
@@ -36,18 +37,17 @@ export function ProgramFlowNode({
               Declarations ↓
             </div>
             <div className="flex justify-center gap-2">
-              {data.term.globals.map((decl, index) => (
+              {/*{data.term.globals.map((decl, index) => (*/}
                 <Handle
-                  key={decl.id}
                   type="source"
                   position={Position.Left}
-                  id={`global-${index}`}
+                  id={`global-decl`}
                   style={{
                     // bottom: "5%"
                   }}
                   className="!w-3 !h-3 !bg-primary !border-2 !border-primary/50"
                 />
-              ))}
+              {/*))}*/}
             </div>
           </div>
 
@@ -56,13 +56,12 @@ export function ProgramFlowNode({
           <div className="text-center text-xs font-medium text-green-600 dark:text-green-400">
             Main Term ↓
           </div>
-          <Handle
+          <LimitedHandle
             type="source"
             position={Position.Bottom}
             id="term"
             className="!w-3 !h-3 !bg-green-500 !border-2 !border-green-300"
-            onConnect={data.onConnectTerm}
-
+            maxConnections={1}
           />
         </div>
       </div>

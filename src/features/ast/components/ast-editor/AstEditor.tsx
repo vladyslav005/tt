@@ -38,13 +38,22 @@ export const nodeTypes: NodeTypes = {
 export function AstEditor({
                       AST,
                       fullScreen = false,
+                      setAST,
                     } : AstProps) {
-  const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [], edges: [] });
+  const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [{
+      id:"origin",
+      type: "program",
+      position: { x: 0, y: 0 },
+      data: {
+        term: AST
+      }
+    }
+  ], edges: [] });
   const [newNodeType_, setNewNodeType] = useState<keyof typeof nodeTypes>("variable");
 
   // Update graph when AST changes
   useEffect(() => {
-    addStandaloneNode("program");
+    // addStandaloneNode("program");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNodesChange = useCallback(
@@ -69,10 +78,29 @@ export function AstEditor({
 
   const onConnect = useCallback(
     (params: any) => {
+
+      const id = params.source
+
+      const target = graph.nodes.find(node => node.id === params.target);
+
+
+      switch (params.sourceHandle) {
+        case "term": {
+          TERM = find term with id(AST)
+          TERM.term = target?.data.term
+
+          setAST(AST)
+        }
+      }
+
       setGraph((prevGraph) => ({
         ...prevGraph,
         edges: addEdge(params, prevGraph.edges),
       }));
+
+      console.log("Connected:", params);
+
+
     },
     [],
   );
@@ -99,10 +127,6 @@ export function AstEditor({
               kind: "Program",
               globals: []
             },
-
-            onConnectTerm: (params: any) => {
-              console.log("Connect term:", params);
-            }
           }
         };
       }
