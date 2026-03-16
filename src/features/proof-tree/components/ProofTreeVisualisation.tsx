@@ -8,7 +8,8 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/share
 import {Network, ZoomIn, ZoomOut, Crosshair, Maximize2, Minimize2} from "lucide-react";
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {useRef, useState, useEffect} from "react";
+import {useRef} from "react";
+import {useFullscreen} from "@/shared/hooks/useFullscreen";
 
 
 interface ProofTreeVisualisationProps {
@@ -21,40 +22,19 @@ export function ProofTreeVisualisation({
   const proof = useAppSelector((state) => state.term.proof);
   const {toTexTree} = useProofHooks()
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
 
   const texTree = proof ? toTexTree(proof) : null;
   const hasProof = proof !== null && proof !== undefined;
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.error('Error toggling fullscreen:', err);
-    }
-  };
-
   return (
     <motion.div
       ref={containerRef}
-      className={cn(className, "h-full max-w-full overflow-hidden")}
+      className={cn(
+        className,
+        "h-full max-w-full overflow-hidden",
+        isPseudoFullscreen && "fixed inset-0 z-50 m-0 h-[100dvh] w-[100dvw] overflow-auto bg-background",
+      )}
       initial="initial"
       animate="animate"
       variants={fadeInUp}
@@ -78,7 +58,7 @@ export function ProofTreeVisualisation({
             <Button
               size="icon"
               variant="ghost"
-              onClick={toggleFullscreen}
+              onClick={toggle}
               className="shrink-0"
               title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
             >

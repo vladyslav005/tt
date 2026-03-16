@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {motion} from "framer-motion";
 import {cn} from "@/shared/lib/utils.ts";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
@@ -10,6 +10,7 @@ import {AstEditor} from "@/features/ast/components/ast-editor/AstEditor.tsx";
 import type {RefObject} from "react";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
 import {astToText} from "@/shared/presentation/AstPrettyPrinter.ts";
+import {useFullscreen} from "@/shared/hooks/useFullscreen";
 
 
 export interface AstEditorProps {
@@ -31,30 +32,7 @@ export function AstEditorContainer({
 
   const hasAst = ast !== null && ast !== undefined;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.error('Error toggling fullscreen:', err);
-    }
-  };
+  const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
 
   const copyAstText = async () => {
     try {
@@ -77,7 +55,11 @@ export function AstEditorContainer({
   return (
     <motion.div
       ref={containerRef}
-      className={cn(className, "h-full")}
+      className={cn(
+        className,
+        "h-full",
+        isPseudoFullscreen && "fixed inset-0 z-50 m-0 h-[100dvh] w-[100dvw] overflow-auto bg-background",
+      )}
       initial="initial"
       animate="animate"
       variants={fadeInUp}
@@ -110,7 +92,7 @@ export function AstEditorContainer({
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={toggleFullscreen}
+                onClick={toggle}
                 className="shrink-0"
                 title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
               >

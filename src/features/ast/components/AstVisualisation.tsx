@@ -6,42 +6,29 @@ import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Layers, Maximize2, Minimize2} from "lucide-react";
 import {Ast} from "@/features/ast/components/ast/Ast.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {useRef, useState, useEffect} from "react";
+import {useRef} from "react";
+import {useFullscreen} from "@/shared/hooks/useFullscreen";
+
 export interface AstVisualisationProps {
   className?: string;
 }
+
 export function AstVisualisation({
                                    className
                                  }: AstVisualisationProps) {
   const ast = useAppSelector((state) => state.term.ast);
   const hasAst = ast !== null && ast !== undefined;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.error('Error toggling fullscreen:', err);
-    }
-  };
+  const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
+
   return (
     <motion.div
       ref={containerRef}
-      className={cn(className, "h-full")}
+      className={cn(
+        className,
+        "h-full",
+        isPseudoFullscreen && "fixed inset-0 z-50 m-0 h-[100dvh] w-[100dvw] overflow-auto bg-background",
+      )}
       initial="initial"
       animate="animate"
       variants={fadeInUp}
@@ -65,7 +52,7 @@ export function AstVisualisation({
             <Button
               size="icon"
               variant="ghost"
-              onClick={toggleFullscreen}
+              onClick={toggle}
               className="shrink-0"
               title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
             >
