@@ -1,5 +1,5 @@
 import type {Edge} from "@xyflow/react";
-import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, Var,} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, Var, Type} from "@/shared/core/domain/ast";
 import {AstVisitor} from "@/shared/core/application/AstVisitor";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types.ts";
 
@@ -53,6 +53,27 @@ export class AstFlowMapper extends AstVisitor<void> {
 
   protected visitAbs(node: Abs): void {
     this.pushNode(node);
+
+    // paramType
+    this.visit(node.paramType as any);
+    this.pushEdge({
+      id: `e-${node.id}-paramType-${(node.paramType as any).id}`,
+      source: node.id,
+      sourceHandle: "paramType",
+      target: (node.paramType as any).id,
+    });
+
+    // result type (if present)
+    if (node.type) {
+      this.visit((node as any).type);
+      this.pushEdge({
+        id: `e-${node.id}-type-${(node as any).type.id}`,
+        source: node.id,
+        sourceHandle: "type",
+        target: (node as any).type.id,
+      });
+    }
+
     this.visit(node.body);
     this.pushEdge({
       id: `e-${node.id}-body-${node.body.id}`,
@@ -85,9 +106,18 @@ export class AstFlowMapper extends AstVisitor<void> {
   }
 
   protected visitTermDecl(node: GlobalDecl): void {
-    // This handles FunDecl nodes
+    // FunDecl
     this.pushNode(node);
-    // Visit the function's value (body)
+
+    // type
+    this.visit((node as any).type);
+    this.pushEdge({
+      id: `e-${node.id}-type-${(node as any).type.id}`,
+      source: node.id,
+      sourceHandle: "type",
+      target: (node as any).type.id,
+    });
+
     this.visit(node.value);
     this.pushEdge({
       id: `e-${node.id}-value-${node.value.id}`,
@@ -98,9 +128,19 @@ export class AstFlowMapper extends AstVisitor<void> {
   }
 
   protected visitTypeDecl(node: GlobalDecl): void {
-    // This handles VarDecl nodes
+    // VarDecl
     this.pushNode(node);
-    // Visit the variable's value
+
+    // type
+    this.visit((node as any).type);
+    this.pushEdge({
+      id: `e-${node.id}-type-${(node as any).type.id}`,
+      source: node.id,
+      sourceHandle: "type",
+      target: (node as any).type.id,
+    });
+
+    // value TODO:
     // this.visit(node.value);
     this.pushEdge({
       id: `e-${node.id}-value-${node.value.id}`,
@@ -108,6 +148,26 @@ export class AstFlowMapper extends AstVisitor<void> {
       sourceHandle: "value",
       target: node.value.id,
     });
+  }
+
+  protected visitType(node: Type): void {
+    this.pushNode(node);
+    if (node.kind === "TyArrow") {
+      this.visit(node.from);
+      this.visit(node.to);
+      this.pushEdge({
+        id: `e-${node.id}-from-${node.from.id}`,
+        source: node.id,
+        sourceHandle: "from",
+        target: node.from.id,
+      });
+      this.pushEdge({
+        id: `e-${node.id}-to-${node.to.id}`,
+        source: node.id,
+        sourceHandle: "to",
+        target: node.to.id,
+      });
+    }
   }
 
   private pushNode(node: ASTNode): void {
@@ -173,6 +233,15 @@ export class AstFlowMapper extends AstVisitor<void> {
           position: {x: 0, y: 0},
           data: {term: node},
         });
+        return;
+      case "TyVar":
+      case "TyArrow":
+        this.nodes.push({
+          id: node.id,
+          type: "type",
+          position: {x: 0, y: 0},
+          data: {term: node as any},
+        } as any);
         return;
     }
   }

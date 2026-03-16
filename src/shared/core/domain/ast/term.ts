@@ -13,7 +13,7 @@ export interface Abs extends Node {
   param: string
   paramType: Type
   body: Term
-  type: Type
+  type?: Type
 }
 
 export interface App extends Node {

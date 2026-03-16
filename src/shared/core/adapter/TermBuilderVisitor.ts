@@ -27,7 +27,7 @@ export class TermBuilderVisitor
       param: ctx.ID().getText(),
       paramType: new TypeBuilderVisitor().visit(ctx.type_()),
       body: this.visit(ctx.term()),
-      type: {} as TyArrow // TODO: handle this properly
+      // type: {} as TyArrow // TODO: handle this properly
     }
   }
 

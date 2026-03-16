@@ -1,5 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import type { LiteralNodeData } from "../../../../../shared/presentation/flow/types.ts";
+import { Input } from "@/shared/components/ui/input";
 
 export function LiteralFlowNode({
                                   data,
@@ -18,10 +19,16 @@ export function LiteralFlowNode({
       </div>
 
       <div className="flex items-center justify-center rounded-lg border-2 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
-        <code className="text-base font-bold font-mono text-amber-700 dark:text-amber-300">{data.term.value}</code>
+        {data.editable ? (
+          <Input
+            value={String(data.term.value)}
+            onChange={(e) => data.onChange?.({ value: e.target.value } as any)}
+            className="h-8 text-base font-bold font-mono text-amber-700 dark:text-amber-300"
+          />
+        ) : (
+          <code className="text-base font-bold font-mono text-amber-700 dark:text-amber-300">{data.term.value}</code>
+        )}
       </div>
     </div>
   );
 }
-
-

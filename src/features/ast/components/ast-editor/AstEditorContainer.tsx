@@ -3,18 +3,23 @@ import {motion} from "framer-motion";
 import {cn} from "@/shared/lib/utils.ts";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
-import { ListTree, Maximize2, Minimize2} from "lucide-react";
+import { ListTree, Maximize2, Minimize2, Copy, ClipboardPaste} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
 import type {Program} from "@/shared/core/domain/ast";
 import {AstEditor} from "@/features/ast/components/ast-editor/AstEditor.tsx";
+import type {RefObject} from "react";
+import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
+import {astToText} from "@/shared/presentation/AstPrettyPrinter.ts";
 
 
 export interface AstEditorProps {
   className: string,
+  editorRef?: RefObject<TextEditorHandle | null>,
 }
 
 export function AstEditorContainer({
   className,
+  editorRef,
 
 }: AstEditorProps) {
 
@@ -51,6 +56,24 @@ export function AstEditorContainer({
     }
   };
 
+  const copyAstText = async () => {
+    try {
+      const text = astToText(ast);
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      console.error("Failed to copy AST text", e);
+    }
+  };
+
+  const pasteAstToEditor = () => {
+    try {
+      const text = astToText(ast);
+      editorRef?.current?.setValue(text);
+    } catch (e) {
+      console.error("Failed to paste AST into editor", e);
+    }
+  };
+
   return (
     <motion.div
       ref={containerRef}
@@ -75,15 +98,25 @@ export function AstEditorContainer({
                 </CardDescription>
               </div>
             </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={toggleFullscreen}
-              className="shrink-0"
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={copyAstText} title="Copy AST as text">
+                <Copy className="h-4 w-4 mr-2" />
+                Copy text
+              </Button>
+              <Button size="sm" variant="secondary" onClick={pasteAstToEditor} disabled={!editorRef?.current} title="Paste AST text into editor">
+                <ClipboardPaste className="h-4 w-4 mr-2" />
+                Paste to editor
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={toggleFullscreen}
+                className="shrink-0"
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">

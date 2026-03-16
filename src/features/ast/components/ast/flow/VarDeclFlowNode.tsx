@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import type { VarDeclNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import { typeToString } from "@/shared/core/domain/typecheck/utils.ts";
+import { Input } from "@/shared/components/ui/input";
 
 export function VarDeclFlowNode({
                                   data,
@@ -21,15 +22,33 @@ export function VarDeclFlowNode({
       <div className="mb-3">
         <label className="mb-1 block text-xs font-medium text-muted-foreground">Name</label>
         <div className="rounded-lg border-2 border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/30 px-3 py-2">
-          <code className="text-sm font-bold font-mono text-cyan-700 dark:text-cyan-300">{data.term.name}</code>
+          {data.editable ? (
+            <Input
+              value={data.term.name}
+              onChange={(e) => data.onChange?.({ name: e.target.value } as any)}
+              className="h-8 text-sm font-bold font-mono text-cyan-700 dark:text-cyan-300"
+            />
+          ) : (
+            <code className="text-sm font-bold font-mono text-cyan-700 dark:text-cyan-300">{data.term.name}</code>
+          )}
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="relative mb-4">
         <label className="mb-1 block text-xs font-medium text-muted-foreground">Type</label>
-        <div className="rounded-lg border border-cyan-200 dark:border-cyan-800 bg-background px-3 py-2">
-          <code className="text-xs font-mono text-foreground/80">{typeToString(data.term.type)}</code>
-        </div>
+        {data.editable ? (
+          <div className="h-9 rounded-lg border border-dashed border-cyan-200 dark:border-cyan-800 bg-background/30" />
+        ) : (
+          <div className="rounded-lg border border-cyan-200 dark:border-cyan-800 bg-background px-3 py-2">
+            <code className="text-xs font-mono text-foreground/80">{typeToString(data.term.type)}</code>
+          </div>
+        )}
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="type"
+          className="!w-3 !h-3 !bg-cyan-500 !border-2 !border-cyan-300"
+        />
       </div>
 
       <div className="flex items-center justify-center gap-2 pt-2 border-t border-cyan-200 dark:border-cyan-800">
@@ -47,4 +66,3 @@ export function VarDeclFlowNode({
     </div>
   );
 }
-

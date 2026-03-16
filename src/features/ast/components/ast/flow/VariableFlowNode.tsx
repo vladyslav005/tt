@@ -1,5 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import type { VariableNodeData } from "../../../../../shared/presentation/flow/types.ts";
+import { Input } from "@/shared/components/ui/input";
 
 export function VariableFlowNode({
                                    data,
@@ -20,9 +21,16 @@ export function VariableFlowNode({
       </div>
 
       <div className="flex items-center justify-center rounded-lg border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3">
-        <code className="text-base font-bold font-mono text-emerald-700 dark:text-emerald-300">{data.term.name}</code>
+        {data.editable ? (
+          <Input
+            value={data.term.name}
+            onChange={(e) => data.onChange?.({ name: e.target.value } as any)}
+            className="h-8 text-base font-bold font-mono text-emerald-700 dark:text-emerald-300"
+          />
+        ) : (
+          <code className="text-base font-bold font-mono text-emerald-700 dark:text-emerald-300">{data.term.name}</code>
+        )}
       </div>
     </div>
   );
 }
-

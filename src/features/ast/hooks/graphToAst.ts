@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyVar, Type, Var, VarDecl} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyVar, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 type NodeMap = Map<string, AstFlowNode>;
 
@@ -41,6 +41,38 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
+function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
+  if (visiting.has(node.id)) {
+    const raw = node.data.term as any;
+    return (raw && (raw.kind === "TyVar" || raw.kind === "TyArrow")) ? (raw as Type) : defaultType(node.id);
+  }
+  visiting.add(node.id);
+
+  const raw = node.data.term as any;
+  const byHandle = groupOutgoingByHandle(edges, node.id);
+
+  if (raw.kind === "TyVar") {
+    visiting.delete(node.id);
+    return { id: raw.id ?? node.id, kind: "TyVar", name: raw.name ?? "T" };
+  }
+
+  if (raw.kind === "TyArrow") {
+    const fromNode = firstTargetNode(byHandle, "from", nodeMap);
+    const toNode = firstTargetNode(byHandle, "to", nodeMap);
+    const ty: TyArrow = {
+      id: raw.id ?? node.id,
+      kind: "TyArrow",
+      from: fromNode ? reconstructType(fromNode, nodeMap, edges, visiting) : defaultType(`${node.id}-from`),
+      to: toNode ? reconstructType(toNode, nodeMap, edges, visiting) : defaultType(`${node.id}-to`),
+    } as TyArrow;
+    visiting.delete(node.id);
+    return ty;
+  }
+
+  visiting.delete(node.id);
+  return (raw as Type) ?? defaultType(node.id);
+}
+
 function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): ASTNode {
   if (visiting.has(node.id)) return node.data.term as ASTNode;
   visiting.add(node.id);
@@ -49,6 +81,12 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
   const byHandle = groupOutgoingByHandle(edges, node.id);
 
   switch (raw.kind) {
+    case "TyVar":
+    case "TyArrow": {
+      visiting.delete(node.id);
+      return reconstructType(node, nodeMap, edges, visiting) as any;
+    }
+
     case "Program": {
       const program: Program = {
         id: raw.id ?? node.id,
@@ -90,9 +128,15 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
         id: raw.id ?? node.id,
         kind: "VarDecl",
         name: raw.name ?? "a",
-        type: (raw.type as Type) ?? defaultType(`${node.id}-type`),
+        type: defaultType(`${node.id}-type`),
         value: defaultVar(`${node.id}-value`, "x"),
       };
+
+      // type can come from edge
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      if (typeNode) vd.type = reconstructType(typeNode, nodeMap, edges, visiting);
+      else if (raw.type) vd.type = raw.type as Type;
+
       const valueNode = firstTargetNode(byHandle, "value", nodeMap);
       if (valueNode) vd.value = reconstruct(valueNode, nodeMap, edges, visiting) as Term;
       visiting.delete(node.id);
@@ -104,9 +148,14 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
         id: raw.id ?? node.id,
         kind: "FunDecl",
         name: raw.name ?? "f",
-        type: (raw.type as Type) ?? defaultType(`${node.id}-type`),
+        type: defaultType(`${node.id}-type`),
         value: defaultVar(`${node.id}-value`, "x"),
       };
+
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      if (typeNode) fd.type = reconstructType(typeNode, nodeMap, edges, visiting);
+      else if (raw.type) fd.type = raw.type as Type;
+
       const valueNode = firstTargetNode(byHandle, "value", nodeMap);
       if (valueNode) fd.value = reconstruct(valueNode, nodeMap, edges, visiting) as Term;
       visiting.delete(node.id);
@@ -118,12 +167,22 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
         id: raw.id ?? node.id,
         kind: "Abs",
         param: raw.param ?? "x",
-        paramType: (raw.paramType as Type) ?? defaultType(`${node.id}-paramType`),
+        paramType: defaultType(`${node.id}-paramType`),
         body: defaultVar(`${node.id}-body`, "x"),
-        type: (raw.type as Type) ?? defaultType(`${node.id}-type`),
+        type: defaultType(`${node.id}-type`),
       };
+
+      const paramTypeNode = firstTargetNode(byHandle, "paramType", nodeMap);
+      if (paramTypeNode) abs.paramType = reconstructType(paramTypeNode, nodeMap, edges, visiting);
+      else if (raw.paramType) abs.paramType = raw.paramType as Type;
+
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      if (typeNode) abs.type = reconstructType(typeNode, nodeMap, edges, visiting);
+      else if (raw.type) abs.type = raw.type as Type;
+
       const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
       if (bodyNode) abs.body = reconstruct(bodyNode, nodeMap, edges, visiting) as Term;
+
       visiting.delete(node.id);
       return abs;
     }

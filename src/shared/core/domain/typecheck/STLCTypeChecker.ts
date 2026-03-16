@@ -1,5 +1,5 @@
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
-import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, TyArrow, Var} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, TyArrow, Var, Type} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/domain/typecheck/Gamma.ts";
 import {typeEquals, typeToString} from "@/shared/core/domain/typecheck/utils.ts";
 import {type ProofTree, Rule} from "@/shared/core/domain/typecheck/ProofTree.ts";
@@ -148,5 +148,17 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       gamma: this.context.serializeGamma(),
       premises: []
     };
+  }
+
+  protected visitType(node: Type): ProofTree {
+    // Types usually aren't checked as terms, but the visitor now supports Type nodes.
+    // Return a minimal proof tree so traversals don't crash.
+    return {
+      rule: "Type" as any,
+      term: node as any,
+      type: node as any,
+      gamma: this.context.serializeGamma(),
+      premises: [],
+    } as ProofTree;
   }
 }

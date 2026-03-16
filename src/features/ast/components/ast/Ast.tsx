@@ -12,6 +12,8 @@ import {VarDeclFlowNode} from "@/features/ast/components/ast/flow/VarDeclFlowNod
 import {LiteralFlowNode} from "@/features/ast/components/ast/flow/LiteralFlowNode.tsx";
 import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
+import {TyVarFlowNode} from "@/features/ast/components/ast/flow/TyVarFlowNode";
+import {TyArrowFlowNode} from "@/features/ast/components/ast/flow/TyArrowFlowNode";
 
 
 export interface AstProps {
@@ -27,6 +29,10 @@ export const nodeTypes: NodeTypes = {
   variable: VariableFlowNode,
   application: ApplicationFlowNode,
   literal: LiteralFlowNode,
+  type: (props: any) => {
+    const kind = (props.data?.term as any)?.kind;
+    return kind === "TyArrow" ? <TyArrowFlowNode {...props} /> : <TyVarFlowNode {...props} />;
+  },
 } as NodeTypes;
 
 export function Ast({

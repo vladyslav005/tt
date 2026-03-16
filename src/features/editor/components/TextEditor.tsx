@@ -1,5 +1,5 @@
 import Editor, {type OnChange, type OnMount, useMonaco} from '@monaco-editor/react';
-import {useEffect, useMemo, useRef, useState} from "react";
+import {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {useSetUpEditor} from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
@@ -54,17 +54,25 @@ export interface TextEditorProps {
   options?: Record<string, any>;
 }
 
-export function TextEditor({
-                             defaultValue = "// Write your lambda expression here a : T; (λ x : T . (x) : T -> T) a;",
-                             value,
-                             language = "lambda",
-                             height = "90vh",
-                             onChange,
-                             onMount,
-                             readOnly = false,
-                             className,
-                             options = {},
-                           }: TextEditorProps) {
+export interface TextEditorHandle {
+  setValue: (text: string) => void;
+  getValue: () => string;
+}
+
+export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function TextEditor(
+  {
+    defaultValue = "// Write your lambda expression here a : T; (λ x : T . (x) : T -> T) a;",
+    value,
+    language = "lambda",
+    height = "90vh",
+    onChange,
+    onMount,
+    readOnly = false,
+    className,
+    options = {},
+  }: TextEditorProps,
+  ref,
+) {
   const monaco = useMonaco();
   const { parseAndTypeCheck } = useTermHooks();
   const { setUpMonacoLanguage } = useSetUpEditor();
@@ -147,6 +155,20 @@ export function TextEditor({
     ...options,
   }), [readOnly, options]);
 
+  useImperativeHandle(ref, () => ({
+    setValue: (text: string) => {
+      const editor = editorRef.current;
+      if (editor) {
+        editor.setValue(text);
+      }
+      dispatch(setTermText(text));
+    },
+    getValue: () => {
+      const editor = editorRef.current;
+      return editor ? editor.getValue() : (value ?? defaultValue);
+    },
+  }), [defaultValue, dispatch, value]);
+
   return (
     <motion.div
       className={cn(className)}
@@ -188,4 +210,4 @@ export function TextEditor({
       </Card>
     </motion.div>
   );
-}
+});
