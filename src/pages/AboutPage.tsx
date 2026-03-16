@@ -1,7 +1,24 @@
 import {motion} from "framer-motion";
-import {CheckCircle2, FileCode, Layers, Network, Play, Sparkles, Terminal,} from "lucide-react";
+import {
+  CheckCircle2,
+  FileCode,
+  Layers,
+  Network,
+  Play,
+  Sparkles,
+  Terminal,
+  GitBranch,
+  Workflow,
+  Braces,
+} from "lucide-react";
 import {Button} from "@/shared/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 
 const fadeInUp = {
   initial: {opacity: 0, y: 20},
@@ -27,19 +44,34 @@ export function AboutPage() {
         animate="animate"
         variants={fadeInUp}
       >
-        <h1
-          className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           About This Project
         </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-          A Master Thesis project exploring advanced type systems, Simply Typed
-          Lambda Calculus, Hindley–Milner type inference, and interactive proof
-          tree visualization for academic and research purposes.
+        <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
+          An interactive environment for experimenting with typed lambda calculus.
+          It supports parsing, AST inspection/editing, type checking and inference,
+          and proof tree visualization.
         </p>
-        <Button size="lg" className="rounded-2xl shadow-lg">
-          <FileCode className="mr-2 h-5 w-5"/>
-          View Documentation
-        </Button>
+        <p className="text-sm md:text-base text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+          Built as a Master Thesis project, the goal is to make the underlying
+          theory explorable: you can see the syntax tree, derived types, and the
+          proof steps that justify them.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+          <Button size="lg" className="rounded-2xl shadow-lg" disabled>
+            <FileCode className="mr-2 h-5 w-5" />
+            Documentation (soon)
+          </Button>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="rounded-2xl shadow-lg"
+            onClick={() => window.open("https://tt-woad.vercel.app/", "_blank")}
+          >
+            <Workflow className="mr-2 h-5 w-5" />
+            Live demo
+          </Button>
+        </div>
       </motion.section>
 
       {/* Project Overview Section */}
@@ -53,7 +85,7 @@ export function AboutPage() {
           <CardHeader>
             <CardTitle className="text-3xl">What This Project Does</CardTitle>
             <CardDescription className="text-base">
-              A comprehensive type theory toolkit for learning and research
+              A type theory playground for learning, debugging, and research
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -66,33 +98,39 @@ export function AboutPage() {
               {[
                 {
                   icon: CheckCircle2,
-                  title: "Type Checking (STLC)",
+                  title: "Type checking (STLC)",
                   description:
-                    "Validates expressions using Simply Typed Lambda Calculus rules with full correctness guarantees.",
+                    "Checks expressions using Simply Typed Lambda Calculus rules and produces structured errors.",
                 },
                 {
                   icon: Sparkles,
-                  title: "Type Inference (Hindley–Milner)",
+                  title: "Type inference (HM)",
                   description:
-                    "Automatically infers the most general type for lambda expressions without annotations.",
+                    "Infers principal types where possible, so you can experiment without annotations.",
                 },
                 {
                   icon: Play,
-                  title: "Expression Evaluation",
+                  title: "Evaluation",
                   description:
-                    "Executes lambda expressions and reduces them to normal form using standard reduction strategies.",
+                    "Reduces lambda terms and helps you study operational behavior alongside typing.",
                 },
                 {
                   icon: Network,
-                  title: "Proof Tree Generation",
+                  title: "Proof tree visualization",
                   description:
-                    "Visualizes derivation trees showing each step of the type checking process.",
+                    "Shows derivation trees step-by-step, making typing rules and contexts explicit.",
                 },
                 {
                   icon: Layers,
-                  title: "AST Visualization",
+                  title: "AST views & editing",
                   description:
-                    "Interactive abstract syntax tree representation for debugging and learning.",
+                    "Inspect and (optionally) edit the AST in a structured form to avoid syntax errors.",
+                },
+                {
+                  icon: GitBranch,
+                  title: "Multiple synchronized representations",
+                  description:
+                    "Text/AST/proof views are designed to represent the same underlying term.",
                 },
               ].map((feature, idx) => (
                 <motion.div
@@ -102,7 +140,7 @@ export function AboutPage() {
                 >
                   <div className="flex-shrink-0">
                     <div className="p-3 rounded-xl bg-muted group-hover:bg-primary/10 transition-colors duration-300">
-                      <feature.icon className="h-6 w-6 text-primary"/>
+                      <feature.icon className="h-6 w-6 text-primary" />
                     </div>
                   </div>
                   <div>
@@ -200,65 +238,137 @@ export function AboutPage() {
         animate={{opacity: 1, y: 0}}
         transition={{delay: 0.6, duration: 0.5}}
       >
-        <h2 className="text-3xl font-bold mb-8 text-center">
-          Technology Stack
-        </h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">Technology Stack</h2>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {
               icon: "⚛️",
-              title: "React",
-              description: "Modern UI library with hooks and concurrent features",
+              title: "React 19",
+              description:
+                "Modern UI with hooks, concurrent rendering, and component-driven architecture.",
+            },
+            {
+              icon: "⚡",
+              title: "Vite",
+              description:
+                "Fast dev server and optimized production builds.",
             },
             {
               icon: "📘",
               title: "TypeScript",
-              description: "Type-safe JavaScript with advanced type inference",
+              description:
+                "Type-safe codebase with strong editor tooling and refactoring support.",
+            },
+            {
+              icon: "🧠",
+              title: "Redux Toolkit",
+              description:
+                "Predictable state management for editor, AST, and proof-related UI state.",
+            },
+            {
+              icon: "🧩",
+              title: "shadcn/ui + Radix UI",
+              description:
+                "Accessible UI primitives and consistent design system components.",
             },
             {
               icon: "🎨",
               title: "Tailwind CSS",
-              description: "Utility-first CSS framework for rapid UI development",
+              description:
+                "Utility-first styling with theming support and small bundle footprint.",
             },
             {
-              icon: "🧩",
-              title: "shadcn/ui",
-              description: "Beautiful, accessible component library built on Radix",
+              icon: "🗺️",
+              title: "React Flow (@xyflow/react)",
+              description:
+                "Graph-based visualization used for interactive AST layout and editing.",
+            },
+            {
+              icon: "📝",
+              title: "Monaco Editor",
+              description:
+                "Code editor experience for textual lambda calculus input.",
+            },
+            {
+              icon: "🔧",
+              title: "ANTLR4",
+              description:
+                "Lexer/parser generation for the term language and AST construction.",
+            },
+            {
+              icon: "🧪",
+              title: "Zod",
+              description:
+                "Schema validation for safer runtime boundaries and structured data.",
             },
             {
               icon: "✨",
               title: "Framer Motion",
-              description: "Production-ready animation library for React",
+              description:
+                "Animations and transitions for a smoother exploratory experience.",
             },
             {
-              icon: "🔧",
-              title: "ANTLR",
-              description: "Powerful parser generator for language processing",
+              icon: "📐",
+              title: "Dagre",
+              description:
+                "Automatic graph layout for cleaner AST and derivation visualizations.",
+            },
+            {
+              icon: "🔍",
+              title: "Math & zoom tooling",
+              description:
+                "Math rendering and pan/zoom utilities for proof tree exploration.",
+            },
+            {
+              icon: "🧱",
+              title: "ESLint",
+              description:
+                "Static analysis and consistency checks during development.",
+            },
+            {
+              icon: "{}",
+              title: "Domain-driven core",
+              description:
+                "A shared core layer for AST/domain types, visitors, and presentation mappers.",
+            },
+            {
+              icon: "🧬",
+              title: "Typed trees",
+              description:
+                "Visitors and mappers for AST → Flow nodes, proof trees, and pretty-printing.",
+            },
+            {
+              icon: "🔣",
+              title: "LaTeX-like proof rendering",
+              description:
+                "Proof trees can be rendered as structured layouts suitable for academic output.",
             },
           ].map((tech, idx) => (
             <motion.div
               key={idx}
               initial={{opacity: 0, scale: 0.9}}
               animate={{opacity: 1, scale: 1}}
-              transition={{delay: 0.7 + idx * 0.1, duration: 0.3}}
+              transition={{delay: 0.7 + idx * 0.05, duration: 0.25}}
             >
-              <Card
-                className="h-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-default">
+              <Card className="h-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-default">
                 <CardHeader>
                   <div className="text-4xl mb-2">{tech.icon}</div>
-                  <CardTitle className="text-lg">{tech.title}</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {tech.title}
+                    {tech.title === "Domain-driven core" && (
+                      <Braces className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {tech.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{tech.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </div>
       </motion.section>
-
     </div>
   );
 }

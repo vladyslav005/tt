@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import {useRef, useState} from "react";
 import {motion} from "framer-motion";
 import {cn} from "@/shared/lib/utils.ts";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";

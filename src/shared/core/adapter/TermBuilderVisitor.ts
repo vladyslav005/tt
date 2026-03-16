@@ -6,7 +6,7 @@ import {
   ParenthesesContext,
   VariableContext
 } from "@/shared/core/antlr/LambdaParser.ts";
-import type {Abs, App, Lit, Term, TyArrow, Var} from "@/shared/core/domain/ast";
+import type {Abs, App, Lit, Term, Var} from "@/shared/core/domain/ast";
 
 export class TermBuilderVisitor
   extends LambdaVisitor<Term> {

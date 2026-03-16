@@ -1,4 +1,4 @@
-import type { Program, GlobalDecl, Term, Type, VarDecl, FunDecl, Var, Abs, App, Lit, TyVar, TyArrow } from "@/shared/core/domain/ast";
+import type { Program, GlobalDecl, Term, Type, VarDecl, FunDecl, Var, Abs, App, Lit } from "@/shared/core/domain/ast";
 import { typeToString } from "@/shared/core/domain/typecheck/utils.ts";
 
 /**
@@ -83,4 +83,3 @@ export class AstPrettyPrinter {
 export function astToText(program: Program): string {
   return new AstPrettyPrinter().printProgram(program);
 }
-
