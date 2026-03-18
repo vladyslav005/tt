@@ -15,6 +15,7 @@ import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
+import { ReactFlowProvider } from "@xyflow/react";
 
 
 export interface AstEditorProps {
@@ -139,7 +140,9 @@ export function AstEditorContainer({
           {hasAst ? (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
-                <AstEditor graph={graph} setGraph={setGraph} AST={ast} setAST={setAst} fullScreen={isFullscreen}/>
+                <ReactFlowProvider>
+                  <AstEditor graph={graph} setGraph={setGraph} AST={ast} setAST={setAst} fullScreen={isFullscreen}/>
+                </ReactFlowProvider>
               </div>
               <details className="group">
                 <summary

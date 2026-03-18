@@ -12,6 +12,9 @@ import {
   type Connection,
   type Node,
   type Edge,
+  useReactFlow,
+  type OnConnectStart,
+  type OnConnectEnd,
 } from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
@@ -57,12 +60,42 @@ export const nodeTypes: NodeTypes = {
   },
 } as NodeTypes;
 
+type AddOnDropKind = "decl" | "term" | "type";
+
+function kindFromSourceHandle(handleId?: string): AddOnDropKind | null {
+  if (!handleId) return null;
+  if (handleId === "global-decl") return "decl";
+  if (handleId === "type" || handleId === "paramType" || handleId === "from" || handleId === "to") return "type";
+  if (handleId === "term" || handleId === "value" || handleId === "body" || handleId === "left" || handleId === "right") return "term";
+  return null;
+}
+
+const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, Array<
+  | "funDecl"
+  | "varDecl"
+  | "abstraction"
+  | "application"
+  | "variable"
+  | "literal"
+  | "typeVar"
+  | "typeArrow"
+>> = {
+  decl: ["funDecl", "varDecl"],
+  term: ["abstraction", "application", "variable", "literal"],
+  type: ["typeVar", "typeArrow"],
+};
+
+// Inner editor must run under ReactFlowProvider (required for useReactFlow)
 export function AstEditor({
   fullScreen = false,
   setAST,
   graph,
   setGraph,
 }: AstProps) {
+  // NOTE: useReactFlow must be used under ReactFlowProvider in AstEditorContainer
+  const rf = useReactFlow();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const [newNodeType_, setNewNodeType] = useState<
     | "program"
     | "funDecl"
@@ -75,6 +108,21 @@ export function AstEditor({
     | "typeArrow"
   >("variable");
   const pendingAstRef = useRef<Program | null>(null);
+
+  const [connectDraft, setConnectDraft] = useState<null | {
+    source: string;
+    sourceHandle: string;
+    kind: AddOnDropKind;
+    clientX: number;
+    clientY: number;
+  }>(null);
+
+  // popup position relative to wrapper
+  const [dropPopupPos, setDropPopupPos] = useState<null | { x: number; y: number }>(null);
+
+  const [addOnDropChoice, setAddOnDropChoice] = useState<string | null>(null);
+  const [addOnDropOpen, setAddOnDropOpen] = useState(false);
+  const addOnDropTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Keep AST in sync with graph (node edits + edge edits)
   useEffect(() => {
@@ -481,7 +529,7 @@ export function AstEditor({
       const isMac = navigator.platform.toLowerCase().includes("mac");
       const mod = isMac ? e.metaKey : e.ctrlKey;
 
-      if (e.key === "Delete" || e.key === "Backspace") {
+      if (e.key === "Delete") {
         e.preventDefault();
         deleteSelection();
         return;
@@ -526,8 +574,267 @@ export function AstEditor({
     setSelectedEdgeIds((params.edges ?? []).map((e) => e.id));
   }, []);
 
+  const onConnectStart: OnConnectStart = useCallback((_, params) => {
+    if (!params.nodeId || !params.handleId) return;
+    const handleKind = kindFromSourceHandle(params.handleId);
+    if (!handleKind) return;
+
+    // Start draft; we'll decide on end whether to open selector.
+    setConnectDraft({
+      source: params.nodeId,
+      sourceHandle: params.handleId,
+      kind: handleKind,
+      clientX: 0,
+      clientY: 0,
+    });
+    setAddOnDropChoice(null);
+  }, []);
+
+  const onConnectEnd: OnConnectEnd = useCallback((event) => {
+    if (!connectDraft) return;
+
+    const targetIsPane = (event.target as HTMLElement | null)?.classList?.contains("react-flow__pane");
+    if (!targetIsPane) {
+      setConnectDraft(null);
+      setDropPopupPos(null);
+      setAddOnDropOpen(false);
+      return;
+    }
+
+    const e = event as MouseEvent;
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setConnectDraft((prev) => (prev ? { ...prev, clientX: e.clientX, clientY: e.clientY } : prev));
+    setDropPopupPos({
+      x: Math.max(8, e.clientX - rect.left + 8),
+      y: Math.max(8, e.clientY - rect.top + 8),
+    });
+    setAddOnDropOpen(true);
+  }, [connectDraft]);
+
+  // When connectDraft has client coords set (drop on pane), show selector.
+  const showAddOnDrop = Boolean(connectDraft && dropPopupPos);
+
+  // Focus trigger when popup appears so keyboard works; keep dropdown open.
+  useEffect(() => {
+    if (!showAddOnDrop) return;
+    // next tick so trigger exists
+    const t = window.setTimeout(() => {
+      addOnDropTriggerRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [showAddOnDrop]);
+
+  const commitAddNodeOnDrop = useCallback((choice: string) => {
+    if (!connectDraft) return;
+
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const position = rf.screenToFlowPosition({
+      x: connectDraft.clientX - rect.left,
+      y: connectDraft.clientY - rect.top,
+    });
+
+    const nodeType = choice as any;
+    const id = `drop-${nodeType}-${Date.now()}`;
+
+    const node = ((): any => {
+      if (nodeType === "funDecl") {
+        const valueId = `${id}-value`;
+        const typeId = `${id}-type`;
+        return {
+          id,
+          type: "funDecl",
+          position,
+          data: {
+            term: {
+              id,
+              kind: "FunDecl",
+              name: "f",
+              type: { id: typeId, kind: "TyVar", name: "T" },
+              value: { id: valueId, kind: "Var", name: "x" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+      if (nodeType === "varDecl") {
+        const valueId = `${id}-value`;
+        const typeId = `${id}-type`;
+        return {
+          id,
+          type: "varDecl",
+          position,
+          data: {
+            term: {
+              id,
+              kind: "VarDecl",
+              name: "x",
+              type: { id: typeId, kind: "TyVar", name: "T" },
+              value: { id: valueId, kind: "Var", name: "x" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+      if (nodeType === "abstraction") {
+        const bodyId = `${id}-body`;
+        const paramTypeId = `${id}-paramType`;
+        return {
+          id,
+          type: "abstraction",
+          position,
+          data: {
+            term: {
+              id,
+              kind: "Abs",
+              param: "x",
+              paramType: { id: paramTypeId, kind: "TyVar", name: "T" },
+              body: { id: bodyId, kind: "Var", name: "x" },
+              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+      if (nodeType === "application") {
+        return {
+          id,
+          type: "application",
+          position,
+          data: {
+            term: {
+              id,
+              kind: "App",
+              func: { id: `${id}-func`, kind: "Var", name: "f" },
+              arg: { id: `${id}-arg`, kind: "Var", name: "x" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+      if (nodeType === "literal") {
+        return {
+          id,
+          type: "literal",
+          position,
+          data: {
+            term: { id, kind: "Lit", value: 0 },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+      if (nodeType === "typeVar") {
+        return {
+          id,
+          type: "type",
+          position,
+          data: {
+            term: { id, kind: "TyVar", name: "T" },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+      if (nodeType === "typeArrow") {
+        return {
+          id,
+          type: "type",
+          position,
+          data: {
+            term: {
+              id,
+              kind: "TyArrow",
+              from: { id: `${id}-from`, kind: "TyVar", name: "A" },
+              to: { id: `${id}-to`, kind: "TyVar", name: "B" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
+
+      return {
+        id,
+        type: "variable",
+        position,
+        data: {
+          term: { id, kind: "Var", name: "x" },
+          editable: true,
+          onChange: (patch: any) => updateNodeTerm(id, patch),
+        },
+      };
+    })();
+
+    const connection: Connection = {
+      source: connectDraft.source,
+      sourceHandle: connectDraft.sourceHandle,
+      target: id,
+      targetHandle: null,
+    };
+
+    setGraph((prev) => ({
+      ...prev,
+      nodes: [...prev.nodes, node],
+      edges: addEdge(connection, prev.edges),
+    }));
+
+    setConnectDraft(null);
+    setDropPopupPos(null);
+    setAddOnDropChoice(null);
+    setAddOnDropOpen(false);
+  }, [connectDraft, rf, setGraph, updateNodeTerm]);
+
   return (
-    <div style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }}>
+    <div ref={wrapperRef} style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }} className="relative">
+      {showAddOnDrop && dropPopupPos && (
+        <div
+          className="absolute z-50 rounded-md border bg-background p-2 shadow-md"
+          style={{ left: dropPopupPos.x, top: dropPopupPos.y }}
+        >
+          <div className="text-xs text-muted-foreground mb-2">Insert node</div>
+          <Select
+            value={addOnDropChoice ?? undefined}
+            open={addOnDropOpen}
+            onOpenChange={setAddOnDropOpen}
+            onValueChange={(v) => {
+              setAddOnDropChoice(v);
+              commitAddNodeOnDrop(v);
+            }}
+          >
+            <SelectTrigger ref={addOnDropTriggerRef as any} className="w-44">
+              <SelectValue placeholder="Select node" />
+            </SelectTrigger>
+            <SelectContent>
+              {connectDraft && VALID_NODE_TYPES_BY_KIND[connectDraft.kind].map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="mt-2 flex justify-end">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setConnectDraft(null);
+                setDropPopupPos(null);
+                setAddOnDropChoice(null);
+                setAddOnDropOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-2 p-2 border-b bg-background/60">
         <Select value={newNodeType_} onValueChange={(value) => setNewNodeType(value as any)}>
           <SelectTrigger className="w-44">
@@ -560,6 +867,8 @@ export function AstEditor({
         onEdgesDelete={onEdgesDelete}
         onSelectionChange={onSelectionChange as any}
         nodeTypes={nodeTypes}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onConnect={onConnect}
         nodesConnectable={true}
         deleteKeyCode={null}
@@ -586,3 +895,4 @@ export function AstEditor({
     </div>
   );
 }
+
