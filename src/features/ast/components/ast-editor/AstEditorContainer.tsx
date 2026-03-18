@@ -11,6 +11,10 @@ import type {RefObject} from "react";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
 import {astToText} from "@/shared/presentation/AstPrettyPrinter.ts";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
+import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
+import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
+import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
+import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
 
 
 export interface AstEditorProps {
@@ -34,6 +38,19 @@ export function AstEditorContainer({
   const containerRef = useRef<HTMLDivElement>(null);
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
 
+  const viewerAST = useAppSelector(state => state.term.ast);
+
+  const { mapAstToFlow } = useMapAstToFlow();
+  const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [{
+      id:"origin",
+      type: "program",
+      position: { x: 0, y: 0 },
+      data: {
+        term: ast
+      }
+    }
+    ], edges: [] });
+
   const copyAstText = async () => {
     try {
       const text = astToText(ast);
@@ -51,6 +68,18 @@ export function AstEditorContainer({
       console.error("Failed to paste AST into editor", e);
     }
   };
+
+  const copyFromViewer = () => {
+    if (viewerAST) {
+      // viewerAST.id = "origin"
+      setAst(viewerAST)
+      const newGraph = mapAstToFlow(viewerAST);
+      const layoutGraph = layoutAstFlow(newGraph.nodes, newGraph.edges);
+      if (newGraph) {
+        setGraph(layoutGraph);
+      }
+    }
+  }
 
   return (
     <motion.div
@@ -89,6 +118,11 @@ export function AstEditorContainer({
                 <ClipboardPaste className="h-4 w-4 mr-2" />
                 Paste to editor
               </Button>
+              <Button size="sm" variant="secondary" onClick={copyFromViewer} disabled={!viewerAST} title="Paste AST text into editor">
+                <ClipboardPaste className="h-4 w-4 mr-2" />
+                Copy from viewer
+              </Button>
+
               <Button
                 size="icon"
                 variant="ghost"
@@ -105,7 +139,7 @@ export function AstEditorContainer({
           {hasAst ? (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
-                <AstEditor AST={ast} setAST={setAst} fullScreen={isFullscreen}/>
+                <AstEditor graph={graph} setGraph={setGraph} AST={ast} setAST={setAst} fullScreen={isFullscreen}/>
               </div>
               <details className="group">
                 <summary

@@ -39,6 +39,8 @@ export interface AstProps {
   AST: Program,
   fullScreen?: boolean,
   setAST: (ast: Program) => void,
+  graph: AstFlowGraph,
+  setGraph:  React.Dispatch<React.SetStateAction<AstFlowGraph>>,
 }
 
 export const nodeTypes: NodeTypes = {
@@ -56,19 +58,11 @@ export const nodeTypes: NodeTypes = {
 } as NodeTypes;
 
 export function AstEditor({
-  AST,
   fullScreen = false,
   setAST,
+  graph,
+  setGraph,
 }: AstProps) {
-  const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [{
-      id:"origin",
-      type: "program",
-      position: { x: 0, y: 0 },
-      data: {
-        term: AST
-      }
-    }
-  ], edges: [] });
   const [newNodeType_, setNewNodeType] = useState<
     | "program"
     | "funDecl"
@@ -144,13 +138,13 @@ export function AstEditor({
         const isTermHandle = handle === "term" || handle === "value" || handle === "body" || handle === "left" || handle === "right";
 
         // 1) Declarations can ONLY be connected from Program.global-decl
-        if (isDecl(targetKind)) {
-          const ok = sourceKind === "Program" && isGlobalHandle;
-          if (!ok) {
-            console.warn("Invalid connection: declarations can only be connected from Program.global-decl", params);
-            return prevGraph;
-          }
+        if ((isDecl(targetKind) && !isGlobalHandle) || (!isDecl(targetKind) && isGlobalHandle)) {
+          console.warn("Invalid connection: declarations can only be connected from Program.global-decl", params);
+          return prevGraph;
         }
+
+        console.warn(isDecl(targetKind), isGlobalHandle, params);
+
 
         // 2) Type nodes can ONLY be targeted via type handles
         if (isType(targetKind) && !isTypeHandle) {
