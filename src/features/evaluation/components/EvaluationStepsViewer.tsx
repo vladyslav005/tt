@@ -23,14 +23,17 @@ function TypeView({ type }: { type: Type }) {
 function TermView({
   term,
   selectedId,
+  resultId,
   errorId,
 }: {
   term: Term;
   selectedId?: string;
+  resultId?: string;
   errorId?: string;
 }) {
   const isError = errorId !== undefined && term.id === errorId;
-  const isSelected = !isError && selectedId !== undefined && term.id === selectedId;
+  const isResult = !isError && resultId !== undefined && term.id === resultId;
+  const isSelected = !isError && !isResult && selectedId !== undefined && term.id === selectedId;
 
   const inner = (() => {
     switch (term.kind) {
@@ -46,16 +49,16 @@ function TermView({
             <span className="text-muted-foreground"> : </span>
             <TypeView type={term.paramType} />
             <span className="text-muted-foreground"> . </span>
-            <TermView term={term.body} selectedId={selectedId} errorId={errorId} />
+            <TermView term={term.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
           </>
         );
       case "App":
         return (
           <>
             <span className="text-muted-foreground">(</span>
-            <TermView term={term.func} selectedId={selectedId} errorId={errorId} />
+            <TermView term={term.func} selectedId={selectedId} resultId={resultId} errorId={errorId} />
             <span className="text-muted-foreground"> </span>
-            <TermView term={term.arg} selectedId={selectedId} errorId={errorId} />
+            <TermView term={term.arg} selectedId={selectedId} resultId={resultId} errorId={errorId} />
             <span className="text-muted-foreground">)</span>
           </>
         );
@@ -65,6 +68,14 @@ function TermView({
   if (isError) {
     return (
       <span className="bg-destructive/15 text-destructive rounded px-0.5 ring-1 ring-destructive/40 font-semibold">
+        {inner}
+      </span>
+    );
+  }
+
+  if (isResult) {
+    return (
+      <span className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 rounded px-0.5 ring-1 ring-emerald-500/30 font-semibold">
         {inner}
       </span>
     );
@@ -84,12 +95,14 @@ function TermView({
 function TermBox({
   term,
   selectedId,
+  resultId,
   errorId,
   label,
   hasError,
 }: {
   term: Term;
   selectedId?: string;
+  resultId?: string;
   errorId?: string;
   label: string;
   hasError?: boolean;
@@ -100,12 +113,10 @@ function TermBox({
       <div
         className={cn(
           "p-4 rounded-xl border font-mono text-sm leading-relaxed overflow-x-auto",
-          hasError
-            ? "bg-destructive/5 border-destructive/30"
-            : "bg-muted/30",
+          hasError ? "bg-destructive/5 border-destructive/30" : "bg-muted/30",
         )}
       >
-        <TermView term={term} selectedId={selectedId} errorId={errorId} />
+        <TermView term={term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
       </div>
     </div>
   );
@@ -217,6 +228,7 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
       <TermBox
         term={currentStep.after}
         label="After"
+        resultId={!isErrorStep ? currentStep.resultId : undefined}
         errorId={isErrorStep ? stuckTermId : undefined}
         hasError={isErrorStep}
       />

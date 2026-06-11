@@ -35,11 +35,14 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       return null;
     }
 
+    const after = this.cloneTermWithFreshIds(definition);
     return {
       before: node,
-      after: this.cloneTermWithFreshIds(definition),
+      after,
       selectedId: node.id,
-    };  }
+      resultId: after.id,
+    };
+  }
 
   protected override visitLit(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -75,6 +78,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           body: bodyStep.after,
         },
         selectedId: bodyStep.selectedId,
+        resultId: bodyStep.resultId,
       };
     } finally {
       this.removeBound(node.param);
@@ -111,6 +115,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           func: functionStep.after,
         },
         selectedId: functionStep.selectedId,
+        resultId: functionStep.resultId,
       };
     }
 
@@ -140,6 +145,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           arg: argumentStep.after,
         },
         selectedId: argumentStep.selectedId,
+        resultId: argumentStep.resultId,
       };
     }
 
@@ -165,6 +171,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           arg: argumentStep.after,
         },
         selectedId: argumentStep.selectedId,
+        resultId: argumentStep.resultId,
       };
     }
 
@@ -190,14 +197,17 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       );
     }
 
+    const after = this.substitute(
+      node.func.body,
+      node.func.param,
+      node.arg,
+    );
+
     return {
       before: node,
-      after: this.substitute(
-        node.func.body,
-        node.func.param,
-        node.arg,
-      ),
+      after,
       selectedId: node.id,
+      resultId: after.id,
     };
   }
 

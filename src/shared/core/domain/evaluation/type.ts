@@ -10,6 +10,7 @@ export interface ReductionStep {
   before: Term;
   after: Term;
   selectedId: string;
+  resultId?: string;
 }
 
 export interface EvaluationError {
