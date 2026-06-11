@@ -8,6 +8,13 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/share
 import {Calculator, Maximize2, Minimize2} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {EvaluationStepsViewer} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
+import {EvaluationStrategy} from "@/shared/core/domain/evaluation/type.ts";
+
+const strategyLabel: Record<EvaluationStrategy, string> = {
+  [EvaluationStrategy.NORMAL]: "Normal Order",
+  [EvaluationStrategy.CALL_BY_VALUE]: "Call by Value",
+  [EvaluationStrategy.CALL_BY_NAME]: "Call by Name",
+};
 
 interface EvaluationVisualisationProps {
   className?: string;
@@ -43,9 +50,14 @@ export function EvaluationVisualisation({
               <div>
                 <CardTitle className="text-2xl">Evaluation</CardTitle>
                 <CardDescription>
-                  {hasEvaluation
-                    ? "Interactive evaluation visualization showing step-by-step reduction of the expression"
-                    : "No evaluation available"}
+                  {hasEvaluation ? (
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <span>Step-by-step reduction</span>
+                      <span className="inline-flex items-center rounded-md border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-600 dark:text-orange-400">
+                        {strategyLabel[evaluation.strategy]}
+                      </span>
+                    </span>
+                  ) : "No evaluation available"}
                 </CardDescription>
               </div>
             </div>
@@ -64,7 +76,7 @@ export function EvaluationVisualisation({
           {hasEvaluation ? (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30 p-4">
-                <EvaluationStepsViewer evaluation={evaluation} />
+                <EvaluationStepsViewer key={evaluation.result.id} evaluation={evaluation} />
               </div>
               <details className="group">
                 <summary

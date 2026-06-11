@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Term, Type } from "@/shared/core/domain/ast";
-import type { EvaluationResult } from "@/shared/core/domain/evaluation/type";
+import type { EvaluationResult, ReductionStep } from "@/shared/core/domain/evaluation/type";
 import { Button } from "@/shared/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
@@ -122,12 +122,100 @@ function TermBox({
   );
 }
 
+function ViewToggle({
+  mode,
+  onChange,
+}: {
+  mode: "single" | "all";
+  onChange: (m: "single" | "all") => void;
+}) {
+  return (
+    <div className="flex rounded-md border overflow-hidden text-xs shrink-0">
+      <button
+        className={cn(
+          "px-2.5 py-1 transition-colors",
+          mode === "single" ? "bg-muted font-medium" : "hover:bg-muted/50",
+        )}
+        onClick={() => onChange("single")}
+      >
+        Step
+      </button>
+      <button
+        className={cn(
+          "px-2.5 py-1 border-l transition-colors",
+          mode === "all" ? "bg-muted font-medium" : "hover:bg-muted/50",
+        )}
+        onClick={() => onChange("all")}
+      >
+        All
+      </button>
+    </div>
+  );
+}
+
+interface StepRowProps {
+  step: ReductionStep;
+  index: number;
+  isLast: boolean;
+  isError: boolean;
+  stuckTermId?: string;
+  onClick?: () => void;
+}
+
+function StepRow({ step, index, isLast, isError: isErrorStep, stuckTermId, onClick }: StepRowProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-3 flex flex-col gap-2 transition-colors",
+        isErrorStep
+          ? "bg-destructive/5 border-destructive/20"
+          : "bg-muted/20 hover:bg-muted/40 cursor-pointer",
+      )}
+      onClick={!isErrorStep ? onClick : undefined}
+      title={!isErrorStep ? "Click to inspect this step" : undefined}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "text-xs font-semibold px-1.5 py-0.5 rounded-md",
+            isErrorStep
+              ? "bg-destructive/10 text-destructive"
+              : "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+          )}
+        >
+          {index + 1}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {isErrorStep ? "stuck — no reduction possible" : "β-reduction"}
+        </span>
+      </div>
+
+      <div className="font-mono text-sm overflow-x-auto">
+        <TermView term={step.before} selectedId={step.selectedId} />
+      </div>
+
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <ArrowDown className={cn("h-3.5 w-3.5 shrink-0", isErrorStep && "text-destructive")} />
+      </div>
+
+      <div className="font-mono text-sm overflow-x-auto">
+        <TermView
+          term={step.after}
+          resultId={!isErrorStep ? step.resultId : undefined}
+          errorId={isErrorStep ? stuckTermId : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
 interface EvaluationStepsViewerProps {
   evaluation: EvaluationResult;
 }
 
 export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<"single" | "all">("single");
   const { steps, result, reachedStepLimit, errors } = evaluation;
 
   const hasErrors = errors && errors.length > 0;
@@ -159,10 +247,67 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
   const isLastStep = stepIndex === steps.length - 1;
   const isErrorStep = isLastStep && hasErrors;
 
+  if (viewMode === "all") {
+    return (
+      <div className="flex flex-col gap-4 h-full overflow-y-auto">
+        <div className="flex items-center justify-between sticky top-0 backdrop-blur-sm py-1 z-10">
+          <span className="text-sm font-medium">{steps.length} step{steps.length !== 1 ? "s" : ""}</span>
+          <ViewToggle mode={viewMode} onChange={setViewMode} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {steps.map((step, i) => {
+            const isLast = i === steps.length - 1;
+            const isStepError = isLast && !!hasErrors;
+            return (
+              <StepRow
+                key={i}
+                step={step}
+                index={i}
+                isLast={isLast}
+                isError={isStepError}
+                stuckTermId={stuckTermId}
+                onClick={() => { setStepIndex(i); setViewMode("single"); }}
+              />
+            );
+          })}
+        </div>
+
+        {!hasErrors && (
+          <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-500" />
+              <span className="text-xs font-medium text-orange-600 dark:text-orange-500 uppercase tracking-wide">
+                Final result
+              </span>
+            </div>
+            <div className="font-mono text-sm overflow-x-auto">
+              <TermView term={result} />
+            </div>
+          </div>
+        )}
+
+        {hasErrors && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-sm">
+            <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{errors![0].message}</span>
+          </div>
+        )}
+
+        {reachedStepLimit && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-yellow-700 dark:text-yellow-500 text-sm">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>Step limit reached — evaluation may not be complete.</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 h-full overflow-y-auto">
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 sticky top-0  backdrop-blur-sm py-1 z-10">
+      <div className="flex items-center justify-between gap-3 sticky top-0 backdrop-blur-sm py-1 z-10">
         <Button
           size="sm"
           variant="outline"
@@ -202,15 +347,18 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
           </div>
         </div>
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setStepIndex((i) => Math.min(steps.length - 1, i + 1))}
-          disabled={isLastStep}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <ViewToggle mode={viewMode} onChange={setViewMode} />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setStepIndex((i) => Math.min(steps.length - 1, i + 1))}
+            disabled={isLastStep}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Step display */}
@@ -233,7 +381,6 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
         hasError={isErrorStep}
       />
 
-      {/* Error banner on the problem step */}
       {isErrorStep && (
         <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-sm">
           <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -241,7 +388,6 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
         </div>
       )}
 
-      {/* Final result (only on last step, no errors) */}
       {isLastStep && !hasErrors && (
         <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
           <div className="flex items-center gap-2 mb-2">
@@ -256,7 +402,6 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
         </div>
       )}
 
-      {/* Step limit warning */}
       {reachedStepLimit && (
         <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-yellow-700 dark:text-yellow-500 text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />

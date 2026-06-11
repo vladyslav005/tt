@@ -50,6 +50,7 @@ export class Evaluator {
           result: currentTerm,
           steps: [...this.evaluationSteps],
           reachedStepLimit: false,
+          strategy,
           ...(errors.length > 0 && { errors }),
         };
       }
@@ -62,6 +63,7 @@ export class Evaluator {
       result: currentTerm,
       steps: [...this.evaluationSteps],
       reachedStepLimit: true,
+      strategy,
     };
   }
 

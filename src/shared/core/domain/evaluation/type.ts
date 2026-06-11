@@ -22,6 +22,7 @@ export interface EvaluationResult {
   result: Term;
   steps: ReductionStep[];
   reachedStepLimit: boolean;
+  strategy: EvaluationStrategy;
   errors?: EvaluationError[];
 }
 

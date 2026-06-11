@@ -23,7 +23,7 @@ export interface EvaluateButtonProps {
 const evaluationStrategies = [
   {
     value: EvaluationStrategy.NORMAL,
-    label: "Normal",
+    label: "Normal Order",
     description: "Leftmost outermost, including lambda bodies",
   },
   {
