@@ -13,6 +13,7 @@ import {
 import {ButtonGroup} from "@/shared/components/ui/button-group.tsx";
 import {useState} from "react";
 import {EvaluationStrategy} from "@/shared/core/domain/evaluation/type.ts";
+import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 
 export interface EvaluateButtonProps {
   onClick?: () => void;
@@ -43,12 +44,14 @@ export function EvaluateButton({
                                 }: EvaluateButtonProps) {
   const { evaluateTerm } = useTermHooks()
 
+  const proofTree = useAppSelector((state) => state.term.proof)
+  const disabled = proofTree === undefined;
+
   const [strategy, setStrategy] = useState(EvaluationStrategy.CALL_BY_VALUE)
 
   const selectedStrategy = evaluationStrategies.find(
     (item) => item.value === strategy
   )
-
 
   const handleClick = () => {
     if (onClick) {
@@ -69,6 +72,7 @@ export function EvaluateButton({
         onClick={() => handleClick()}
         className="gap-2 shadow-none"
         size="default"
+        disabled={disabled}
       >
         <Calculator className="h-4 w-4" />
 
@@ -85,6 +89,7 @@ export function EvaluateButton({
             size="icon"
             className="shadow-none"
             aria-label="Choose evaluation strategy"
+            disabled={disabled}
           >
             <ChevronDown className="h-4 w-4" />
           </Button>

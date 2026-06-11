@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Term, Type } from "@/shared/core/domain/ast";
 import type { EvaluationResult } from "@/shared/core/domain/evaluation/type";
 import { Button } from "@/shared/components/ui/button";
-import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 function TypeView({ type }: { type: Type }) {
@@ -20,8 +20,17 @@ function TypeView({ type }: { type: Type }) {
   }
 }
 
-function TermView({ term, selectedId }: { term: Term; selectedId?: string }) {
-  const isSelected = selectedId !== undefined && term.id === selectedId;
+function TermView({
+  term,
+  selectedId,
+  errorId,
+}: {
+  term: Term;
+  selectedId?: string;
+  errorId?: string;
+}) {
+  const isError = errorId !== undefined && term.id === errorId;
+  const isSelected = !isError && selectedId !== undefined && term.id === selectedId;
 
   const inner = (() => {
     switch (term.kind) {
@@ -37,21 +46,29 @@ function TermView({ term, selectedId }: { term: Term; selectedId?: string }) {
             <span className="text-muted-foreground"> : </span>
             <TypeView type={term.paramType} />
             <span className="text-muted-foreground"> . </span>
-            <TermView term={term.body} selectedId={selectedId} />
+            <TermView term={term.body} selectedId={selectedId} errorId={errorId} />
           </>
         );
       case "App":
         return (
           <>
             <span className="text-muted-foreground">(</span>
-            <TermView term={term.func} selectedId={selectedId} />
+            <TermView term={term.func} selectedId={selectedId} errorId={errorId} />
             <span className="text-muted-foreground"> </span>
-            <TermView term={term.arg} selectedId={selectedId} />
+            <TermView term={term.arg} selectedId={selectedId} errorId={errorId} />
             <span className="text-muted-foreground">)</span>
           </>
         );
     }
   })();
+
+  if (isError) {
+    return (
+      <span className="bg-destructive/15 text-destructive rounded px-0.5 ring-1 ring-destructive/40 font-semibold">
+        {inner}
+      </span>
+    );
+  }
 
   if (isSelected) {
     return (
@@ -67,19 +84,28 @@ function TermView({ term, selectedId }: { term: Term; selectedId?: string }) {
 function TermBox({
   term,
   selectedId,
+  errorId,
   label,
-  className,
+  hasError,
 }: {
   term: Term;
   selectedId?: string;
+  errorId?: string;
   label: string;
-  className?: string;
+  hasError?: boolean;
 }) {
   return (
-    <div className={className}>
+    <div>
       <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">{label}</div>
-      <div className="p-4 rounded-xl bg-muted/30 border font-mono text-sm leading-relaxed overflow-x-auto">
-        <TermView term={term} selectedId={selectedId} />
+      <div
+        className={cn(
+          "p-4 rounded-xl border font-mono text-sm leading-relaxed overflow-x-auto",
+          hasError
+            ? "bg-destructive/5 border-destructive/30"
+            : "bg-muted/30",
+        )}
+      >
+        <TermView term={term} selectedId={selectedId} errorId={errorId} />
       </div>
     </div>
   );
@@ -91,15 +117,28 @@ interface EvaluationStepsViewerProps {
 
 export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps) {
   const [stepIndex, setStepIndex] = useState(0);
-  const { steps, result, reachedStepLimit } = evaluation;
+  const { steps, result, reachedStepLimit, errors } = evaluation;
+
+  const hasErrors = errors && errors.length > 0;
+  const stuckTermId = errors?.[0]?.stuckTermId;
 
   if (steps.length === 0) {
     return (
-      <div className="flex flex-col gap-4 h-full">
+      <div className="flex flex-col gap-4">
         <div className="p-4 rounded-xl bg-muted/30 border text-center">
-          <p className="text-sm text-muted-foreground">Expression is already in normal form — no reduction steps needed.</p>
+          <p className="text-sm text-muted-foreground">
+            {hasErrors
+              ? "Expression is stuck — no reductions are possible."
+              : "Expression is already in normal form — no reduction steps needed."}
+          </p>
         </div>
-        <TermBox term={result} label="Normal form" />
+        <TermBox term={result} label={hasErrors ? "Stuck term" : "Normal form"} errorId={stuckTermId} hasError={hasErrors} />
+        {hasErrors && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-sm">
+            <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{errors[0].message}</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -107,11 +146,12 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
   const currentStep = steps[stepIndex];
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === steps.length - 1;
+  const isErrorStep = isLastStep && hasErrors;
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-y-auto">
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+      <div className="flex items-center justify-between gap-3 sticky top-0  backdrop-blur-sm py-1 z-10">
         <Button
           size="sm"
           variant="outline"
@@ -127,19 +167,27 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
             Step {stepIndex + 1} of {steps.length}
           </span>
           <div className="flex gap-1">
-            {steps.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setStepIndex(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-200",
-                  i === stepIndex
-                    ? "w-4 bg-orange-500"
-                    : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60",
-                )}
-                aria-label={`Go to step ${i + 1}`}
-              />
-            ))}
+            {steps.map((_, i) => {
+              const isLast = i === steps.length - 1;
+              const isActive = i === stepIndex;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setStepIndex(i)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-200",
+                    isActive
+                      ? isLast && hasErrors
+                        ? "w-4 bg-destructive"
+                        : "w-4 bg-orange-500"
+                      : isLast && hasErrors
+                        ? "w-1.5 bg-destructive/40 hover:bg-destructive/70"
+                        : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60",
+                  )}
+                  aria-label={`Go to step ${i + 1}`}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -155,17 +203,34 @@ export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps
       </div>
 
       {/* Step display */}
-      <TermBox term={currentStep.before} selectedId={currentStep.selectedId} label="Before" />
+      <TermBox
+        term={currentStep.before}
+        selectedId={currentStep.selectedId}
+        label="Before"
+      />
 
       <div className="flex items-center gap-2 text-muted-foreground px-2">
-        <ArrowDown className="h-4 w-4 shrink-0" />
-        <span className="text-xs">β-reduction</span>
+        <ArrowDown className={cn("h-4 w-4 shrink-0", isErrorStep && "text-destructive")} />
+        <span className="text-xs">{isErrorStep ? "stuck — no reduction possible" : "β-reduction"}</span>
       </div>
 
-      <TermBox term={currentStep.after} label="After" />
+      <TermBox
+        term={currentStep.after}
+        label="After"
+        errorId={isErrorStep ? stuckTermId : undefined}
+        hasError={isErrorStep}
+      />
 
-      {/* Final result */}
-      {isLastStep && (
+      {/* Error banner on the problem step */}
+      {isErrorStep && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-sm">
+          <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{errors![0].message}</span>
+        </div>
+      )}
+
+      {/* Final result (only on last step, no errors) */}
+      {isLastStep && !hasErrors && (
         <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-500" />

@@ -6,23 +6,40 @@ import {EvaluationStrategy, type ReductionStep,} from "@/shared/core/domain/eval
 
 export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
-  private strategy: EvaluationStrategy = EvaluationStrategy.CALL_BY_VALUE
+  private boundVariables = new Map<string, number>();
+
+  constructor(
+    private readonly strategy: EvaluationStrategy,
+    private readonly globals: ReadonlyMap<string, Term>,
+  ) {
+    super();
+  }
 
   /**
    * Performs exactly one reduction step.
    */
-  public reduce(term: Term, strategy?: EvaluationStrategy): ReductionStep | null {
-    if (strategy)
-      this.strategy = strategy;
+  public reduce(term: Term): ReductionStep | null {
     return this.visit(term);
   }
 
   protected override visitVar(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _node: Var,
+    node: Var,
   ): ReductionStep | null {
-    return null;
-  }
+    if (this.isBound(node.name)) {
+      return null;
+    }
+
+    const definition = this.globals.get(node.name);
+
+    if (!definition || !definition.id) {
+      return null;
+    }
+
+    return {
+      before: node,
+      after: this.cloneTermWithFreshIds(definition),
+      selectedId: node.id,
+    };  }
 
   protected override visitLit(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -42,20 +59,26 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       return null;
     }
 
-    const bodyStep = this.visit(node.body);
+    this.addBound(node.param);
 
-    if (!bodyStep) {
-      return null;
+    try {
+      const bodyStep = this.visit(node.body);
+
+      if (!bodyStep) {
+        return null;
+      }
+
+      return {
+        before: node,
+        after: {
+          ...node,
+          body: bodyStep.after,
+        },
+        selectedId: bodyStep.selectedId,
+      };
+    } finally {
+      this.removeBound(node.param);
     }
-
-    return {
-      before: node,
-      after: {
-        ...node,
-        body: bodyStep.after,
-      },
-      selectedId: bodyStep.selectedId,
-    };
   }
 
   protected override visitApp(
@@ -498,5 +521,24 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     _node: Type,
   ): ReductionStep | null {
     return null;
+  }
+
+  private addBound(name: string): void {
+    const count = this.boundVariables.get(name) ?? 0;
+    this.boundVariables.set(name, count + 1);
+  }
+
+  private removeBound(name: string): void {
+    const count = this.boundVariables.get(name) ?? 0;
+
+    if (count <= 1) {
+      this.boundVariables.delete(name);
+    } else {
+      this.boundVariables.set(name, count - 1);
+    }
+  }
+
+  private isBound(name: string): boolean {
+    return (this.boundVariables.get(name) ?? 0) > 0;
   }
 }

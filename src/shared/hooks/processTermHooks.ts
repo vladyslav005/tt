@@ -65,11 +65,26 @@ export function useTermHooks() {
 
 
   function evaluateTerm(strategy: EvaluationStrategy) {
-    if (ast) {
+    if (!ast) return;
 
+    try {
       const evaluationResult = evaluator.evaluate(ast, strategy);
       dispatch(setEvaluation(evaluationResult));
 
+      evaluationResult.errors?.forEach((e) =>
+        dispatch(pushProcessingError(new Error(e.message))),
+      );
+
+      if (evaluationResult.reachedStepLimit) {
+        dispatch(
+          pushProcessingError(
+            new Error("Evaluation reached the step limit — expression may not be fully reduced"),
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Error evaluating term:", error);
+      dispatch(pushProcessingError(new Error(`${(error as Error).message}`)));
     }
   }
 

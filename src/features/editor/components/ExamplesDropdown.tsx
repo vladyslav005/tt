@@ -9,6 +9,38 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 
+// const EXAMPLES: { label: string; description: string; code: string }[] = [
+//   {
+//     label: "Identity",
+//     description: "Identity function",
+//     code: "a : T;\n(λ x : T . x) a;",
+//   },
+//   {
+//     label: "Boolean if",
+//     description: "If-then-else expression",
+//     code: "if true then false else true",
+//   },
+//   {
+//     label: "Natural numbers",
+//     description: "Successor and iszero",
+//     code: "iszero (succ (succ 0))",
+//   },
+//   {
+//     label: "Nested abstraction",
+//     description: "Curried function",
+//     code: "λ x : Nat . λ y : Nat . succ x",
+//   },
+//   {
+//     label: "Type alias",
+//     description: "typedef + abstraction",
+//     code: "typedef MyNat = Nat;\n(λ x : MyNat . succ x) : MyNat -> MyNat",
+//   },
+//   {
+//     label: "Fix point",
+//     description: "Recursive function via fix",
+//     code: "fix (λ f : Nat -> Nat . λ n : Nat . if iszero n then 0 else succ (f (pred n)))",
+//   },
+// ];
 const EXAMPLES: { label: string; description: string; code: string }[] = [
   {
     label: "Identity",
@@ -16,30 +48,31 @@ const EXAMPLES: { label: string; description: string; code: string }[] = [
     code: "a : T;\n(λ x : T . x) a;",
   },
   {
-    label: "Boolean if",
-    description: "If-then-else expression",
-    code: "if true then false else true",
+    label: "Example 1",
+    description: "Application chain",
+    code: `identity = λ x : T . x : T -> T;
+
+compose =
+  λ f : T -> T .
+  λ g : T -> T .
+  λ x : T .
+    f (g x)
+  : (T -> T) -> (T -> T) -> T -> T;
+
+twice =
+  λ f : T -> T .
+  λ x : T .
+    f (f x)
+  : (T -> T) -> T -> T;
+
+twice ((compose identity) identity);`,
   },
   {
-    label: "Natural numbers",
-    description: "Successor and iszero",
-    code: "iszero (succ (succ 0))",
+    label: "Example 2",
+    description: "Alpha conversion",
+    code: `y: T; (λ x : T . λ y : T . x) y;`,
   },
-  {
-    label: "Nested abstraction",
-    description: "Curried function",
-    code: "λ x : Nat . λ y : Nat . succ x",
-  },
-  {
-    label: "Type alias",
-    description: "typedef + abstraction",
-    code: "typedef MyNat = Nat;\n(λ x : MyNat . succ x) : MyNat -> MyNat",
-  },
-  {
-    label: "Fix point",
-    description: "Recursive function via fix",
-    code: "fix (λ f : Nat -> Nat . λ n : Nat . if iszero n then 0 else succ (f (pred n)))",
-  },
+
 ];
 
 interface ExamplesDropdownProps {

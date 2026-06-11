@@ -12,9 +12,15 @@ export interface ReductionStep {
   selectedId: string;
 }
 
+export interface EvaluationError {
+  message: string;
+  stuckTermId?: string;
+}
+
 export interface EvaluationResult {
   result: Term;
   steps: ReductionStep[];
   reachedStepLimit: boolean;
+  errors?: EvaluationError[];
 }
 

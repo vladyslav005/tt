@@ -6,6 +6,7 @@ import type {
 
 import {
   EvaluationStrategy,
+  type EvaluationError,
   type EvaluationResult,
   type ReductionStep,
 } from "@/shared/core/domain/evaluation/type.ts";
@@ -19,14 +20,20 @@ export class Evaluator {
   ) {}
 
   public evaluate(
-    ast: ASTNode,
+    ast: Program,
     strategy: EvaluationStrategy,
   ): EvaluationResult {
+
+    const globals = new Map<string, Term>();
+
+    for (const declaration of ast.globals) {
+      globals.set(declaration.name, declaration.value);
+    }
+
     this.evaluationSteps = [];
 
     const initialTerm = this.extractTerm(ast);
-    const reductionVisitor =
-      new ReductionVisitor();
+    const reductionVisitor = new ReductionVisitor(strategy, globals);
 
     let currentTerm = initialTerm;
 
@@ -35,13 +42,15 @@ export class Evaluator {
       index < this.maximumSteps;
       index += 1
     ) {
-      const step = reductionVisitor.reduce(currentTerm, strategy);
+      const step = reductionVisitor.reduce(currentTerm);
 
       if (!step) {
+        const errors = this.collectErrors(currentTerm);
         return {
           result: currentTerm,
           steps: [...this.evaluationSteps],
           reachedStepLimit: false,
+          ...(errors.length > 0 && { errors }),
         };
       }
 
@@ -54,6 +63,31 @@ export class Evaluator {
       steps: [...this.evaluationSteps],
       reachedStepLimit: true,
     };
+  }
+
+  private collectErrors(term: Term): EvaluationError[] {
+    const stuckTermId = this.findStuckTermId(term);
+    if (stuckTermId) {
+      return [{
+        message: "Evaluation stuck: a non-function value (literal) was applied as a function",
+        stuckTermId,
+      }];
+    }
+    return [];
+  }
+
+  private findStuckTermId(term: Term): string | undefined {
+    switch (term.kind) {
+      case "Var":
+      case "Abs":
+      case "Lit":
+        return undefined;
+      case "App":
+        if (term.func.kind === "Lit") {
+          return term.id;
+        }
+        return this.findStuckTermId(term.func) ?? this.findStuckTermId(term.arg);
+    }
   }
 
   private extractTerm(ast: ASTNode): Term {
