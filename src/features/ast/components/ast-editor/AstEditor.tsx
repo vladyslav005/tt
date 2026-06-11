@@ -259,6 +259,28 @@ export function AstEditor({
     });
   }, []);
 
+  useEffect(() => {
+    // Ensure editable nodes have an onChange handler so Inputs are editable after copying nodes from viewer
+    const needsPatch = graph.nodes.some((n: any) => n.data?.editable && typeof (n.data as any).onChange !== "function");
+    if (!needsPatch) return;
+
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n: any) => {
+        if (n.data?.editable && typeof (n.data as any).onChange !== "function") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              onChange: (patch: any) => updateNodeTerm(n.id, patch),
+            },
+          };
+        }
+        return n;
+      }),
+    }));
+  }, [graph.nodes, setGraph, updateNodeTerm]);
+
   const addStandaloneNode = useCallback((nodeType?: string) => {
     console.log("Adding node of type:", nodeType);
     let newNodeType = newNodeType_;
@@ -432,7 +454,7 @@ export function AstEditor({
       ...prevGraph,
       nodes: [...prevGraph.nodes, makeNode() as AstFlowGraph["nodes"][number]],
     }));
-  }, [graph.nodes.length, newNodeType_, updateNodeTerm]);
+  }, [graph.nodes.length, newNodeType_, setGraph, updateNodeTerm]);
 
   function offsetPosition(pos: { x: number; y: number }, dx: number, dy: number) {
     return { x: pos.x + dx, y: pos.y + dy };
@@ -872,6 +894,7 @@ export function AstEditor({
         onConnect={onConnect}
         nodesConnectable={true}
         deleteKeyCode={null}
+        panActivationKeyCode={null}
         fitView
       >
         <Background />

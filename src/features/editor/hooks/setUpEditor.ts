@@ -3,7 +3,7 @@ export function useSetUpEditor() {
   function setUpMonacoLanguage(monaco: any) {
     monaco.languages.register({id: "lambda"});
 
-    let keywords: string[] = [
+    const keywords: string[] = [
       "as", "case", "of", "if", "then", "else", "inl", "inr", "nil",
       "isnil", "head", "tail", "cons", "typedef", "fix"
     ];
@@ -175,6 +175,9 @@ export function useSetUpEditor() {
     monaco.languages.registerCompletionItemProvider("lambda", {
       provideCompletionItems: (model: any, position: any) => {
         try {
+          const currentWord = model.getWordUntilPosition(position);
+          if (!currentWord.word) return { suggestions: [] };
+
           const textUntilPosition = model.getValueInRange({
             startLineNumber: 1,
             startColumn: 1,
@@ -209,6 +212,8 @@ export function useSetUpEditor() {
     monaco.languages.registerCompletionItemProvider("lambda", {
       provideCompletionItems: (model: any, position: any) => {
         const word = model.getWordUntilPosition(position);
+        if (!word.word) return { suggestions: [] };
+
         const wordRange = new monaco.Range(
           position.lineNumber,
           word.startColumn,
@@ -333,6 +338,7 @@ export function useSetUpEditor() {
     });
 
     monaco.languages.registerCompletionItemProvider("lambda", {
+      triggerCharacters: ['\\'],
       provideCompletionItems: (model: any, position: any) => {
         const word = model.getWordUntilPosition(position);
 

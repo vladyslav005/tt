@@ -129,7 +129,7 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
         kind: "VarDecl",
         name: raw.name ?? "a",
         type: defaultType(`${node.id}-type`),
-        value: defaultVar(`${node.id}-value`, "x"),
+        value: {} as Term,
       };
 
       // type can come from edge

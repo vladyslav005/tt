@@ -33,7 +33,11 @@ export class AstPrettyPrinter {
   }
 
   private printVarDecl(decl: VarDecl): string {
-    return `${decl.name} : ${this.printType(decl.type)} = ${this.printTerm(decl.value)}`;
+    if (decl.value.id)
+      return `${decl.name} : ${this.printType(decl.type)} = ${this.printTerm(decl.value)}`;
+    else
+      return `${decl.name} : ${this.printType(decl.type)}`;
+
   }
 
   private printFunDecl(decl: FunDecl): string {

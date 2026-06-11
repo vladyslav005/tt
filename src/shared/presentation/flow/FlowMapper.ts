@@ -153,20 +153,23 @@ export class AstFlowMapper extends AstVisitor<void> {
   protected visitType(node: Type): void {
     this.pushNode(node);
     if (node.kind === "TyArrow") {
-      this.visit(node.from);
       this.visit(node.to);
-      this.pushEdge({
-        id: `e-${node.id}-from-${node.from.id}`,
-        source: node.id,
-        sourceHandle: "from",
-        target: node.from.id,
-      });
+      this.visit(node.from);
+
       this.pushEdge({
         id: `e-${node.id}-to-${node.to.id}`,
         source: node.id,
         sourceHandle: "to",
         target: node.to.id,
       });
+
+      this.pushEdge({
+        id: `e-${node.id}-from-${node.from.id}`,
+        source: node.id,
+        sourceHandle: "from",
+        target: node.from.id,
+      });
+
     }
   }
 

@@ -23,13 +23,11 @@ export function MainPage() {
         defaultValue="a : T; (λ x : T . (x) ) a;"
         height="400px"
         language="lambda"
-        onChange={(value) => {
+        onChange={(value: string | undefined) => {
           dispatch(setTermText(value));
           console.log("Editor content changed:", value);
         }}
       />
-      <AstEditorContainer className="p-4 m-4" editorRef={editorRef}></AstEditorContainer>
-
 
       <ErrorOutput className="flex-1 h-full p-4 m-4"/>
 
@@ -37,6 +35,9 @@ export function MainPage() {
         <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>
         <AstVisualisation className="flex-1 p-4 m-4 "/>
       </div>
+
+      <AstEditorContainer className="p-4 m-4" editorRef={editorRef}></AstEditorContainer>
+
     </div>
   )
 }

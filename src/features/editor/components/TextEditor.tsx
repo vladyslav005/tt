@@ -4,7 +4,6 @@ import {useSetUpEditor} from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
-import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
@@ -74,7 +73,6 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   ref,
 ) {
   const monaco = useMonaco();
-  const { parseAndTypeCheck } = useTermHooks();
   const { setUpMonacoLanguage } = useSetUpEditor();
   const { theme: appTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(false);
@@ -127,8 +125,8 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       ],
       precondition: 'editorTextFocus',
       run: () => {
-        const currentValue = editor.getValue();
-        parseAndTypeCheck(currentValue);
+        // const currentValue = editor.getValue();
+        // parseAndTypeCheck(currentValue);
       }
     });
 
@@ -152,6 +150,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       bottom: 16,
     },
     automaticLayout: true,
+    accessibilitySupport: "off" as const,
     ...options,
   }), [readOnly, options]);
 

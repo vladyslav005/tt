@@ -75,6 +75,7 @@ export function AstEditorContainer({
       // viewerAST.id = "origin"
       setAst(viewerAST)
       const newGraph = mapAstToFlow(viewerAST);
+      newGraph.nodes.forEach((node) => {node.data.editable = true;});
       const layoutGraph = layoutAstFlow(newGraph.nodes, newGraph.edges);
       if (newGraph) {
         setGraph(layoutGraph);
