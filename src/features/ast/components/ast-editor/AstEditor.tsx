@@ -546,33 +546,42 @@ export function AstEditor({
   }, []);
 
   // Keyboard shortcuts: delete, copy, paste
-  // useEffect(() => {
-  //   const onKeyDown = (e: KeyboardEvent) => {
-  //     const isMac = navigator.platform.toLowerCase().includes("mac");
-  //     const mod = isMac ? e.metaKey : e.ctrlKey;
-  //
-  //     if (e.key === "Delete") {
-  //       e.preventDefault();
-  //       deleteSelection();
-  //       return;
-  //     }
-  //
-  //     if (mod && (e.key === "c" || e.key === "C")) {
-  //       e.preventDefault();
-  //       copySelection();
-  //       return;
-  //     }
-  //
-  //     if (mod && (e.key === "v" || e.key === "V")) {
-  //       e.preventDefault();
-  //       pasteSelection();
-  //       return;
-  //     }
-  //   };
-  //
-  //   window.addEventListener("keydown", onKeyDown);
-  //   return () => window.removeEventListener("keydown", onKeyDown);
-  // }, [copySelection, deleteSelection, pasteSelection]);
+  const onEditorKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement;
+
+      const isEditingText =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable ||
+        target.getAttribute("role") === "combobox";
+
+      if (isEditingText) {
+        return;
+      }
+
+      const modifier = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        deleteSelection();
+        return;
+      }
+
+      if (modifier && key === "c") {
+        event.preventDefault();
+        copySelection();
+        return;
+      }
+
+      if (modifier && key === "v") {
+        event.preventDefault();
+        pasteSelection();
+      }
+    },
+    [copySelection, deleteSelection, pasteSelection],
+  );
 
   const onNodesDelete = useCallback((deleted: Node[]) => {
     const ids = new Set(deleted.map((n) => n.id));
@@ -815,7 +824,11 @@ export function AstEditor({
   }, [connectDraft, rf, setGraph, updateNodeTerm]);
 
   return (
-    <div ref={wrapperRef} style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }} className="relative">
+    <div
+      ref={wrapperRef}
+      style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }} className="relative"
+      onKeyDown={onEditorKeyDown}
+    >
       {showAddOnDrop && dropPopupPos && (
         <div
           className="absolute z-50 rounded-md border bg-background p-2 shadow-md"
