@@ -2,12 +2,19 @@ import { Handle, Position } from "@xyflow/react";
 import type { AbstractionNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import {typeToString} from "@/shared/core/domain/typecheck/utils.ts";
 import { Input } from "@/shared/components/ui/input";
+import { cn } from "@/shared/lib/utils";
 
 export function AbstractionFlowNode({
                                       data,
-                                    }: { data: AbstractionNodeData }) {
+                                      selected,
+                                    }: { data: AbstractionNodeData; selected?: boolean }) {
   return (
-    <div className="min-w-60 rounded-2xl border-2 border-purple-500/30 bg-gradient-to-br from-card to-purple-500/5 text-card-foreground p-5 shadow-xl">
+    <div className={cn(
+      "min-w-60 rounded-2xl border-2 bg-gradient-to-br from-card to-purple-500/5 text-card-foreground p-5 transition-all duration-150",
+      selected
+        ? "border-purple-500 shadow-2xl shadow-purple-500/30"
+        : "border-purple-500/30 shadow-xl",
+    )}>
       <Handle
         type="target"
         position={Position.Top}

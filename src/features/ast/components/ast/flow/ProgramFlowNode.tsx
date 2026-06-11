@@ -1,12 +1,19 @@
 import { Handle, Position } from "@xyflow/react";
 import type { ProgramNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import {LimitedHandle} from "@/features/ast/components/ast/flow/LimitedHandle.tsx";
+import { cn } from "@/shared/lib/utils";
 
 export function ProgramFlowNode({
                                   data,
-                                }: { data: ProgramNodeData }) {
+                                  selected,
+                                }: { data: ProgramNodeData; selected?: boolean }) {
   return (
-    <div className="min-w-72 rounded-2xl border-4 border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 text-card-foreground p-6 shadow-2xl">
+    <div className={cn(
+      "min-w-72 rounded-2xl border-4 bg-gradient-to-br from-primary/5 to-primary/10 text-card-foreground p-6 transition-all duration-150",
+      selected
+        ? "border-primary shadow-2xl shadow-primary/30"
+        : "border-primary/40 shadow-2xl",
+    )}>
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
           <span className="text-xl font-bold text-primary">📄</span>

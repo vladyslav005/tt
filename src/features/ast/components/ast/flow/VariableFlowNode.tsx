@@ -1,14 +1,21 @@
 import { Handle, Position } from "@xyflow/react";
 import type { VariableNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import { Input } from "@/shared/components/ui/input";
+import { cn } from "@/shared/lib/utils";
 
 export function VariableFlowNode({
                                    data,
-                                 }: { data: VariableNodeData }) {
+                                   selected,
+                                 }: { data: VariableNodeData; selected?: boolean }) {
 
 
   return (
-    <div className="min-w-40 rounded-2xl border-2 border-emerald-500/30 bg-gradient-to-br from-card to-emerald-500/5 text-card-foreground p-4 shadow-xl">
+    <div className={cn(
+      "min-w-40 rounded-2xl border-2 bg-gradient-to-br from-card to-emerald-500/5 text-card-foreground p-4 transition-all duration-150",
+      selected
+        ? "border-emerald-500 shadow-2xl shadow-emerald-500/30"
+        : "border-emerald-500/30 shadow-xl",
+    )}>
       <Handle
         type="target"
         position={Position.Top}

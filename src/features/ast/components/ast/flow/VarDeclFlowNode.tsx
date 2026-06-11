@@ -2,12 +2,19 @@ import { Handle, Position } from "@xyflow/react";
 import type { VarDeclNodeData } from "../../../../../shared/presentation/flow/types.ts";
 import { typeToString } from "@/shared/core/domain/typecheck/utils.ts";
 import { Input } from "@/shared/components/ui/input";
+import { cn } from "@/shared/lib/utils";
 
 export function VarDeclFlowNode({
                                   data,
-                                }: { data: VarDeclNodeData }) {
+                                  selected,
+                                }: { data: VarDeclNodeData; selected?: boolean }) {
   return (
-    <div className="min-w-64 rounded-2xl border-2 border-cyan-500/30 bg-gradient-to-br from-card to-cyan-500/5 text-card-foreground p-5 shadow-xl">
+    <div className={cn(
+      "min-w-64 rounded-2xl border-2 bg-gradient-to-br from-card to-cyan-500/5 text-card-foreground p-5 transition-all duration-150",
+      selected
+        ? "border-cyan-500 shadow-2xl shadow-cyan-500/30"
+        : "border-cyan-500/30 shadow-xl",
+    )}>
       <Handle
         type="target"
         position={Position.Top}

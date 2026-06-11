@@ -1,12 +1,18 @@
 import { Handle, Position } from "@xyflow/react";
 import { Input } from "@/shared/components/ui/input";
 import type { TypeNodeData } from "@/shared/presentation/flow/types";
+import { cn } from "@/shared/lib/utils";
 
-export function TyVarFlowNode({ data }: { data: TypeNodeData }) {
+export function TyVarFlowNode({ data, selected }: { data: TypeNodeData; selected?: boolean }) {
   const term = data.term as any;
 
   return (
-    <div className="min-w-40 rounded-2xl border-2 border-slate-500/30 bg-gradient-to-br from-card to-slate-500/5 text-card-foreground p-4 shadow-xl">
+    <div className={cn(
+      "min-w-40 rounded-2xl border-2 bg-gradient-to-br from-card to-slate-500/5 text-card-foreground p-4 transition-all duration-150",
+      selected
+        ? "border-slate-500 shadow-2xl shadow-slate-500/30"
+        : "border-slate-500/30 shadow-xl",
+    )}>
       <Handle
         type="target"
         position={Position.Top}
