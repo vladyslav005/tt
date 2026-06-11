@@ -7,6 +7,7 @@ import {ErrorOutput} from "@/features/error-output/components/ErrorOutput.tsx";
 import {AstEditorContainer} from "@/features/ast/components/ast-editor/AstEditorContainer.tsx";
 import {useRef} from "react";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
+import {EvaluationVisualisation} from "@/features/evaluation/components/EvaluationVisualisation.tsx";
 
 export function MainPage() {
 
@@ -30,6 +31,8 @@ export function MainPage() {
       />
 
       <ErrorOutput className="flex-1 h-full p-4 m-4"/>
+
+      <EvaluationVisualisation className="flex-1 p-4 m-4"></EvaluationVisualisation>
 
       <div className="mt-4 flex md:flex-row flex-col">
         <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>

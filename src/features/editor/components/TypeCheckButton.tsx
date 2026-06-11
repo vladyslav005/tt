@@ -1,7 +1,7 @@
 import {cn} from "@/shared/lib/utils.ts";
 import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {Play} from "lucide-react";
+import {Network} from "lucide-react";
 
 export interface TypeCheckButtonProps {
   onClick?: () => void;
@@ -31,7 +31,7 @@ export function TypeCheckButton({
       )}
       size="default"
     >
-      <Play className="h-4 w-4" />
+      <Network className="h-4 w-4" />
       Type Check
     </Button>
   );

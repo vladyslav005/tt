@@ -11,6 +11,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/share
 import {Terminal} from "lucide-react";
 import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
+import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
 
 export interface TextEditorProps {
   /**
@@ -197,6 +198,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
                 dispatch(setTermText(code));
               }} />
               <TypeCheckButton />
+              <EvaluateButton />
             </div>
           </div>
         </CardHeader>

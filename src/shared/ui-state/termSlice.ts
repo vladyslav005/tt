@@ -2,19 +2,22 @@
 import {createSlice} from "@reduxjs/toolkit";
 import type {Program} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
+import type {EvaluationResult} from "@/shared/core/domain/evaluation/type.ts";
 
 interface TermState {
   termText: string | undefined;
   processingErrors?: Error[];
   ast: Program | undefined;
   proof: ProofTree | undefined;
+  evaluation: EvaluationResult | undefined;
 }
 
 const initialState: TermState = {
   termText: undefined,
   processingErrors: undefined,
   ast: undefined,
-  proof: undefined
+  proof: undefined,
+  evaluation: undefined,
 };
 
 const counterSlice = createSlice({
@@ -33,6 +36,10 @@ const counterSlice = createSlice({
       state.ast = action.payload;
     },
 
+    setEvaluation: (state, action: { payload: EvaluationResult | undefined }) => {
+      state.evaluation = action.payload;
+    },
+
     pushProcessingError: (state, action: { payload: Error }) => {
       if (!state.processingErrors) {
         state.processingErrors = [];
@@ -45,11 +52,13 @@ const counterSlice = createSlice({
       state.processingErrors = [];
       state.ast = undefined;
       state.proof = undefined;
+      state.evaluation = undefined;
     }
   },
 });
 
 export const {
+  setEvaluation,
   setTermText,
   setProof,
   setAst,
