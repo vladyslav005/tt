@@ -162,7 +162,7 @@ interface StepRowProps {
   onClick?: () => void;
 }
 
-function StepRow({ step, index, isLast, isError: isErrorStep, stuckTermId, onClick }: StepRowProps) {
+function StepRow({ step, index, isError: isErrorStep, stuckTermId, onClick }: StepRowProps) {
   return (
     <div
       className={cn(
