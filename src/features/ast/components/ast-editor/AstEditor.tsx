@@ -546,33 +546,33 @@ export function AstEditor({
   }, []);
 
   // Keyboard shortcuts: delete, copy, paste
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toLowerCase().includes("mac");
-      const mod = isMac ? e.metaKey : e.ctrlKey;
-
-      if (e.key === "Delete") {
-        e.preventDefault();
-        deleteSelection();
-        return;
-      }
-
-      if (mod && (e.key === "c" || e.key === "C")) {
-        e.preventDefault();
-        copySelection();
-        return;
-      }
-
-      if (mod && (e.key === "v" || e.key === "V")) {
-        e.preventDefault();
-        pasteSelection();
-        return;
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [copySelection, deleteSelection, pasteSelection]);
+  // useEffect(() => {
+  //   const onKeyDown = (e: KeyboardEvent) => {
+  //     const isMac = navigator.platform.toLowerCase().includes("mac");
+  //     const mod = isMac ? e.metaKey : e.ctrlKey;
+  //
+  //     if (e.key === "Delete") {
+  //       e.preventDefault();
+  //       deleteSelection();
+  //       return;
+  //     }
+  //
+  //     if (mod && (e.key === "c" || e.key === "C")) {
+  //       e.preventDefault();
+  //       copySelection();
+  //       return;
+  //     }
+  //
+  //     if (mod && (e.key === "v" || e.key === "V")) {
+  //       e.preventDefault();
+  //       pasteSelection();
+  //       return;
+  //     }
+  //   };
+  //
+  //   window.addEventListener("keydown", onKeyDown);
+  //   return () => window.removeEventListener("keydown", onKeyDown);
+  // }, [copySelection, deleteSelection, pasteSelection]);
 
   const onNodesDelete = useCallback((deleted: Node[]) => {
     const ids = new Set(deleted.map((n) => n.id));

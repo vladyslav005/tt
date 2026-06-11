@@ -7,6 +7,7 @@ import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
 import {Calculator, Maximize2, Minimize2} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {EvaluationStepsViewer} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
 
 interface EvaluationVisualisationProps {
   className?: string;
@@ -62,8 +63,8 @@ export function EvaluationVisualisation({
         <CardContent className="flex-1 overflow-hidden">
           {hasEvaluation ? (
             <div className="space-y-4 h-full flex flex-col">
-              <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
-                EVAL VISUALISATION GOES HERE
+              <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30 p-4">
+                <EvaluationStepsViewer evaluation={evaluation} />
               </div>
               <details className="group">
                 <summary
