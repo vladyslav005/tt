@@ -63,11 +63,11 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitApp(node: App): ProofTree {
-    let error: string | undefined = undefined;
+    const error: string | undefined = undefined;
     const funcProof: ProofTree = this.visit(node.func);
     const argProof: ProofTree = this.visit(node.arg);
 
-    let returnProof: ProofTree = {
+    const returnProof: ProofTree = {
       rule: Rule.App,
       term: node,
       type: undefined as any,
@@ -113,7 +113,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   protected visitVar(node: Var): ProofTree {
     const varType = this.context.get(node.name);
 
-    let returnProof: ProofTree = {
+    const returnProof: ProofTree = {
       rule: Rule.Var,
       term: node,
       type: "undefined" as any,

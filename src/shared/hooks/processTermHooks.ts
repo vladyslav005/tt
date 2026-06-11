@@ -39,6 +39,7 @@ export function useTermHooks() {
       dispatch(pushProcessingError(new Error(`${(error as Error).message}`)))
       dispatch(setAst(undefined))
       dispatch(setProof(undefined))
+      return;
     }
 
     try {

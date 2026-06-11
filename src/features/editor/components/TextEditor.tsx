@@ -4,6 +4,7 @@ import {useSetUpEditor} from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
+import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
@@ -177,21 +178,30 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     >
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-500">
-              <Terminal className="h-5 w-5" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-500">
+                <Terminal className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Lambda Expression Editor</CardTitle>
+                <CardDescription>
+                  Write and test your lambda calculus expressions
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-2xl">Lambda Expression Editor</CardTitle>
-              <CardDescription>
-                Write and test your lambda calculus expressions
-              </CardDescription>
+
+            <div className="flex items-center gap-2">
+              <ExamplesDropdown onSelect={(code) => {
+                editorRef.current?.setValue(code);
+                dispatch(setTermText(code));
+              }} />
+              <TypeCheckButton />
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="relative rounded-xl overflow-hidden border">
-            <TypeCheckButton />
             <Editor
               height={height}
               theme={monacoTheme}

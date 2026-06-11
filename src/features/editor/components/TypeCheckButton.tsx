@@ -26,10 +26,10 @@ export function TypeCheckButton({
     <Button
       onClick={handleClick}
       className={cn(
-        "absolute z-20 right-4 bottom-4 shadow-lg hover:shadow-xl transition-all duration-300 gap-2",
+        "shadow-lg hover:shadow-xl transition-all duration-300 gap-2",
         className
       )}
-      size="lg"
+      size="default"
     >
       <Play className="h-4 w-4" />
       Type Check
