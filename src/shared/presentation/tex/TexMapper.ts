@@ -16,7 +16,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitAbs(node: ProofTree): TexTree {
     return {
-      judgement: TexMapper.judgementToTex(node),
+      ...TexMapper.judgements(node),
       rule: "T-Abs",
       children: node.premises.map(child => this.visit(child))
     }
@@ -24,7 +24,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitApp(node: ProofTree): TexTree {
     return {
-      judgement: TexMapper.judgementToTex(node),
+      ...TexMapper.judgements(node),
       rule: "T-App",
       children: node.premises.map(child => this.visit(child))
     }
@@ -33,14 +33,14 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   protected visitVar(node: ProofTree): TexTree {
     if (node.premises.length > 0) {
       return {
-        judgement: TexMapper.judgementToTex(node),
+        ...TexMapper.judgements(node),
         rule: "T-Def",
         meta: (node.term as any).name as string,
         children: node.premises.map(child => this.visit(child))
       }
     }
     return {
-      judgement: TexMapper.judgementToTex(node),
+      ...TexMapper.judgements(node),
       rule: "T-Var",
       children: [this.variableMembershipTex(node)]
     }
@@ -52,7 +52,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       : (value === "true" || value === "True" || value === "false" || value === "False") ? "T-Bool"
       : "T-Nat"
     return {
-      judgement: TexMapper.judgementToTex(node),
+      ...TexMapper.judgements(node),
       rule,
       children: []
     }
@@ -61,19 +61,40 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)
+    const entries = Object.entries(node.gamma)
+
+    const judgementFull = entries.length > 0
+      ? `${variableName} : ${variableType} \\in \\{ ${entries.map(([n, t]) => `${n} : ${TexMapper.typeToTex(t)}`).join(", ")} \\}`
+      : undefined
 
     return {
       judgement: `${variableName} : ${variableType} \\in \\Gamma`,
+      judgementFull,
       rule: ""
     }
   }
 
-  static  judgementToTex(node: ProofTree): string {
+  static judgementToTex(node: ProofTree): string {
     const gamma = this.gammaToTex(node.gamma)
     const term = this.termToTex(node.term)
     const type = this.typeToTex(node.type)
-
     return `${gamma} \\vdash ${term} : ${type}`
+  }
+
+  static judgementCollapsedToTex(node: ProofTree): string {
+    const hasEntries = Object.keys(node.gamma).length > 0
+    const gamma = hasEntries ? "\\Gamma" : "\\emptyset"
+    const term = this.termToTex(node.term)
+    const type = this.typeToTex(node.type)
+    return `${gamma} \\vdash ${term} : ${type}`
+  }
+
+  static judgements(node: ProofTree): { judgement: string; judgementFull?: string } {
+    const hasEntries = Object.keys(node.gamma).length > 0
+    return {
+      judgement: this.judgementCollapsedToTex(node),
+      judgementFull: hasEntries ? this.judgementToTex(node) : undefined,
+    }
   }
 
   static termToTex(term: Term): string {

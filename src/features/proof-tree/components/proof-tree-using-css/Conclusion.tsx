@@ -1,9 +1,16 @@
+import {useState} from "react";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {MathJax} from "better-react-mathjax";
 import "./ProofTree.css"
 import {cn} from "@/shared/lib/utils.ts";
 import {AlertCircle, ChevronDown, ChevronRight} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/shared/components/ui/context-menu.tsx";
 
 interface ConclusionCenterProps {
   isItLeaf: string;
@@ -17,8 +24,14 @@ interface ConclusionCenterProps {
 export const Conclusion = (props: ConclusionCenterProps) => {
   const {isDef = false, isExpanded = false, onToggle} = props;
   const containsError = props.node.error !== undefined;
+  const hasExpandableGamma = !!props.node.judgementFull;
+  const [gammaExpanded, setGammaExpanded] = useState(false);
 
-  const inner = (
+  const judgementTex = gammaExpanded && props.node.judgementFull
+    ? props.node.judgementFull
+    : props.node.judgement;
+
+  const conclusionDiv = (
     <div
       className={cn(
         `conclusion-center ${props.isItLeaf} ${props.isItRoot} rounded-md my-1.5 px-2 flex items-center gap-2 transition-all duration-200`,
@@ -40,8 +53,8 @@ export const Conclusion = (props: ConclusionCenterProps) => {
         </span>
       )}
 
-      <MathJax className="flex-1" >
-        {`\\[ ${props.node.judgement} \\]`}
+      <MathJax className="flex-1" key={judgementTex}>
+        {`\\[ ${judgementTex} \\]`}
       </MathJax>
 
       {containsError && (
@@ -56,19 +69,30 @@ export const Conclusion = (props: ConclusionCenterProps) => {
     </div>
   );
 
-  if (!isDef) return inner;
+  const withContextMenu = (children: React.ReactNode) => (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        {hasExpandableGamma && (
+          <ContextMenuItem onClick={() => setGammaExpanded(v => !v)}>
+            {gammaExpanded ? "Collapse context" : "Expand context"}
+          </ContextMenuItem>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
 
-  const varName = props.node.meta ?? "variable";
-  const tooltipText = isExpanded
-    ? `Hide proof of ${varName}`
-    : `Show proof of ${varName}`;
-
-  return (
+  const withDefTooltip = (children: React.ReactNode) => (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>{inner}</TooltipTrigger>
-        <TooltipContent side="top">{tooltipText}</TooltipContent>
+        <TooltipTrigger asChild>{children as React.ReactElement}</TooltipTrigger>
+        <TooltipContent side="top">
+          {isExpanded ? `Hide proof of ${props.node.meta ?? "variable"}` : `Show proof of ${props.node.meta ?? "variable"}`}
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
+
+  const wrapped = withContextMenu(conclusionDiv);
+  return isDef ? withDefTooltip(wrapped) : wrapped;
 }
