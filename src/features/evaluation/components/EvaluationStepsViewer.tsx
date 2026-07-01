@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Term, Type } from "@/shared/core/domain/ast";
-import type { EvaluationResult, ReductionStep } from "@/shared/core/domain/evaluation/type";
+import type { EvaluationResult, ReductionStep } from "@/shared/core/application/evaluation/type";
 import { Button } from "@/shared/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";

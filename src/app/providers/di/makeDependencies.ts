@@ -1,8 +1,8 @@
 import {AntlrParserAdapter} from "@/shared/core/adapter/AntlrParserAdapter.ts";
-import {SLTLCTypeChecker} from "@/shared/core/domain/typecheck/STLCTypeChecker.ts";
+import {SLTLCTypeChecker} from "@/shared/core/application/typecheck/STLCTypeChecker.ts";
 import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
 import {AstFlowMapper} from "@/shared/presentation/flow/FlowMapper.ts";
-import {Evaluator} from "@/shared/core/domain/evaluation/Evaluator.ts";
+import {Evaluator} from "@/shared/core/application/evaluation/Evaluator.ts";
 
 
 export function makeDependencies() {

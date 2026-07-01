@@ -1,4 +1,4 @@
-import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
+import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 
 export abstract class ProofTreeVisitor<R> {
 

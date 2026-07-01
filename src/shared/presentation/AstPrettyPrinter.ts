@@ -1,5 +1,5 @@
 import type { Program, GlobalDecl, Term, Type, VarDecl, FunDecl, Var, Abs, App, Lit } from "@/shared/core/domain/ast";
-import { typeToString } from "@/shared/core/domain/typecheck/utils.ts";
+import { typeToString } from "@/shared/core/application/typecheck/utils.ts";
 
 /**
  * Converts an AST back into the surface syntax used by the lambda editor.

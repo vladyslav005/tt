@@ -9,8 +9,8 @@ import {
   type EvaluationError,
   type EvaluationResult,
   type ReductionStep,
-} from "@/shared/core/domain/evaluation/type.ts";
-import {ReductionVisitor} from "@/shared/core/domain/evaluation/ReductionVisitor.ts";
+} from "@/shared/core/application/evaluation/type.ts";
+import {ReductionVisitor} from "@/shared/core/application/evaluation/ReductionVisitor.ts";
 
 export class Evaluator {
   private evaluationSteps: ReductionStep[] = [];

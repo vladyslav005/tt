@@ -1,8 +1,8 @@
 // src/store/counterSlice.ts
 import {createSlice} from "@reduxjs/toolkit";
 import type {Program} from "@/shared/core/domain/ast";
-import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
-import type {EvaluationResult} from "@/shared/core/domain/evaluation/type.ts";
+import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
+import type {EvaluationResult} from "@/shared/core/application/evaluation/type.ts";
 
 interface TermState {
   termText: string | undefined;

@@ -2,7 +2,7 @@ import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
 
 import type {Abs, App, GlobalDecl, Lit, Program, Term, Type, Var,} from "@/shared/core/domain/ast";
 
-import {EvaluationStrategy, type ReductionStep,} from "@/shared/core/domain/evaluation/type.ts";
+import {EvaluationStrategy, type ReductionStep,} from "@/shared/core/application/evaluation/type.ts";
 
 export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 

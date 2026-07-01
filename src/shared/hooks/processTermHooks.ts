@@ -1,9 +1,9 @@
 import type {Program} from "@/shared/core/domain/ast";
-import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
+import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {clean, pushProcessingError, setAst, setEvaluation, setProof} from "@/shared/ui-state/termSlice.ts";
-import type {EvaluationStrategy} from "@/shared/core/domain/evaluation/type.ts";
+import type {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
 
 //TODO: retrieve type errors and parsing errors, to be able to display them in different sections of the UI
 

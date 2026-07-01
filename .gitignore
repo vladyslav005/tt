@@ -29,3 +29,5 @@ src/shared/core/main.ts
 !src/shared/core/antlr/Lambda.g4
 
 generate_parser.sh
+
+desc.md

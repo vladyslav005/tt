@@ -8,7 +8,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/share
 import {Calculator, Maximize2, Minimize2} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {EvaluationStepsViewer} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
-import {EvaluationStrategy} from "@/shared/core/domain/evaluation/type.ts";
+import {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
 
 const strategyLabel: Record<EvaluationStrategy, string> = {
   [EvaluationStrategy.NORMAL]: "Normal Order",

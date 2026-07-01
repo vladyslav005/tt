@@ -1,6 +1,6 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
-import type {ProofTree} from "@/shared/core/domain/typecheck/ProofTree.ts";
+import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {Term, Type} from "@/shared/core/domain/ast";
 
 export class TexMapper extends ProofTreeVisitor<TexTree> {
