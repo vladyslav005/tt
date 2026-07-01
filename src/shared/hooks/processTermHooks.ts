@@ -49,16 +49,22 @@ export function useTermHooks() {
     }
 
     try {
-      if (!ast || !ast.term) return
+      if (!ast) return;
+
+      if (!ast.term) {
+        dispatch(pushProcessingError(new Error("No main expression — write a term after the declarations")));
+        return;
+      }
+
       proof = typeCheckerSLTC.visit(ast);
 
-      typeCheckerSLTC.getErrors().map(e => dispatch(pushProcessingError(e)));
+      typeCheckerSLTC.getErrors().forEach(e => dispatch(pushProcessingError(e)));
 
       dispatch(setProof(proof));
 
     } catch (error) {
       console.error("Error typechecking term:", error);
-      dispatch(pushProcessingError(new Error(`${(error as Error).message}`)))
+      dispatch(pushProcessingError(new Error(`${(error as Error).message}`)));
       dispatch(setProof(undefined));
     }
   }

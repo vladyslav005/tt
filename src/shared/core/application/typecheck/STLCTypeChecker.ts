@@ -1,11 +1,11 @@
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
-import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, TyArrow, Var, Type} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, TyArrow, Var, Type, TyVar} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 import {type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 
-
-// TODO: HANDLE PARSE ERRORS AND SAFE PIPELINE
+// Sentinel type used as a placeholder when the real type cannot be inferred due to an error.
+const ERROR_TYPE: TyVar = { kind: "TyVar", id: "error-sentinel", name: "?" };
 
 export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
@@ -16,7 +16,6 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   public getErrors(): Error[] {
     return this.errorBuffer;
   }
-
 
   visit(node: ASTNode): ProofTree {
     const proof = super.visit(node);
@@ -30,7 +29,19 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     this.globalProofs = new Map();
     node.globals.forEach((g) => this.visit(g));
 
-    if (!node.term) throw new Error("Type AST is empty");
+    if (!node.term) {
+      const msg = "No main expression — write a term after your declarations";
+      this.errorBuffer.push(new Error(msg));
+      return {
+        rule: Rule.Var,
+        term: { kind: "Var", id: node.id, name: "(empty)" } as any,
+        type: ERROR_TYPE,
+        gamma: this.context.serializeGamma(),
+        premises: [],
+        error: msg,
+      };
+    }
+
     return this.visit(node.term);
   }
 
@@ -42,69 +53,65 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     const abstractionType: TyArrow = {
       kind: "TyArrow",
       id: crypto.randomUUID(),
-
       from: node.paramType,
-      to: bodyProof.type
-    }
+      to: bodyProof.type,
+    };
 
-    const returnProof: ProofTree = {
-      rule: "Abs",
+    return {
+      rule: Rule.Abs,
       term: node,
       type: abstractionType,
       gamma: this.context.serializeGamma(),
-      premises: [bodyProof]
-    } as ProofTree;
-
-    // if (!typeEquals(abstractionType, node.type)) {
-    //   console.error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`);
-    //   this.errorBuffer.push(new Error(`Type error in abstraction: expected type ${typeToString(node.type)}, got ${typeToString(bodyProof.type)}`));
-    //   returnProof.error = `Type error in abstraction: expected type ${node.type}, got ${bodyProof.type}`;
-    // }
-
-    return returnProof
+      premises: [bodyProof],
+    };
   }
 
   protected visitApp(node: App): ProofTree {
-    const error: string | undefined = undefined;
     const funcProof: ProofTree = this.visit(node.func);
     const argProof: ProofTree = this.visit(node.arg);
 
     const returnProof: ProofTree = {
       rule: Rule.App,
       term: node,
-      type: undefined as any,
+      type: ERROR_TYPE,
       gamma: this.context.serializeGamma(),
       premises: [funcProof, argProof],
-      error: error
     };
 
     if (funcProof.type.kind !== "TyArrow") {
-      console.error(`Type error: expected a function type, got ${typeToString(funcProof.type)}`);
-      this.errorBuffer.push(new Error(`Type error: expected a function type, got ${typeToString(funcProof.type)}`));
-      returnProof.error = `Type error: expected a function type, got ${funcProof.type.kind}`;
+      const msg = `Cannot apply a non-function — the left-hand side has type ${typeToString(funcProof.type)}, which is not a function type`;
+      this.errorBuffer.push(new Error(msg));
+      returnProof.error = msg;
       return returnProof;
     }
 
     const funcType = funcProof.type as TyArrow;
     returnProof.type = funcType.to;
 
-    if (!typeEquals((funcProof.type as TyArrow).from, argProof.type)) {
-      console.error(`Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`);
-      this.errorBuffer.push(new Error(`Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`));
-      returnProof.error = `Type error: expected an argument of type ${typeToString(funcType.from)}, got ${typeToString(argProof.type)}`;
+    if (!typeEquals(funcType.from, argProof.type)) {
+      const msg = `Argument type mismatch — function expects ${typeToString(funcType.from)}, but got ${typeToString(argProof.type)}`;
+      this.errorBuffer.push(new Error(msg));
+      returnProof.error = msg;
     }
 
-    return returnProof
+    return returnProof;
   }
 
   protected visitTermDecl(node: GlobalDecl): ProofTree {
-    const valueProof: ProofTree = this.visit(node.value)
-    if (!typeEquals(valueProof.type, node.type)) {
-      throw new Error(`Type error in declaration of ${node.name}: expected type ${node.type}, got ${valueProof.type}`);
-    }
+    const valueProof: ProofTree = this.visit(node.value);
 
+    // Always add the declared type to context so subsequent declarations
+    // and the main term can still be type-checked.
     this.context.add(node.name, node.type);
     this.globalProofs.set(node.name, valueProof);
+
+    if (!typeEquals(valueProof.type, node.type)) {
+      const msg = `Declaration "${node.name}": declared type is ${typeToString(node.type)}, but the value has type ${typeToString(valueProof.type)}`;
+      this.errorBuffer.push(new Error(msg));
+      // Attach the error to the value proof so it surfaces in a T-Def expansion.
+      valueProof.error = (valueProof.error ? valueProof.error + "; " : "") + msg;
+    }
+
     return {} as ProofTree;
   }
 
@@ -119,15 +126,19 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     const returnProof: ProofTree = {
       rule: Rule.Var,
       term: node,
-      type: "undefined" as any,
+      type: ERROR_TYPE,
       gamma: this.context.serializeGamma(),
-      premises: []
-    }
+      premises: [],
+    };
 
     if (!varType) {
-      console.error(`Type error: variable ${node.name} not found in context`);
-      returnProof.error = `Type error: variable ${node.name} not found in context`;
-      this.errorBuffer.push(new Error(`Type error: variable ${node.name} not found in context`));
+      const contextKeys = Object.keys(this.context.serializeGamma());
+      const contextHint = contextKeys.length > 0
+        ? ` (in-scope variables: ${contextKeys.join(", ")})`
+        : " (context is empty)";
+      const msg = `Variable "${node.name}" is not in scope${contextHint}`;
+      returnProof.error = msg;
+      this.errorBuffer.push(new Error(msg));
       return returnProof;
     }
 
@@ -148,10 +159,10 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
         ? "Bool"
         : "Nat";
 
-    const litType = {
-      kind: "TyVar" as const,
+    const litType: TyVar = {
+      kind: "TyVar",
       id: crypto.randomUUID(),
-      name: typeName
+      name: typeName,
     };
 
     return {
@@ -159,13 +170,11 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       term: node,
       type: litType,
       gamma: this.context.serializeGamma(),
-      premises: []
+      premises: [],
     };
   }
 
   protected visitType(node: Type): ProofTree {
-    // Types usually aren't checked as terms, but the visitor now supports Type nodes.
-    // Return a minimal proof tree so traversals don't crash.
     return {
       rule: "Type" as any,
       term: node as any,

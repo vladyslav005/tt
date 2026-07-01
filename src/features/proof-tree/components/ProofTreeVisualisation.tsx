@@ -5,7 +5,12 @@ import {ProofTreeComponentUsingCss} from "@/features/proof-tree/components/proof
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
-import {Network, ZoomIn, ZoomOut, Crosshair, Maximize2, Minimize2} from "lucide-react";
+import {Network, ZoomIn, ZoomOut, Crosshair, Maximize2, Minimize2, AlertTriangle} from "lucide-react";
+import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+
+function countTreeErrors(node: TexTree): number {
+  return (node.error ? 1 : 0) + (node.children ?? []).reduce((n, c) => n + countTreeErrors(c), 0);
+}
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {useRef} from "react";
@@ -26,6 +31,7 @@ export function ProofTreeVisualisation({
 
   const texTree = proof ? toTexTree(proof) : null;
   const hasProof = proof !== null && proof !== undefined;
+  const treeErrorCount = texTree ? countTreeErrors(texTree) : 0;
 
   return (
     <motion.div
@@ -43,15 +49,24 @@ export function ProofTreeVisualisation({
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <Network className="h-5 w-5" />
+              <div className={cn(
+                "p-2 rounded-xl",
+                treeErrorCount > 0 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+              )}>
+                {treeErrorCount > 0
+                  ? <AlertTriangle className="h-5 w-5" />
+                  : <Network className="h-5 w-5" />
+                }
               </div>
               <div>
                 <CardTitle className="text-2xl">Proof Tree</CardTitle>
                 <CardDescription>
-                  {hasProof
-                    ? "Type derivation tree visualization"
-                    : "No proof tree available"}
+                  {!hasProof
+                    ? "No proof tree available"
+                    : treeErrorCount > 0
+                      ? `Type derivation contains ${treeErrorCount} error${treeErrorCount !== 1 ? "s" : ""} — hover nodes for details`
+                      : "Type derivation tree visualization"
+                  }
                 </CardDescription>
               </div>
             </div>
@@ -80,7 +95,7 @@ export function ProofTreeVisualisation({
                   panning={{velocityDisabled: true}}
                   limitToBounds={false}
                 >
-                  {({zoomIn, zoomOut, resetTransform, centerView}) => (
+                  {({zoomIn, zoomOut, centerView}) => (
                     <>
                       {/* Zoom Controls */}
                       <div className="absolute top-4 right-4 z-10 flex gap-2">

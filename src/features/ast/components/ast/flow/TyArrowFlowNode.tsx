@@ -3,7 +3,7 @@ import type {TypeNodeData} from "@/shared/presentation/flow/types";
 import {cn} from "@/shared/lib/utils";
 import {LimitedHandle} from "./LimitedHandle.tsx";
 
-export function TyArrowFlowNode({data, selected}: { data: TypeNodeData; selected?: boolean }) {
+export function TyArrowFlowNode({selected}: { data: TypeNodeData; selected?: boolean }) {
   return (
     <div className={cn(
       "min-w-56 rounded-xl border-2 bg-gradient-to-br from-card to-slate-500/5 text-card-foreground shadow-lg transition-all duration-150",

@@ -112,7 +112,7 @@ export function AstEditor({
   const rf = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const [newNodeType_, setNewNodeType] = useState<
+  const [newNodeType_] = useState<
     | "program"
     | "funDecl"
     | "varDecl"
@@ -224,8 +224,8 @@ export function AstEditor({
     return true;
   }, []);
 
-  const isValidConnection = useCallback((params: Connection): boolean => {
-    return validateConnection(params, rf.getNodes());
+  const isValidConnection = useCallback((params: Edge | Connection): boolean => {
+    return validateConnection(params as Connection, rf.getNodes());
   }, [rf, validateConnection]);
 
   const onConnect = useCallback(

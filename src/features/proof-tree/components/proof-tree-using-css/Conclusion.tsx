@@ -9,6 +9,8 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/components/ui/context-menu.tsx";
 
@@ -25,6 +27,7 @@ export const Conclusion = (props: ConclusionCenterProps) => {
   const {isDef = false, isExpanded = false, onToggle} = props;
   const containsError = props.node.error !== undefined;
   const hasExpandableGamma = !!props.node.judgementFull;
+  const hasContextMenu = containsError || hasExpandableGamma;
   const [gammaExpanded, setGammaExpanded] = useState(false);
 
   const judgementTex = gammaExpanded && props.node.judgementFull
@@ -36,7 +39,7 @@ export const Conclusion = (props: ConclusionCenterProps) => {
       className={cn(
         `conclusion-center ${props.isItLeaf} ${props.isItRoot} rounded-md my-1.5 px-2 flex items-center gap-2 transition-all duration-200`,
         containsError
-          ? "bg-destructive/10 border border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30 hover:bg-destructive/15 dark:hover:bg-destructive/25"
+          ? "bg-destructive/10 border border-destructive/30 dark:bg-destructive/15 dark:border-destructive/40"
           : "",
         isDef
           ? "cursor-pointer hover:bg-primary/10 border border-transparent hover:border-primary/20 select-none"
@@ -58,29 +61,49 @@ export const Conclusion = (props: ConclusionCenterProps) => {
       </MathJax>
 
       {containsError && (
-        <div
-          className="flex items-center gap-1.5 text-destructive group cursor-help"
-          title={props.node.error}
-        >
-          <AlertCircle className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110"/>
-          <span className="text-xs font-medium whitespace-nowrap">Error</span>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1 text-destructive cursor-help shrink-0 rounded px-1 py-0.5 hover:bg-destructive/10 transition-colors">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0"/>
+                <span className="text-xs font-semibold">Error</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent
+              side="bottom"
+              className="max-w-sm text-xs leading-relaxed border-destructive/30 bg-destructive/5 text-destructive dark:bg-destructive/10"
+            >
+              {props.node.error}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
     </div>
   );
 
-  const withContextMenu = (children: React.ReactNode) => (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent>
-        {hasExpandableGamma && (
-          <ContextMenuItem onClick={() => setGammaExpanded(v => !v)}>
-            {gammaExpanded ? "Collapse context" : "Expand context"}
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
-  );
+  const withContextMenu = (children: React.ReactNode) => {
+    if (!hasContextMenu) return <>{children}</>;
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="max-w-xs">
+          {containsError && (
+            <>
+              <ContextMenuLabel className="text-destructive font-normal text-xs leading-relaxed whitespace-normal py-2 px-2 max-w-xs">
+                {props.node.error}
+              </ContextMenuLabel>
+              {hasExpandableGamma && <ContextMenuSeparator />}
+            </>
+          )}
+          {hasExpandableGamma && (
+            <ContextMenuItem onClick={() => setGammaExpanded(v => !v)}>
+              {gammaExpanded ? "Collapse context" : "Expand context"}
+            </ContextMenuItem>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  };
 
   const withDefTooltip = (children: React.ReactNode) => (
     <TooltipProvider>
