@@ -76,11 +76,11 @@ export function ProofTreeVisualisation({
                   maxScale={3}
                   centerOnInit={true}
                   wheel={{step: 0.1}}
-                  doubleClick={{mode: "reset"}}
+                  doubleClick={{mode: "zoomIn"}}
                   panning={{velocityDisabled: true}}
                   limitToBounds={false}
                 >
-                  {({zoomIn, zoomOut, resetTransform}) => (
+                  {({zoomIn, zoomOut, resetTransform, centerView}) => (
                     <>
                       {/* Zoom Controls */}
                       <div className="absolute top-4 right-4 z-10 flex gap-2">
@@ -105,16 +105,16 @@ export function ProofTreeVisualisation({
                         <Button
                           size="icon"
                           variant="secondary"
-                          onClick={() => resetTransform()}
+                          onClick={() => centerView()}
                           className="shadow-lg hover:shadow-xl transition-shadow"
-                          title="Reset View"
+                          title="Center View"
                         >
                             <Crosshair className="h-4 w-4"/>
                         </Button>
                       </div>
 
                       <div className="absolute bottom-4 left-4 z-10 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-2 rounded-lg border">
-                        <p>💡 Scroll to zoom • Drag to pan • Double-click to reset</p>
+                        <p>💡 Scroll to zoom • Drag to pan • Double-click to zoom in</p>
                       </div>
 
                       <TransformComponent
