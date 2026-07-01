@@ -133,16 +133,20 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitLit(node: Lit): ProofTree {
-    // Literals have a base type - we'll infer it based on the value
-    // For now, we'll use a generic "Nat" type for numeric literals
+    const typeName = node.value === "unit"
+      ? "Unit"
+      : (node.value === "true" || node.value === "True" || node.value === "false" || node.value === "False")
+        ? "Bool"
+        : "Nat";
+
     const litType = {
       kind: "TyVar" as const,
       id: crypto.randomUUID(),
-      name: "Nat" // Could be extended to handle different literal types
+      name: typeName
     };
 
     return {
-      rule: "Lit" as any,
+      rule: Rule.Lit,
       term: node,
       type: litType,
       gamma: this.context.serializeGamma(),

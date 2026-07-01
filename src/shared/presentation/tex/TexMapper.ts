@@ -38,6 +38,18 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  protected visitLit(node: ProofTree): TexTree {
+    const value = (node.term as any).value as string
+    const rule = value === "unit" ? "T-Unit"
+      : (value === "true" || value === "True" || value === "false" || value === "False") ? "T-Bool"
+      : "T-Nat"
+    return {
+      judgement: TexMapper.judgementToTex(node),
+      rule,
+      children: []
+    }
+  }
+
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)

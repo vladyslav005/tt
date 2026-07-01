@@ -13,10 +13,12 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitAbs(node)
       case "App":
         return this.visitApp(node)
+      case "Lit":
+        return this.visitLit(node)
 
 
       default:
-        throw new Error("Unknown AST node")
+        throw new Error("Unknown AST node: " + node.rule)
     }
   }
 
@@ -26,5 +28,7 @@ export abstract class ProofTreeVisitor<R> {
   protected abstract visitAbs(node: ProofTree): R
 
   protected abstract visitApp(node: ProofTree): R
+
+  protected abstract visitLit(node: ProofTree): R
 
 }

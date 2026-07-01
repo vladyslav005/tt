@@ -15,6 +15,7 @@ export enum Rule {
   Var = "Var",
   Abs = "Abs",
   App = "App",
+  Lit = "Lit",
   If = "If",
   Inl = "Inl",
   Inr = "Inr",
