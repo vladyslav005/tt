@@ -101,38 +101,41 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     switch (term.kind) {
       case "Var":
         return term.name
-      case "Abs":
-        return `\\lambda ${term.param} : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)}`
       case "Lit":
         return term.value.toString()
+      case "Abs":
+        return `(\\lambda ${term.param} : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
       case "App":
-        return `${this.termToTex(term.func)}\\ ${this.termToTex(term.arg)}`
+        return `(${this.termToTex(term.func)}\\ ${this.termToTex(term.arg)})`
     }
   }
 
-  static  gammaToTex(gamma: Record<string, Type>): string {
+  static gammaToTex(gamma: Record<string, Type>): string {
     const entries = Object.entries(gamma);
 
     if (entries.length === 0) {
-      // Empty context
       return "\\emptyset";
     }
 
-    // Map each variable to its type
-    const formatted = entries.map(([name, type]) => {
-      return `${name} : ${this.typeToTex(type)}`;
-    });
-
-    // Join with commas for LaTeX
+    const formatted = entries.map(([name, type]) => `${name} : ${this.typeToTex(type)}`);
     return `\\Gamma = \\{ ${formatted.join(", ")} \\}`;
   }
 
-  static  typeToTex(type: Type): string {
+  static typeToTex(type: Type): string {
     switch (type.kind) {
       case "TyVar":
-        return `${type.name}`
-      case "TyArrow":
-        return `${this.typeToTex(type.from)} \\to ${this.typeToTex(type.to)}`
+        return type.name
+      case "TyArrow": {
+        // Parenthesize sub-arrow on the left (non-default grouping);
+        // also parenthesize on the right so right-assoc default is explicit.
+        const from = type.from.kind === "TyArrow"
+          ? `(${this.typeToTex(type.from)})`
+          : this.typeToTex(type.from)
+        const to = type.to.kind === "TyArrow"
+          ? `(${this.typeToTex(type.to)})`
+          : this.typeToTex(type.to)
+        return `${from} \\to ${to}`
+      }
     }
   }
 }

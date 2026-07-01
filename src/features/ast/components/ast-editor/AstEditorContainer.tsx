@@ -118,7 +118,7 @@ export function AstEditorContainer({
               </Button>
               <Button size="sm" variant="secondary" onClick={pasteAstToEditor} disabled={!editorRef?.current} title="Paste AST text into editor">
                 <ClipboardPaste className="h-4 w-4 mr-2" />
-                Paste to editor
+                Paste to text editor
               </Button>
               <Button size="sm" variant="secondary" onClick={copyFromViewer} disabled={!viewerAST} title="Paste AST text into editor">
                 <ClipboardPaste className="h-4 w-4 mr-2" />
