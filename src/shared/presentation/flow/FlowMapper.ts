@@ -249,12 +249,23 @@ export class AstFlowMapper extends AstVisitor<void> {
     }
   }
 
+  private static readonly HANDLE_LABELS: Record<string, string> = {
+    "global-decl": "decl",
+    "term": "term",
+    "body": "body",
+    "paramType": "param",
+    "type": "type",
+    "value": "value",
+    "left": "fn",
+    "right": "arg",
+    "from": "from",
+    "to": "to",
+  };
+
   private pushEdge(edge: Edge): void {
-    // Prevent duplicate edges
-    if (this.visitedEdges.has(edge.id)) {
-      return;
-    }
+    if (this.visitedEdges.has(edge.id)) return;
     this.visitedEdges.add(edge.id);
-    this.edges.push(edge);
+    const label = edge.sourceHandle ? AstFlowMapper.HANDLE_LABELS[edge.sourceHandle] : undefined;
+    this.edges.push(label ? { ...edge, label } : edge);
   }
 }

@@ -1,78 +1,52 @@
-import { Handle, Position } from "@xyflow/react";
-import type { ProgramNodeData } from "../../../../../shared/presentation/flow/types.ts";
-import {LimitedHandle} from "@/features/ast/components/ast/flow/LimitedHandle.tsx";
-import { cn } from "@/shared/lib/utils";
+import {Handle, Position} from "@xyflow/react";
+import type {ProgramNodeData} from "@/shared/presentation/flow/types.ts";
+import {LimitedHandle} from "./LimitedHandle.tsx";
+import {cn} from "@/shared/lib/utils";
+import {FileCode2} from "lucide-react";
 
-export function ProgramFlowNode({
-                                  data,
-                                  selected,
-                                }: { data: ProgramNodeData; selected?: boolean }) {
+export function ProgramFlowNode({data, selected}: { data: ProgramNodeData; selected?: boolean }) {
   return (
     <div className={cn(
-      "min-w-72 rounded-2xl border-4 bg-gradient-to-br from-primary/5 to-primary/10 text-card-foreground p-6 transition-all duration-150",
+      "min-w-64 rounded-xl border-2 bg-gradient-to-br from-primary/5 to-primary/10 text-card-foreground shadow-lg transition-all duration-150",
       selected
-        ? "border-primary shadow-2xl shadow-primary/30"
-        : "border-primary/40 shadow-2xl",
+        ? "border-primary shadow-primary/20"
+        : "border-primary/40",
     )}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
-          <span className="text-xl font-bold text-primary">📄</span>
-        </div>
-        <div>
-          <div className="text-lg font-bold text-primary">Program</div>
-          <div className="text-xs text-muted-foreground">Root Node</div>
-        </div>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 flex items-center gap-2 border-b border-primary/15">
+        <FileCode2 className="h-4 w-4 text-primary"/>
+        <span className="text-xs font-semibold text-primary">Program</span>
+        <span className="ml-auto text-xs text-muted-foreground">Root</span>
       </div>
 
-      <div className="space-y-2 rounded-lg bg-background/50 p-3 backdrop-blur-sm">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Global Declarations:</span>
+      {/* Stats */}
+      <div className="px-4 py-3 space-y-1.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Globals</span>
           <span className="font-bold text-primary">{data.term.globals.length}</span>
         </div>
-        {data.term.term && (
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Main Expression:</span>
-            <span className="font-bold text-green-600 dark:text-green-400">Yes</span>
-          </div>
-        )}
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Main term</span>
+          <span className={cn("font-bold", data.term.term ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
+            {data.term.term ? "Yes" : "None"}
+          </span>
+        </div>
       </div>
 
-      <div className="mt-4 space-y-3">
+      {/* Handles section */}
+      <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-primary/15 pt-3">
+        <div className="relative flex flex-col items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-3">
+          <span className="text-xs font-medium text-primary">Declarations</span>
+          <Handle type="source" position={Position.Left} id="global-decl"
+            className="!w-3 !h-3 !bg-primary !border-2 !border-background"/>
+        </div>
 
-          <div className="relative rounded-lg border-2 border-primary/20 bg-primary/5 p-2">
-            <div className="mb-2 text-center text-xs font-medium text-primary">
-              Declarations ↓
-            </div>
-            <div className="flex justify-center gap-2">
-              {/*{data.term.globals.map((decl, index) => (*/}
-                <Handle
-                  type="source"
-                  position={Position.Left}
-                  id={`global-decl`}
-                  style={{
-                    // bottom: "5%"
-                  }}
-                  className="!w-3 !h-3 !bg-primary !border-2 !border-primary/50"
-                />
-              {/*))}*/}
-            </div>
-          </div>
-
-
-        <div className="relative rounded-lg border-2 border-green-500/20 bg-green-500/5 p-2">
-          <div className="text-center text-xs font-medium text-green-600 dark:text-green-400">
-            Main Term ↓
-          </div>
-          <LimitedHandle
-            type="source"
-            position={Position.Bottom}
-            id="term"
-            className="!w-3 !h-3 !bg-green-500 !border-2 !border-green-300"
-            maxConnections={1}
-          />
+        <div className="relative flex flex-col items-center gap-1 rounded-lg border border-green-500/20 bg-green-500/5 px-3 py-3">
+          <span className="text-xs font-medium text-green-600 dark:text-green-400">Main Term</span>
+          <LimitedHandle type="source" position={Position.Bottom} id="term" maxConnections={1}
+            className="!w-3 !h-3 !bg-green-500 !border-2 !border-background"/>
         </div>
       </div>
     </div>
   );
 }
-

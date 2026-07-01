@@ -80,7 +80,7 @@ export function Ast({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        nodesConnectable={true}
+        nodesConnectable={false}
         fitView
       >
         <Background />

@@ -26,6 +26,7 @@ import {FunDeclFlowNode} from "@/features/ast/components/ast/flow/FunDeclFlowNod
 import {VarDeclFlowNode} from "@/features/ast/components/ast/flow/VarDeclFlowNode.tsx";
 import {LiteralFlowNode} from "@/features/ast/components/ast/flow/LiteralFlowNode.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {Separator} from "@/shared/components/ui/separator.tsx";
 import {
   Select,
   SelectContent,
@@ -34,9 +35,24 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select.tsx";
 import {graphToAst} from "@/features/ast/hooks/graphToAst";
+import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
 import type {TyArrow, TyVar} from "@/shared/core/domain/ast";
 import {TyVarFlowNode} from "@/features/ast/components/ast/flow/TyVarFlowNode";
 import {TyArrowFlowNode} from "@/features/ast/components/ast/flow/TyArrowFlowNode";
+import {Undo2, Redo2, LayoutGrid, Maximize2, Trash2} from "lucide-react";
+
+const HANDLE_LABELS: Record<string, string> = {
+  "global-decl": "decl",
+  "term": "term",
+  "body": "body",
+  "paramType": "param",
+  "type": "type",
+  "value": "value",
+  "left": "fn",
+  "right": "arg",
+  "from": "from",
+  "to": "to",
+};
 
 export interface AstProps {
   AST: Program,
@@ -124,6 +140,32 @@ export function AstEditor({
   const [addOnDropOpen, setAddOnDropOpen] = useState(false);
   const addOnDropTriggerRef = useRef<HTMLButtonElement | null>(null);
 
+  // Node right-click context menu
+  const [nodeCtxMenu, setNodeCtxMenu] = useState<null | { x: number; y: number; nodeId: string }>(null);
+
+  // Undo / redo stacks (refs so mutations don't trigger re-renders)
+  const undoStackRef = useRef<AstFlowGraph[]>([]);
+  const redoStackRef = useRef<AstFlowGraph[]>([]);
+
+  const snapshotHistory = useCallback((current: AstFlowGraph) => {
+    undoStackRef.current = [...undoStackRef.current, current].slice(-50);
+    redoStackRef.current = [];
+  }, []);
+
+  const undo = useCallback(() => {
+    if (undoStackRef.current.length === 0) return;
+    const snapshot = undoStackRef.current.pop()!;
+    redoStackRef.current = [...redoStackRef.current, graph].slice(-50);
+    setGraph(snapshot);
+  }, [graph, setGraph]);
+
+  const redo = useCallback(() => {
+    if (redoStackRef.current.length === 0) return;
+    const snapshot = redoStackRef.current.pop()!;
+    undoStackRef.current = [...undoStackRef.current, graph].slice(-50);
+    setGraph(snapshot);
+  }, [graph, setGraph]);
+
   // Keep AST in sync with graph (node edits + edge edits)
   useEffect(() => {
     pendingAstRef.current = graphToAst(graph);
@@ -135,11 +177,6 @@ export function AstEditor({
     setAST(pendingAstRef.current);
     pendingAstRef.current = null;
   }, [graph, setAST]);
-
-  // Update graph when AST changes
-  useEffect(() => {
-    // addStandaloneNode("program");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -161,80 +198,58 @@ export function AstEditor({
     [],
   );
 
+  const validateConnection = useCallback((params: Connection, nodes: Node[]): boolean => {
+    const sourceNode = nodes.find((n) => n.id === params.source);
+    const targetNode = nodes.find((n) => n.id === params.target);
+    if (!sourceNode || !targetNode || !params.sourceHandle) return false;
+
+    const sourceKind = (sourceNode.data as any)?.term?.kind as string | undefined;
+    const targetKind = (targetNode.data as any)?.term?.kind as string | undefined;
+
+    const isDecl = (k?: string) => k === "VarDecl" || k === "FunDecl";
+    const isType = (k?: string) => k === "TyVar" || k === "TyArrow";
+    const isTerm = (k?: string) => k === "Var" || k === "Abs" || k === "App" || k === "Lit";
+
+    const handle = params.sourceHandle;
+    const isGlobalHandle = handle === "global-decl";
+    const isTypeHandle = handle === "type" || handle === "paramType" || handle === "from" || handle === "to";
+    const isTermHandle = handle === "term" || handle === "value" || handle === "body" || handle === "left" || handle === "right";
+
+    if ((isDecl(targetKind) && !isGlobalHandle) || (!isDecl(targetKind) && isGlobalHandle)) return false;
+    if (isType(targetKind) && !isTypeHandle) return false;
+    if (isTypeHandle && !isType(targetKind)) return false;
+    if (isTermHandle && !isTerm(targetKind)) return false;
+    if (handle === "term" && sourceKind === "Program" && !isTerm(targetKind)) return false;
+
+    return true;
+  }, []);
+
+  const isValidConnection = useCallback((params: Connection): boolean => {
+    return validateConnection(params, rf.getNodes());
+  }, [rf, validateConnection]);
+
   const onConnect = useCallback(
     (params: Connection) => {
+      if (!validateConnection(params, rf.getNodes())) return;
+      snapshotHistory(graph);
+      const label = params.sourceHandle ? HANDLE_LABELS[params.sourceHandle] : undefined;
       setGraph((prevGraph) => {
-        const sourceNode = prevGraph.nodes.find((n) => n.id === params.source);
-        const targetNode = prevGraph.nodes.find((n) => n.id === params.target);
+        if (!validateConnection(params, prevGraph.nodes)) return prevGraph;
 
-        // Basic sanity
-        if (!sourceNode || !targetNode || !params.sourceHandle) {
-          return prevGraph;
-        }
-
-        const sourceKind = (sourceNode.data as any)?.term?.kind as string | undefined;
-        const targetKind = (targetNode.data as any)?.term?.kind as string | undefined;
-
-        const isDecl = (k?: string) => k === "VarDecl" || k === "FunDecl";
-        const isType = (k?: string) => k === "TyVar" || k === "TyArrow";
-        const isTerm = (k?: string) => k === "Var" || k === "Abs" || k === "App" || k === "Lit";
-
-        const handle = params.sourceHandle;
-
-        const isGlobalHandle = handle === "global-decl";
-        const isTypeHandle = handle === "type" || handle === "paramType" || handle === "from" || handle === "to";
-        const isTermHandle = handle === "term" || handle === "value" || handle === "body" || handle === "left" || handle === "right";
-
-        // 1) Declarations can ONLY be connected from Program.global-decl
-        if ((isDecl(targetKind) && !isGlobalHandle) || (!isDecl(targetKind) && isGlobalHandle)) {
-          console.warn("Invalid connection: declarations can only be connected from Program.global-decl", params);
-          return prevGraph;
-        }
-
-        console.warn(isDecl(targetKind), isGlobalHandle, params);
-
-
-        // 2) Type nodes can ONLY be targeted via type handles
-        if (isType(targetKind) && !isTypeHandle) {
-          console.warn("Invalid connection: type nodes must be connected via type handles", params);
-          return prevGraph;
-        }
-
-        // 3) Type handles can ONLY target type nodes
-        if (isTypeHandle && !isType(targetKind)) {
-          console.warn("Invalid connection: type handles must connect to type nodes", params);
-          return prevGraph;
-        }
-
-        // 4) Term handles can ONLY target term nodes
-        if (isTermHandle && !isTerm(targetKind)) {
-          console.warn("Invalid connection: term handles must connect to term nodes", params);
-          return prevGraph;
-        }
-
-        // 5) Program.term must target a term
-        if (handle === "term" && sourceKind === "Program" && !isTerm(targetKind)) {
-          console.warn("Invalid connection: Program.term must connect to a term node", params);
-          return prevGraph;
-        }
-
-        // allow multiple globals on the same handle, but keep single edges for structural handles
-        const isMultiHandle = isGlobalHandle;
-        const nextEdges = isMultiHandle
+        const isGlobalHandle = params.sourceHandle === "global-decl";
+        const nextEdges = isGlobalHandle
           ? prevGraph.edges
           : prevGraph.edges.filter(
               (e) => !(e.source === params.source && e.sourceHandle === params.sourceHandle),
             );
 
-        const withNew = addEdge(params, nextEdges);
+        const withNew = addEdge({ ...params, label }, nextEdges);
         const nextGraph = { ...prevGraph, edges: withNew };
-
         pendingAstRef.current = graphToAst(nextGraph);
-
         return nextGraph;
       });
     },
-    [],
+    [graph, rf, snapshotHistory, validateConnection],
   );
 
   const updateNodeTerm = useCallback((nodeId: string, patch: any) => {
@@ -282,7 +297,6 @@ export function AstEditor({
   }, [graph.nodes, setGraph, updateNodeTerm]);
 
   const addStandaloneNode = useCallback((nodeType?: string) => {
-    console.log("Adding node of type:", nodeType);
     let newNodeType = newNodeType_;
     if (nodeType) {
       newNodeType = nodeType as typeof newNodeType_;
@@ -294,55 +308,36 @@ export function AstEditor({
     const makeNode = () => {
       if (newNodeType === "program") {
         return {
-          id,
-          type: "program",
-          position,
+          id, type: "program", position,
           data: {
-            term: {
-              id,
-              kind: "Program",
-              globals: []
-            },
+            term: { id, kind: "Program", globals: [] },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
           }
         };
       }
       if (newNodeType === "funDecl") {
-        const valueId = `${id}-value`;
-        const typeId = `${id}-type`;
         return {
-          id,
-          type: "funDecl",
-          position,
+          id, type: "funDecl", position,
           data: {
             term: {
-              id,
-              kind: "FunDecl",
-              name: "f",
-              type: { id: typeId, kind: "TyVar", name: "T" },
-              value: { id: valueId, kind: "Var", name: "x" },
+              id, kind: "FunDecl", name: "f",
+              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
           },
-
         };
       }
       if (newNodeType === "varDecl") {
-        const valueId = `${id}-value`;
-        const typeId = `${id}-type`;
         return {
-          id,
-          type: "varDecl",
-          position,
+          id, type: "varDecl", position,
           data: {
             term: {
-              id,
-              kind: "VarDecl",
-              name: "x",
-              type: { id: typeId, kind: "TyVar", name: "T" },
-              value: { id: valueId, kind: "Var", name: "x" },
+              id, kind: "VarDecl", name: "x",
+              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
@@ -350,19 +345,13 @@ export function AstEditor({
         };
       }
       if (newNodeType === "abstraction") {
-        const bodyId = `${id}-body`;
-        const paramTypeId = `${id}-paramType`;
         return {
-          id,
-          type: "abstraction",
-          position,
+          id, type: "abstraction", position,
           data: {
             term: {
-              id,
-              kind: "Abs",
-              param: "x",
-              paramType: { id: paramTypeId, kind: "TyVar", name: "T" },
-              body: { id: bodyId, kind: "Var", name: "x" },
+              id, kind: "Abs", param: "x",
+              paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+              body: { id: `${id}-body`, kind: "Var", name: "x" },
               type: { id: `${id}-type`, kind: "TyVar", name: "T" },
             },
             editable: true,
@@ -371,19 +360,13 @@ export function AstEditor({
         };
       }
       if (newNodeType === "application") {
-        const funcId = `${id}-func`;
-        const argId = `${id}-arg`;
         return {
-          id,
-          type: "application",
-          position,
+          id, type: "application", position,
           data: {
             term: {
-              id,
-              kind: "App",
-              func: { id: funcId, kind: "Var", name: "f" },
-              arg: { id: argId, kind: "Var", name: "x" },
-              editable: true,
+              id, kind: "App",
+              func: { id: `${id}-func`, kind: "Var", name: "f" },
+              arg: { id: `${id}-arg`, kind: "Var", name: "x" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
@@ -392,92 +375,118 @@ export function AstEditor({
       }
       if (newNodeType === "literal") {
         return {
-          id, type: "literal",
-          position,
+          id, type: "literal", position,
           data: {
-            term: {
-              id,
-              kind: "Lit",
-              value: 0 },
+            term: { id, kind: "Lit", value: 0 },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
           }
         };
-
       }
       if (newNodeType === "typeVar") {
         const ty: TyVar = { id, kind: "TyVar", name: "T" };
         return {
-          id,
-          type: "type",
-          position,
-          data: {
-            term: ty,
-            editable: true,
-            onChange: (patch: any) => updateNodeTerm(id, patch),
-          },
+          id, type: "type", position,
+          data: { term: ty, editable: true, onChange: (patch: any) => updateNodeTerm(id, patch) },
         };
       }
       if (newNodeType === "typeArrow") {
         const ty: TyArrow = {
-          id,
-          kind: "TyArrow",
+          id, kind: "TyArrow",
           from: { id: `${id}-from`, kind: "TyVar", name: "A" },
           to: { id: `${id}-to`, kind: "TyVar", name: "B" },
         };
         return {
-          id,
-          type: "type",
-          position,
-          data: {
-            term: ty,
-            editable: true,
-            onChange: (patch: any) => updateNodeTerm(id, patch),
-          },
+          id, type: "type", position,
+          data: { term: ty, editable: true, onChange: (patch: any) => updateNodeTerm(id, patch) },
         };
       }
       return {
-        id, type: "variable",
-        position,
+        id, type: "variable", position,
         data: {
-          term: {
-            id,
-            kind: "Var",
-            name: "x" },
+          term: { id, kind: "Var", name: "x" },
           editable: true,
           onChange: (patch: any) => updateNodeTerm(id, patch),
         },
       };
     };
 
+    snapshotHistory(graph);
     setGraph((prevGraph) => ({
       ...prevGraph,
       nodes: [...prevGraph.nodes, makeNode() as AstFlowGraph["nodes"][number]],
     }));
-  }, [graph.nodes.length, newNodeType_, setGraph, updateNodeTerm]);
+  }, [graph, newNodeType_, setGraph, snapshotHistory, updateNodeTerm]);
 
-  function offsetPosition(pos: { x: number; y: number }, dx: number, dy: number) {
-    return { x: pos.x + dx, y: pos.y + dy };
-  }
+  const autoLayout = useCallback(() => {
+    snapshotHistory(graph);
+    setGraph((prev) => layoutAstFlow(prev.nodes, prev.edges));
+  }, [graph, setGraph, snapshotHistory]);
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const clipboardRef = useRef<Array<{ node: Node; edges: Edge[] }> | null>(null);
 
   const deleteSelection = useCallback(() => {
+    if (selectedNodeIds.length === 0 && selectedEdgeIds.length === 0) return;
+    snapshotHistory(graph);
     setGraph((prev) => {
-      if (selectedNodeIds.length === 0 && selectedEdgeIds.length === 0) return prev;
-
       const remainingNodes = prev.nodes.filter((n) => !selectedNodeIds.includes(n.id));
       const remainingEdges = prev.edges.filter((e) => {
         if (selectedEdgeIds.includes(e.id)) return false;
         if (selectedNodeIds.includes(e.source) || selectedNodeIds.includes(e.target)) return false;
         return true;
       });
-
       return { ...prev, nodes: remainingNodes, edges: remainingEdges };
     });
-  }, [selectedEdgeIds, selectedNodeIds]);
+  }, [graph, selectedEdgeIds, selectedNodeIds, snapshotHistory]);
+
+  const deleteNode = useCallback((nodeId: string) => {
+    snapshotHistory(graph);
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.filter((n) => n.id !== nodeId),
+      edges: prev.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+    }));
+  }, [graph, setGraph, snapshotHistory]);
+
+  const duplicateNode = useCallback((nodeId: string) => {
+    snapshotHistory(graph);
+    setGraph((prev) => {
+      const original = prev.nodes.find((n) => n.id === nodeId);
+      if (!original) return prev;
+      const newId = `${nodeId}-copy-${Date.now()}`;
+      const newNode = {
+        ...original,
+        id: newId,
+        position: { x: original.position.x + 40, y: original.position.y + 40 },
+        selected: false,
+        data: {
+          ...(original.data as any),
+          term: { ...(original.data as any)?.term, id: newId },
+          onChange: (patch: any) => updateNodeTerm(newId, patch),
+        },
+      } as any;
+      return { ...prev, nodes: [...prev.nodes, newNode] };
+    });
+  }, [graph, setGraph, snapshotHistory, updateNodeTerm]);
+
+  const selectAll = useCallback(() => {
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) => ({ ...n, selected: true })),
+      edges: prev.edges.map((e) => ({ ...e, selected: true })),
+    }));
+  }, [setGraph]);
+
+  const clearAll = useCallback(() => {
+    snapshotHistory(graph);
+    setGraph({ nodes: [], edges: [] });
+  }, [graph, setGraph, snapshotHistory]);
+
+  function offsetPosition(pos: { x: number; y: number }, dx: number, dy: number) {
+    return { x: pos.x + dx, y: pos.y + dy };
+  }
 
   const copySelection = useCallback(() => {
     setGraph((prev) => {
@@ -501,6 +510,7 @@ export function AstEditor({
     const clip = clipboardRef.current;
     if (!clip || clip.length === 0) return;
 
+    snapshotHistory(graph);
     setGraph((prev) => {
       const idMap = new Map<string, string>();
       const now = Date.now();
@@ -515,16 +525,12 @@ export function AstEditor({
           selected: false,
           data: {
             ...(node.data as any),
-            // If the term has an id, keep it aligned to node id for consistency
             term: { ...(node.data as any)?.term, id: newId },
           },
         } as any;
       });
 
       const clipNodeIds = new Set(clip.map((c) => c.node.id));
-      const newEdges: Edge[] = prev.edges;
-
-      // Create edges among pasted nodes (only edges fully inside selection)
       const edgesToCopy = prev.edges.filter(
         (e) => clipNodeIds.has(e.source) && clipNodeIds.has(e.target),
       );
@@ -540,12 +546,12 @@ export function AstEditor({
       return {
         ...prev,
         nodes: [...prev.nodes, ...(newNodes as any)],
-        edges: [...newEdges, ...(pastedEdges as any)],
+        edges: [...prev.edges, ...(pastedEdges as any)],
       };
     });
-  }, []);
+  }, [graph, snapshotHistory]);
 
-  // Keyboard shortcuts: delete, copy, paste
+  // Keyboard shortcuts
   const onEditorKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const target = event.target as HTMLElement;
@@ -556,9 +562,7 @@ export function AstEditor({
         target.isContentEditable ||
         target.getAttribute("role") === "combobox";
 
-      if (isEditingText) {
-        return;
-      }
+      if (isEditingText) return;
 
       const modifier = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
@@ -566,6 +570,24 @@ export function AstEditor({
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         deleteSelection();
+        return;
+      }
+
+      if (modifier && key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+
+      if (modifier && (key === "y" || (key === "z" && event.shiftKey))) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      if (modifier && key === "a") {
+        event.preventDefault();
+        selectAll();
         return;
       }
 
@@ -580,7 +602,7 @@ export function AstEditor({
         pasteSelection();
       }
     },
-    [copySelection, deleteSelection, pasteSelection],
+    [copySelection, deleteSelection, pasteSelection, redo, selectAll, undo],
   );
 
   const onNodesDelete = useCallback((deleted: Node[]) => {
@@ -605,12 +627,24 @@ export function AstEditor({
     setSelectedEdgeIds((params.edges ?? []).map((e) => e.id));
   }, []);
 
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setNodeCtxMenu({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      nodeId: node.id,
+    });
+  }, []);
+
+  const onPaneClick = useCallback(() => setNodeCtxMenu(null), []);
+
   const onConnectStart: OnConnectStart = useCallback((_, params) => {
     if (!params.nodeId || !params.handleId) return;
     const handleKind = kindFromSourceHandle(params.handleId);
     if (!handleKind) return;
 
-    // Start draft; we'll decide on end whether to open selector.
     setConnectDraft({
       source: params.nodeId,
       sourceHandle: params.handleId,
@@ -644,13 +678,10 @@ export function AstEditor({
     setAddOnDropOpen(true);
   }, [connectDraft]);
 
-  // When connectDraft has client coords set (drop on pane), show selector.
   const showAddOnDrop = Boolean(connectDraft && dropPopupPos);
 
-  // Focus trigger when popup appears so keyboard works; keep dropdown open.
   useEffect(() => {
     if (!showAddOnDrop) return;
-    // next tick so trigger exists
     const t = window.setTimeout(() => {
       addOnDropTriggerRef.current?.focus();
     }, 0);
@@ -673,19 +704,13 @@ export function AstEditor({
 
     const node = ((): any => {
       if (nodeType === "funDecl") {
-        const valueId = `${id}-value`;
-        const typeId = `${id}-type`;
         return {
-          id,
-          type: "funDecl",
-          position,
+          id, type: "funDecl", position,
           data: {
             term: {
-              id,
-              kind: "FunDecl",
-              name: "f",
-              type: { id: typeId, kind: "TyVar", name: "T" },
-              value: { id: valueId, kind: "Var", name: "x" },
+              id, kind: "FunDecl", name: "f",
+              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
@@ -693,19 +718,13 @@ export function AstEditor({
         };
       }
       if (nodeType === "varDecl") {
-        const valueId = `${id}-value`;
-        const typeId = `${id}-type`;
         return {
-          id,
-          type: "varDecl",
-          position,
+          id, type: "varDecl", position,
           data: {
             term: {
-              id,
-              kind: "VarDecl",
-              name: "x",
-              type: { id: typeId, kind: "TyVar", name: "T" },
-              value: { id: valueId, kind: "Var", name: "x" },
+              id, kind: "VarDecl", name: "x",
+              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
@@ -713,19 +732,13 @@ export function AstEditor({
         };
       }
       if (nodeType === "abstraction") {
-        const bodyId = `${id}-body`;
-        const paramTypeId = `${id}-paramType`;
         return {
-          id,
-          type: "abstraction",
-          position,
+          id, type: "abstraction", position,
           data: {
             term: {
-              id,
-              kind: "Abs",
-              param: "x",
-              paramType: { id: paramTypeId, kind: "TyVar", name: "T" },
-              body: { id: bodyId, kind: "Var", name: "x" },
+              id, kind: "Abs", param: "x",
+              paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+              body: { id: `${id}-body`, kind: "Var", name: "x" },
               type: { id: `${id}-type`, kind: "TyVar", name: "T" },
             },
             editable: true,
@@ -735,13 +748,10 @@ export function AstEditor({
       }
       if (nodeType === "application") {
         return {
-          id,
-          type: "application",
-          position,
+          id, type: "application", position,
           data: {
             term: {
-              id,
-              kind: "App",
+              id, kind: "App",
               func: { id: `${id}-func`, kind: "Var", name: "f" },
               arg: { id: `${id}-arg`, kind: "Var", name: "x" },
             },
@@ -752,9 +762,7 @@ export function AstEditor({
       }
       if (nodeType === "literal") {
         return {
-          id,
-          type: "literal",
-          position,
+          id, type: "literal", position,
           data: {
             term: { id, kind: "Lit", value: 0 },
             editable: true,
@@ -764,9 +772,7 @@ export function AstEditor({
       }
       if (nodeType === "typeVar") {
         return {
-          id,
-          type: "type",
-          position,
+          id, type: "type", position,
           data: {
             term: { id, kind: "TyVar", name: "T" },
             editable: true,
@@ -776,13 +782,10 @@ export function AstEditor({
       }
       if (nodeType === "typeArrow") {
         return {
-          id,
-          type: "type",
-          position,
+          id, type: "type", position,
           data: {
             term: {
-              id,
-              kind: "TyArrow",
+              id, kind: "TyArrow",
               from: { id: `${id}-from`, kind: "TyVar", name: "A" },
               to: { id: `${id}-to`, kind: "TyVar", name: "B" },
             },
@@ -791,11 +794,8 @@ export function AstEditor({
           },
         };
       }
-
       return {
-        id,
-        type: "variable",
-        position,
+        id, type: "variable", position,
         data: {
           term: { id, kind: "Var", name: "x" },
           editable: true,
@@ -810,25 +810,29 @@ export function AstEditor({
       target: id,
       targetHandle: null,
     };
+    const label = connectDraft.sourceHandle ? HANDLE_LABELS[connectDraft.sourceHandle] : undefined;
 
+    snapshotHistory(graph);
     setGraph((prev) => ({
       ...prev,
       nodes: [...prev.nodes, node],
-      edges: addEdge(connection, prev.edges),
+      edges: addEdge({ ...connection, label }, prev.edges),
     }));
 
     setConnectDraft(null);
     setDropPopupPos(null);
     setAddOnDropChoice(null);
     setAddOnDropOpen(false);
-  }, [connectDraft, rf, setGraph, updateNodeTerm]);
+  }, [connectDraft, graph, rf, setGraph, snapshotHistory, updateNodeTerm]);
 
   return (
     <div
       ref={wrapperRef}
-      style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }} className="relative"
+      style={{ width: '100%', height: fullScreen ? '80vh' : '600px' }}
+      className="relative"
       onKeyDown={onEditorKeyDown}
     >
+      {/* Drop-to-create popup */}
       {showAddOnDrop && dropPopupPos && (
         <div
           className="absolute z-50 rounded-md border bg-background p-2 shadow-md"
@@ -870,28 +874,117 @@ export function AstEditor({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 p-2 border-b bg-background/60">
-        <Select value={newNodeType_} onValueChange={(value) => setNewNodeType(value as any)}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Node type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="program">Program</SelectItem>
-            <SelectItem value="funDecl">FunDecl</SelectItem>
-            <SelectItem value="varDecl">VarDecl</SelectItem>
-            <SelectItem value="abstraction">Abstraction</SelectItem>
-            <SelectItem value="application">Application</SelectItem>
-            <SelectItem value="variable">Variable</SelectItem>
-            <SelectItem value="literal">Literal</SelectItem>
-            <SelectItem value="typeVar">TyVar</SelectItem>
-            <SelectItem value="typeArrow">TyArrow</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button type="button" onClick={() => addStandaloneNode()}>Add node</Button>
-        <Button type="button" variant="destructive" onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>
-          Delete
-        </Button>
+      {/* Node context menu */}
+      {nodeCtxMenu && (
+        <div
+          className="absolute z-50 min-w-[9rem] rounded-md border bg-popover text-popover-foreground shadow-md py-1"
+          style={{ left: nodeCtxMenu.x, top: nodeCtxMenu.y }}
+        >
+          <button
+            className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent hover:text-accent-foreground"
+            onClick={() => { duplicateNode(nodeCtxMenu.nodeId); setNodeCtxMenu(null); }}
+          >
+            Duplicate
+          </button>
+          <div className="h-px bg-border my-1" />
+          <button
+            className="w-full px-3 py-1.5 text-sm text-left text-destructive hover:bg-accent"
+            onClick={() => { deleteNode(nodeCtxMenu.nodeId); setNodeCtxMenu(null); }}
+          >
+            Delete
+          </button>
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-background/60 flex-wrap">
+        {/* Term nodes */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Terms</span>
+          {([
+            { type: "abstraction", label: "λ", title: "Abstraction (λx.e)" },
+            { type: "application", label: "@", title: "Application (f x)" },
+            { type: "variable",    label: "x", title: "Variable" },
+            { type: "literal",     label: "#", title: "Literal (0, true, unit)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 w-7 p-0 font-mono font-bold text-sm">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        {/* Type nodes */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Types</span>
+          {([
+            { type: "typeVar",   label: "T", title: "Type Variable" },
+            { type: "typeArrow", label: "→", title: "Arrow Type (A→B)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 w-7 p-0 font-mono font-bold text-sm">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        {/* Decl nodes */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Decls</span>
+          {([
+            { type: "funDecl", label: "ƒ",   title: "Function Declaration" },
+            { type: "varDecl", label: "let", title: "Variable Declaration" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={undo} title="Undo (Ctrl+Z)"
+            className="h-7 w-7 p-0">
+            <Undo2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={redo} title="Redo (Ctrl+Y)"
+            className="h-7 w-7 p-0">
+            <Redo2 className="h-3.5 w-3.5" />
+          </Button>
+
+          <Separator orientation="vertical" className="h-5 mx-1" />
+
+          <Button size="sm" variant="ghost" onClick={autoLayout} title="Auto Layout"
+            className="h-7 w-7 p-0">
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => rf.fitView()} title="Fit View"
+            className="h-7 w-7 p-0">
+            <Maximize2 className="h-3.5 w-3.5" />
+          </Button>
+
+          <Separator orientation="vertical" className="h-5 mx-1" />
+
+          <Button size="sm" variant="ghost" onClick={deleteSelection}
+            disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}
+            title="Delete selection (Del)" className="h-7 w-7 p-0">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={clearAll}
+            title="Clear all nodes and edges"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive">
+            Clear
+          </Button>
+        </div>
       </div>
+
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
@@ -905,9 +998,18 @@ export function AstEditor({
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneClick={onPaneClick}
         nodesConnectable={true}
         deleteKeyCode={null}
         panActivationKeyCode={null}
+        defaultEdgeOptions={{
+          labelStyle: { fontSize: 10 },
+          labelBgPadding: [3, 4] as [number, number],
+          labelBgBorderRadius: 3,
+          labelBgStyle: { fillOpacity: 0.7 },
+        }}
         fitView
       >
         <Background />
@@ -931,4 +1033,3 @@ export function AstEditor({
     </div>
   );
 }
-
