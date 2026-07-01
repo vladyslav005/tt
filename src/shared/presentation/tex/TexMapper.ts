@@ -31,6 +31,14 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   }
 
   protected visitVar(node: ProofTree): TexTree {
+    if (node.premises.length > 0) {
+      return {
+        judgement: TexMapper.judgementToTex(node),
+        rule: "T-Def",
+        meta: (node.term as any).name as string,
+        children: node.premises.map(child => this.visit(child))
+      }
+    }
     return {
       judgement: TexMapper.judgementToTex(node),
       rule: "T-Var",

@@ -4,4 +4,5 @@ export interface TexTree {
   children?: TexTree[]
   id?: string
   error?: string
+  meta?: string
 }

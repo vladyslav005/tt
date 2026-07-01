@@ -11,6 +11,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   private context: Gamma = new Gamma();
   private errorBuffer: Error[] = [];
+  private globalProofs: Map<string, ProofTree> = new Map();
 
   public getErrors(): Error[] {
     return this.errorBuffer;
@@ -26,6 +27,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   protected visitProgram(node: Program): ProofTree {
     this.context.clear();
     this.errorBuffer = [];
+    this.globalProofs = new Map();
     node.globals.forEach((g) => this.visit(g));
 
     if (!node.term) throw new Error("Type AST is empty");
@@ -102,6 +104,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     }
 
     this.context.add(node.name, node.type);
+    this.globalProofs.set(node.name, valueProof);
     return {} as ProofTree;
   }
 
@@ -129,6 +132,12 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     }
 
     returnProof.type = varType;
+
+    const definitionProof = this.globalProofs.get(node.name);
+    if (definitionProof) {
+      returnProof.premises = [definitionProof];
+    }
+
     return returnProof;
   }
 

@@ -13,11 +13,25 @@ export function AppProviders({children}: { children: ReactNode }) {
 
   const repos = useMemo(() => (makeDependencies()), []);
 
+  const mathJaxConfig = {
+    loader: {
+      load: ['input/tex', 'output/chtml']
+    },
+    options: {
+      enableMenu: false,
+      a11y: {
+        enableExplorer: false,
+        speech: false,
+        braille: false
+      }
+    }
+  };
+
   return (
     <ReduxProvider store={store}>
       <DependencyProvider value={repos}>
         <ThemeProvider attribute="class" defaultTheme="system" storageKey="theme" enableSystem>
-          <MathJaxContext>
+          <MathJaxContext config={mathJaxConfig}>
             {children}
             <Toaster/>
           </MathJaxContext>
