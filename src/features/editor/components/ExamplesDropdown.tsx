@@ -102,6 +102,13 @@ twice ((compose identity) identity);`,
     code: `(<name=1, flag=true>.flag);`,
   },
   {
+    label: "Projections",
+    description: "projection through a function, and chained tuple.record projection",
+    code: `swap = λ p : <Nat*Nat> . <p.2, p.1> : <Nat*Nat> -> <Nat*Nat>;
+
+<((swap <7, 9>).1), (<10, <label=20, flag=true>>.2.label)>;`,
+  },
+  {
     label: "Ascription & Sequencing",
     description: "t1 : Unit ; t2, then ascribed",
     code: `((unit; 42) as Nat);`,
