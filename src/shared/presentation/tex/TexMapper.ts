@@ -48,13 +48,117 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitLit(node: ProofTree): TexTree {
     const value = (node.term as any).value as string
-    const rule = value === "unit" ? "T-Unit"
+    const rule = (value === "unit" || value === "Unit") ? "T-Unit"
       : (value === "true" || value === "True" || value === "false" || value === "False") ? "T-Bool"
       : "T-Nat"
     return {
       ...TexMapper.judgements(node),
       rule,
       children: []
+    }
+  }
+
+  protected visitIfCondition(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-If",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitInl(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Inl",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitInr(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Inr",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitCase(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Case",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitVariantCase(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-VariantCase",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitVariant(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Variant",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitAscribe(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Ascribe",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitTuple(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Tuple",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitTupleProjection(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Proj",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitRecord(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Record",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitRecordProjection(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-RecordProj",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitSequencing(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Seq",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitDummyAbstraction(node: ProofTree): TexTree {
+    return {
+      ...TexMapper.judgements(node),
+      rule: "T-Abs",
+      children: node.premises.map(child => this.visit(child))
     }
   }
 
@@ -107,6 +211,42 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `(\\lambda ${term.param} : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
       case "App":
         return `(${this.termToTex(term.func)}\\ ${this.termToTex(term.arg)})`
+      case "Inl":
+        return `\\text{inl}\\ ${this.termToTex(term.term)}\\ \\text{as}\\ ${this.typeToTex(term.type)}`
+      case "Inr":
+        return `\\text{inr}\\ ${this.termToTex(term.term)}\\ \\text{as}\\ ${this.typeToTex(term.type)}`
+      case "IfCondition": {
+        let tex = `\\text{if}\\ ${this.termToTex(term.condition)}\\ \\text{then}\\ ${this.termToTex(term.then)}`
+        for (const branch of term.elif ?? []) {
+          tex += `\\ \\text{elseif}\\ ${this.termToTex(branch.condition)}\\ \\text{then}\\ ${this.termToTex(branch.then)}`
+        }
+        if (term.else) {
+          tex += `\\ \\text{else}\\ ${this.termToTex(term.else)}`
+        }
+        return tex
+      }
+      case "Case":
+        return `\\text{case}\\ ${this.termToTex(term.variable)}\\ \\text{of}\\ \\text{inl}\\ ${term.inl.variable} \\Rightarrow ${this.termToTex(term.inl.term)}\\ |\\ \\text{inr}\\ ${term.inr.variable} \\Rightarrow ${this.termToTex(term.inr.term)}`
+      case "VariantCase":
+        return `\\text{case}\\ ${this.termToTex(term.variable)}\\ \\text{of}\\ ${term.cases
+          .map((c) => `[${c.label}=${c.variable}] \\Rightarrow ${this.termToTex(c.body)}`)
+          .join("\\ |\\ ")}`
+      case "Variant":
+        return `[${term.variants.map((v) => `${v.label}=${this.termToTex(v.term)}`).join(", ")}]\\ \\text{as}\\ ${this.typeToTex(term.type)}`
+      case "Ascribe":
+        return `(${this.termToTex(term.term)}\\ \\text{as}\\ ${this.typeToTex(term.type)})`
+      case "TupleProjection":
+        return `${this.termToTex(term.tuple)}.${term.index}`
+      case "RecordProjection":
+        return `${this.termToTex(term.term)}.${term.label}`
+      case "Record":
+        return `\\langle ${term.fields.map((f) => `${f.label}=${this.termToTex(f.term)}`).join(", ")} \\rangle`
+      case "Sequencing":
+        return `${this.termToTex(term.first)}; ${this.termToTex(term.second)}`
+      case "Tuple":
+        return `\\langle ${term.elements.map((e) => this.termToTex(e)).join(", ")} \\rangle`
+      case "DummyAbstraction":
+        return `(\\lambda \\_ : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
     }
   }
 
@@ -136,6 +276,14 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
           : this.typeToTex(type.to)
         return `${from} \\to ${to}`
       }
+      case "TupleType":
+        return `\\langle ${type.elements.map((e) => this.typeToTex(e)).join(" \\times ")} \\rangle`
+      case "SumType":
+        return `(${this.typeToTex(type.left)} + ${this.typeToTex(type.right)})`
+      case "VariantType":
+        return `\\langle ${type.variants.map((v) => `${v.label}:${this.typeToTex(v.type)}`).join(", ")} \\rangle`
+      case "RecordType":
+        return `\\{ ${type.fields.map((f) => `${f.label}:${this.typeToTex(f.type)}`).join(", ")} \\}`
     }
   }
 }

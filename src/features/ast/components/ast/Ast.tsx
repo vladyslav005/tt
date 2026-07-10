@@ -14,11 +14,46 @@ import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
 import {TyVarFlowNode} from "@/features/ast/components/ast/flow/TyVarFlowNode";
 import {TyArrowFlowNode} from "@/features/ast/components/ast/flow/TyArrowFlowNode";
+import {SumTypeFlowNode} from "@/features/ast/components/ast/flow/SumTypeFlowNode";
+import {TupleTypeFlowNode} from "@/features/ast/components/ast/flow/TupleTypeFlowNode";
+import {VariantTypeFlowNode} from "@/features/ast/components/ast/flow/VariantTypeFlowNode";
+import {RecordTypeFlowNode} from "@/features/ast/components/ast/flow/RecordTypeFlowNode";
+import {InlFlowNode} from "@/features/ast/components/ast/flow/InlFlowNode";
+import {InrFlowNode} from "@/features/ast/components/ast/flow/InrFlowNode";
+import {IfConditionFlowNode} from "@/features/ast/components/ast/flow/IfConditionFlowNode";
+import {CaseFlowNode} from "@/features/ast/components/ast/flow/CaseFlowNode";
+import {VariantCaseFlowNode} from "@/features/ast/components/ast/flow/VariantCaseFlowNode";
+import {VariantFlowNode} from "@/features/ast/components/ast/flow/VariantFlowNode";
+import {AscribeFlowNode} from "@/features/ast/components/ast/flow/AscribeFlowNode";
+import {TupleProjectionFlowNode} from "@/features/ast/components/ast/flow/TupleProjectionFlowNode";
+import {RecordProjectionFlowNode} from "@/features/ast/components/ast/flow/RecordProjectionFlowNode";
+import {RecordFlowNode} from "@/features/ast/components/ast/flow/RecordFlowNode";
+import {SequencingFlowNode} from "@/features/ast/components/ast/flow/SequencingFlowNode";
+import {TupleFlowNode} from "@/features/ast/components/ast/flow/TupleFlowNode";
+import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/DummyAbstractionFlowNode";
 
 
 export interface AstProps {
   AST: Program,
   fullScreen?: boolean,
+}
+
+function TypeFlowNodeDispatch(props: any) {
+  const kind = (props.data?.term as any)?.kind;
+  switch (kind) {
+    case "TyArrow":
+      return <TyArrowFlowNode {...props} />;
+    case "SumType":
+      return <SumTypeFlowNode {...props} />;
+    case "TupleType":
+      return <TupleTypeFlowNode {...props} />;
+    case "VariantType":
+      return <VariantTypeFlowNode {...props} />;
+    case "RecordType":
+      return <RecordTypeFlowNode {...props} />;
+    default:
+      return <TyVarFlowNode {...props} />;
+  }
 }
 
 export const nodeTypes: NodeTypes = {
@@ -29,10 +64,20 @@ export const nodeTypes: NodeTypes = {
   variable: VariableFlowNode,
   application: ApplicationFlowNode,
   literal: LiteralFlowNode,
-  type: (props: any) => {
-    const kind = (props.data?.term as any)?.kind;
-    return kind === "TyArrow" ? <TyArrowFlowNode {...props} /> : <TyVarFlowNode {...props} />;
-  },
+  type: TypeFlowNodeDispatch,
+  inl: InlFlowNode,
+  inr: InrFlowNode,
+  ifCondition: IfConditionFlowNode,
+  case: CaseFlowNode,
+  variantCase: VariantCaseFlowNode,
+  variant: VariantFlowNode,
+  ascribe: AscribeFlowNode,
+  tupleProjection: TupleProjectionFlowNode,
+  recordProjection: RecordProjectionFlowNode,
+  record: RecordFlowNode,
+  sequencing: SequencingFlowNode,
+  tuple: TupleFlowNode,
+  dummyAbstraction: DummyAbstractionFlowNode,
 } as NodeTypes;
 
 export function Ast({
@@ -97,6 +142,17 @@ export function Ast({
             if (node.type === 'application') return 'hsl(217, 91%, 60%)';
             if (node.type === 'variable') return 'hsl(142, 71%, 45%)';
             if (node.type === 'literal') return 'hsl(38, 92%, 50%)';
+            if (node.type === 'inl') return 'hsl(347, 77%, 50%)';
+            if (node.type === 'inr') return 'hsl(330, 81%, 60%)';
+            if (node.type === 'ifCondition') return 'hsl(189, 94%, 43%)';
+            if (node.type === 'case') return 'hsl(239, 84%, 67%)';
+            if (node.type === 'variantCase') return 'hsl(258, 90%, 66%)';
+            if (node.type === 'variant') return 'hsl(292, 84%, 61%)';
+            if (node.type === 'ascribe') return 'hsl(173, 80%, 40%)';
+            if (node.type === 'tupleProjection' || node.type === 'tuple') return 'hsl(84, 81%, 44%)';
+            if (node.type === 'recordProjection' || node.type === 'record') return 'hsl(25, 95%, 53%)';
+            if (node.type === 'sequencing') return 'hsl(199, 89%, 48%)';
+            if (node.type === 'dummyAbstraction') return 'hsl(258, 90%, 66%)';
             return 'hsl(var(--muted))';
           }}
         />

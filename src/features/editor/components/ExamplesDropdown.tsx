@@ -72,7 +72,45 @@ twice ((compose identity) identity);`,
     description: "Alpha conversion",
     code: `y: T; (λ x : T . λ y : T . x) y;`,
   },
+  {
+    label: "Booleans & If",
+    description: "if/then/elseif/else over Bool",
+    code: `(if false then 100 elseif true then 200 else 300);`,
+  },
+  {
+    label: "Sum Types",
+    description: "inl/inr construction and case analysis",
+    code: `value = (inl 5 as Nat+Bool) : Nat+Bool;
 
+(case value || inl x => x || inr y => 0);`,
+  },
+  {
+    label: "Variants",
+    description: "labeled sum type and case-of-variant",
+    code: `shape = ([circle=1] as [circle:Nat, square:Nat]) : [circle:Nat, square:Nat];
+
+(case shape of [circle=r] => r || [square=s] => s);`,
+  },
+  {
+    label: "Tuples",
+    description: "tuple literal and positional projection",
+    code: `(<1, true, 2>.2);`,
+  },
+  {
+    label: "Records",
+    description: "record literal and field projection",
+    code: `(<name=1, flag=true>.flag);`,
+  },
+  {
+    label: "Ascription & Sequencing",
+    description: "t1 : Unit ; t2, then ascribed",
+    code: `((unit; 42) as Nat);`,
+  },
+  {
+    label: "Dummy Abstraction",
+    description: "λ_:T.t discards its argument",
+    code: `((λ _ : Nat . true) 5);`,
+  },
 ];
 
 interface ExamplesDropdownProps {

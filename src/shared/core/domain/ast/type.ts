@@ -1,6 +1,6 @@
 import type {Node} from "@/shared/core/domain/ast/node.ts";
 
-export type Type = TyVar | TyArrow | TupleType | SumType | VariantType
+export type Type = TyVar | TyArrow | TupleType | SumType | VariantType | RecordType
 
 export interface TyVar extends Node {
   kind: "TyVar"
@@ -27,6 +27,16 @@ export interface SumType extends Node {
 export interface VariantType extends Node {
   kind: "VariantType"
   variants: {
+    label: string
+    type: Type
+  }[]
+}
+
+// Synthesized from a Record term during typechecking — there is no surface
+// syntax for it, since record types are always inferred from field literals.
+export interface RecordType extends Node {
+  kind: "RecordType"
+  fields: {
     label: string
     type: Type
   }[]

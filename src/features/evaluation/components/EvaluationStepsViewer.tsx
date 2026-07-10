@@ -17,6 +17,53 @@ function TypeView({ type }: { type: Type }) {
           <TypeView type={type.to} />
         </>
       );
+    case "SumType":
+      return (
+        <>
+          <TypeView type={type.left} />
+          <span className="text-muted-foreground"> + </span>
+          <TypeView type={type.right} />
+        </>
+      );
+    case "TupleType":
+      return (
+        <>
+          <span className="text-muted-foreground">⟨</span>
+          {type.elements.map((e, i) => (
+            <span key={i}>
+              {i > 0 && <span className="text-muted-foreground"> × </span>}
+              <TypeView type={e} />
+            </span>
+          ))}
+          <span className="text-muted-foreground">⟩</span>
+        </>
+      );
+    case "VariantType":
+      return (
+        <>
+          <span className="text-muted-foreground">⟨</span>
+          {type.variants.map((v, i) => (
+            <span key={v.label}>
+              {i > 0 && <span className="text-muted-foreground">, </span>}
+              {v.label}:<TypeView type={v.type} />
+            </span>
+          ))}
+          <span className="text-muted-foreground">⟩</span>
+        </>
+      );
+    case "RecordType":
+      return (
+        <>
+          <span className="text-muted-foreground">{"{"}</span>
+          {type.fields.map((f, i) => (
+            <span key={f.label}>
+              {i > 0 && <span className="text-muted-foreground">, </span>}
+              {f.label}:<TypeView type={f.type} />
+            </span>
+          ))}
+          <span className="text-muted-foreground">{"}"}</span>
+        </>
+      );
   }
 }
 
@@ -60,6 +107,154 @@ function TermView({
             <span className="text-muted-foreground"> </span>
             <TermView term={term.arg} selectedId={selectedId} resultId={resultId} errorId={errorId} />
             <span className="text-muted-foreground">)</span>
+          </>
+        );
+      case "Inl":
+        return (
+          <>
+            <span className="text-rose-600 dark:text-rose-400">inl </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-muted-foreground"> as </span>
+            <TypeView type={term.type} />
+          </>
+        );
+      case "Inr":
+        return (
+          <>
+            <span className="text-pink-600 dark:text-pink-400">inr </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-muted-foreground"> as </span>
+            <TypeView type={term.type} />
+          </>
+        );
+      case "IfCondition":
+        return (
+          <>
+            <span className="text-cyan-600 dark:text-cyan-400">if </span>
+            <TermView term={term.condition} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-cyan-600 dark:text-cyan-400"> then </span>
+            <TermView term={term.then} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            {(term.elif ?? []).map((b, i) => (
+              <span key={i}>
+                <span className="text-cyan-600 dark:text-cyan-400"> elseif </span>
+                <TermView term={b.condition} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+                <span className="text-cyan-600 dark:text-cyan-400"> then </span>
+                <TermView term={b.then} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+              </span>
+            ))}
+            {term.else && (
+              <>
+                <span className="text-cyan-600 dark:text-cyan-400"> else </span>
+                <TermView term={term.else} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+              </>
+            )}
+          </>
+        );
+      case "Case":
+        return (
+          <>
+            <span className="text-indigo-600 dark:text-indigo-400">case </span>
+            <TermView term={term.variable} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-indigo-600 dark:text-indigo-400"> of inl {term.inl.variable} ⇒ </span>
+            <TermView term={term.inl.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-indigo-600 dark:text-indigo-400"> | inr {term.inr.variable} ⇒ </span>
+            <TermView term={term.inr.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "VariantCase":
+        return (
+          <>
+            <span className="text-violet-600 dark:text-violet-400">case </span>
+            <TermView term={term.variable} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-violet-600 dark:text-violet-400"> of </span>
+            {term.cases.map((c, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-violet-600 dark:text-violet-400"> | </span>}
+                [{c.label}={c.variable}] ⇒{" "}
+                <TermView term={c.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+              </span>
+            ))}
+          </>
+        );
+      case "Variant":
+        return (
+          <>
+            <span className="text-fuchsia-600 dark:text-fuchsia-400">[</span>
+            {term.variants.map((v, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-muted-foreground">, </span>}
+                {v.label}=<TermView term={v.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+              </span>
+            ))}
+            <span className="text-fuchsia-600 dark:text-fuchsia-400">] </span>
+            <span className="text-muted-foreground">as </span>
+            <TypeView type={term.type} />
+          </>
+        );
+      case "Ascribe":
+        return (
+          <>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-teal-600 dark:text-teal-400"> as </span>
+            <TypeView type={term.type} />
+          </>
+        );
+      case "TupleProjection":
+        return (
+          <>
+            <TermView term={term.tuple} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-lime-600 dark:text-lime-400">.{term.index}</span>
+          </>
+        );
+      case "RecordProjection":
+        return (
+          <>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-orange-600 dark:text-orange-400">.{term.label}</span>
+          </>
+        );
+      case "Record":
+        return (
+          <>
+            <span className="text-orange-600 dark:text-orange-400">⟨</span>
+            {term.fields.map((f, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-muted-foreground">, </span>}
+                {f.label}=<TermView term={f.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+              </span>
+            ))}
+            <span className="text-orange-600 dark:text-orange-400">⟩</span>
+          </>
+        );
+      case "Sequencing":
+        return (
+          <>
+            <TermView term={term.first} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-sky-600 dark:text-sky-400">; </span>
+            <TermView term={term.second} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "Tuple":
+        return (
+          <>
+            <span className="text-lime-600 dark:text-lime-400">⟨</span>
+            {term.elements.map((e, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-muted-foreground">, </span>}
+                <TermView term={e} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+              </span>
+            ))}
+            <span className="text-lime-600 dark:text-lime-400">⟩</span>
+          </>
+        );
+      case "DummyAbstraction":
+        return (
+          <>
+            <span className="text-violet-600 dark:text-violet-400">λ_</span>
+            <span className="text-muted-foreground"> : </span>
+            <TypeView type={term.paramType} />
+            <span className="text-muted-foreground"> . </span>
+            <TermView term={term.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
           </>
         );
     }

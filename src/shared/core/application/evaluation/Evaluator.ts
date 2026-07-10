@@ -83,12 +83,58 @@ export class Evaluator {
       case "Var":
       case "Abs":
       case "Lit":
+      case "DummyAbstraction":
         return undefined;
+
       case "App":
         if (term.func.kind === "Lit") {
           return term.id;
         }
         return this.findStuckTermId(term.func) ?? this.findStuckTermId(term.arg);
+
+      case "Inl":
+      case "Inr":
+      case "Ascribe":
+      case "RecordProjection":
+        return this.findStuckTermId(term.term);
+
+      case "TupleProjection":
+        return this.findStuckTermId(term.tuple);
+
+      case "IfCondition": {
+        const subterms = [
+          term.condition,
+          term.then,
+          ...(term.elif ?? []).flatMap((b) => [b.condition, b.then]),
+          ...(term.else ? [term.else] : []),
+        ];
+        return subterms.reduce<string | undefined>((found, t) => found ?? this.findStuckTermId(t), undefined);
+      }
+
+      case "Case":
+        return (
+          this.findStuckTermId(term.variable) ??
+          this.findStuckTermId(term.inl.term) ??
+          this.findStuckTermId(term.inr.term)
+        );
+
+      case "VariantCase":
+        return term.cases.reduce<string | undefined>(
+          (found, c) => found ?? this.findStuckTermId(c.body),
+          this.findStuckTermId(term.variable),
+        );
+
+      case "Variant":
+        return term.variants.reduce<string | undefined>((found, v) => found ?? this.findStuckTermId(v.term), undefined);
+
+      case "Tuple":
+        return term.elements.reduce<string | undefined>((found, e) => found ?? this.findStuckTermId(e), undefined);
+
+      case "Record":
+        return term.fields.reduce<string | undefined>((found, f) => found ?? this.findStuckTermId(f.term), undefined);
+
+      case "Sequencing":
+        return this.findStuckTermId(term.first) ?? this.findStuckTermId(term.second);
     }
   }
 
@@ -98,6 +144,19 @@ export class Evaluator {
       case "Abs":
       case "App":
       case "Lit":
+      case "Inl":
+      case "Inr":
+      case "IfCondition":
+      case "Case":
+      case "VariantCase":
+      case "Variant":
+      case "Ascribe":
+      case "TupleProjection":
+      case "RecordProjection":
+      case "Record":
+      case "Sequencing":
+      case "Tuple":
+      case "DummyAbstraction":
         return ast;
 
       case "Program": {
@@ -118,6 +177,10 @@ export class Evaluator {
 
       case "TyVar":
       case "TyArrow":
+      case "TupleType":
+      case "SumType":
+      case "VariantType":
+      case "RecordType":
         throw new Error(
           `Cannot evaluate type node ${ast.kind}`,
         );

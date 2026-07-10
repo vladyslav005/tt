@@ -18,7 +18,7 @@ import {
   TupleProjectionContext,
   VariableContext,
   VariantCaseContext,
-  VariantContext, VariantTypeContext
+  VariantContext
 } from "@/shared/core/antlr/LambdaParser.ts";
 import type {
   Abs,
@@ -38,7 +38,7 @@ import type {
   TupleProjection,
   Var,
   Variant,
-  VariantCase, VariantType
+  VariantCase
 } from "@/shared/core/domain/ast";
 
 export class TermBuilderVisitor
@@ -86,12 +86,14 @@ export class TermBuilderVisitor
   }
 
   visitVariantCase = (ctx: VariantCaseContext): VariantCase => {
-    const cases: any[] = [];
+    // Each case contributes two IDs ([label=variable]) and one body term.
+    const cases: { label: string; variable: string; body: Term }[] = [];
+    const caseCount = ctx.term_list().length - 1;
 
-    for (let i = 0; i < ctx.term_list().length - 1; i++) {
+    for (let i = 0; i < caseCount; i++) {
       cases.push({
-        label: ctx.ID(i).getText(),
-        variable: ctx.ID(i + 1).getText(),
+        label: ctx.ID(i * 2).getText(),
+        variable: ctx.ID(i * 2 + 1).getText(),
         body: this.visit(ctx.term(i + 1))
       })
     }
@@ -123,19 +125,23 @@ export class TermBuilderVisitor
   }
 
   visitIfCondition = (ctx: IfConditionContext): IfCondition => {
+    // Terms appear in source order: condition, then, (elseif-condition, elseif-then)*, else?
+    const terms = ctx.term_list();
+    let next = 0;
+
     const node: IfCondition = {
       kind: "IfCondition",
       id: crypto.randomUUID(),
-      condition: this.visit(ctx.term(0)),
-      then: this.visit(ctx.term(1)),
+      condition: this.visit(terms[next++]),
+      then: this.visit(terms[next++]),
     }
 
     if (ctx.ELSEIF_list().length > 0) {
-      const elif: any[] = []
+      const elif: { condition: Term; then: Term }[] = []
       for (let i = 0; i < ctx.ELSEIF_list().length; i++) {
         elif.push({
-          condition: this.visit(ctx.term(i + 2)),
-          then: this.visit(ctx.term(i + 3)),
+          condition: this.visit(terms[next++]),
+          then: this.visit(terms[next++]),
         })
       }
 
@@ -143,7 +149,7 @@ export class TermBuilderVisitor
     }
 
     if (ctx.ELSE() != null) {
-      node.else = this.visit(ctx.term(ctx.THEN_list().length * 2 + 1))
+      node.else = this.visit(terms[next++])
     }
 
     return node

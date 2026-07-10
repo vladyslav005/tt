@@ -19,6 +19,15 @@ export enum Rule {
   If = "If",
   Inl = "Inl",
   Inr = "Inr",
-  Case = "Case"
+  Case = "Case",
+  VariantCase = "VariantCase",
+  Variant = "Variant",
+  Ascribe = "Ascribe",
+  Tuple = "Tuple",
+  TupleProjection = "TupleProjection",
+  Record = "Record",
+  RecordProjection = "RecordProjection",
+  Sequencing = "Sequencing",
+  DummyAbs = "DummyAbs",
 }
 

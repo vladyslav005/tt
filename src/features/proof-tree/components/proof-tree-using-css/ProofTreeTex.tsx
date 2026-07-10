@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {Fragment, useState} from "react";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {Conclusion} from "@/features/proof-tree/components/proof-tree-using-css/Conclusion.tsx";
 import "./ProofTree.css"
@@ -26,15 +26,14 @@ export function ProofTreeComponentUsingCss(
       {showPremises && (
         <div className={`premises`}>
           {node.children!.map((premise, index) => (
-            <>
+            <Fragment key={`${premise.id}-${index}`}>
               <ProofTreeComponentUsingCss
-                key={`${premise.id}-${index}`}
                 root={false}
                 node={premise}/>
               {node.children !== undefined && index !== node.children.length - 1 && (
                 <div className="inter-proof"></div>
               )}
-            </>
+            </Fragment>
           ))}
         </div>
       )}

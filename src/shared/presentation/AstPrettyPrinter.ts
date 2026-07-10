@@ -1,4 +1,28 @@
-import type { Program, GlobalDecl, Term, Type, VarDecl, FunDecl, Var, Abs, App, Lit } from "@/shared/core/domain/ast";
+import type {
+  Abs,
+  App,
+  Ascribe,
+  Case,
+  DummyAbstraction,
+  FunDecl,
+  GlobalDecl,
+  IfCondition,
+  Inl,
+  Inr,
+  Lit,
+  Program,
+  Record,
+  RecordProjection,
+  Sequencing,
+  Term,
+  Tuple,
+  TupleProjection,
+  Type,
+  Var,
+  VarDecl,
+  Variant,
+  VariantCase,
+} from "@/shared/core/domain/ast";
 import { typeToString } from "@/shared/core/application/typecheck/utils.ts";
 
 /**
@@ -55,7 +79,96 @@ export class AstPrettyPrinter {
         return this.printApp(term);
       case "Lit":
         return this.printLit(term);
+      case "Inl":
+        return this.printInl(term);
+      case "Inr":
+        return this.printInr(term);
+      case "IfCondition":
+        return this.printIfCondition(term);
+      case "Case":
+        return this.printCase(term);
+      case "VariantCase":
+        return this.printVariantCase(term);
+      case "Variant":
+        return this.printVariant(term);
+      case "Ascribe":
+        return this.printAscribe(term);
+      case "TupleProjection":
+        return this.printTupleProjection(term);
+      case "RecordProjection":
+        return this.printRecordProjection(term);
+      case "Record":
+        return this.printRecord(term);
+      case "Sequencing":
+        return this.printSequencing(term);
+      case "Tuple":
+        return this.printTuple(term);
+      case "DummyAbstraction":
+        return this.printDummyAbstraction(term);
     }
+  }
+
+  private printInl(t: Inl): string {
+    return `(inl ${this.printTerm(t.term)} as ${this.printType(t.type)})`;
+  }
+
+  private printInr(t: Inr): string {
+    return `(inr ${this.printTerm(t.term)} as ${this.printType(t.type)})`;
+  }
+
+  private printIfCondition(t: IfCondition): string {
+    let s = `if ${this.printTerm(t.condition)} then ${this.printTerm(t.then)}`;
+    for (const branch of t.elif ?? []) {
+      s += ` elseif ${this.printTerm(branch.condition)} then ${this.printTerm(branch.then)}`;
+    }
+    if (t.else) {
+      s += ` else ${this.printTerm(t.else)}`;
+    }
+    return `(${s})`;
+  }
+
+  private printCase(t: Case): string {
+    return `(case ${this.printTerm(t.variable)} || inl ${t.inl.variable} => ${this.printTerm(t.inl.term)} || inr ${t.inr.variable} => ${this.printTerm(t.inr.term)})`;
+  }
+
+  private printVariantCase(t: VariantCase): string {
+    const cases = t.cases.map((c) => `[${c.label}=${c.variable}] => ${this.printTerm(c.body)}`).join(" || ");
+    return `(case ${this.printTerm(t.variable)} of ${cases})`;
+  }
+
+  private printVariant(t: Variant): string {
+    const fields = t.variants.map((v) => `${v.label}=${this.printTerm(v.term)}`).join(", ");
+    return `[${fields}] as ${this.printType(t.type)}`;
+  }
+
+  private printAscribe(t: Ascribe): string {
+    return `(${this.printTerm(t.term)} as ${this.printType(t.type)})`;
+  }
+
+  private printTupleProjection(t: TupleProjection): string {
+    return `${this.printTerm(t.tuple)}.${t.index}`;
+  }
+
+  private printRecordProjection(t: RecordProjection): string {
+    return `${this.printTerm(t.term)}.${t.label}`;
+  }
+
+  private printRecord(t: Record): string {
+    const fields = t.fields.map((f) => `${f.label}=${this.printTerm(f.term)}`).join(", ");
+    return `<${fields}>`;
+  }
+
+  private printSequencing(t: Sequencing): string {
+    return `(${this.printTerm(t.first)}; ${this.printTerm(t.second)})`;
+  }
+
+  private printTuple(t: Tuple): string {
+    const elements = t.elements.map((e) => this.printTerm(e)).join(", ");
+    return `<${elements}>`;
+  }
+
+  private printDummyAbstraction(t: DummyAbstraction): string {
+    return `(λ _ : ${this.printType(t.paramType)} . ${this.printTerm(t.body)})`;
   }
 
   private printVar(v: Var): string {
