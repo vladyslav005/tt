@@ -36,7 +36,11 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         ...TexMapper.judgements(node),
         rule: "T-Def",
         meta: (node.term as any).name as string,
-        children: node.premises.map(child => this.visit(child))
+        children: node.premises.map(child => this.visit(child)),
+        // Collapsed, a global-variable reference is indistinguishable from
+        // a plain variable lookup — only expanding it reveals the T-Def proof.
+        collapsedRule: "T-Var",
+        collapsedChildren: [this.variableMembershipTex(node)],
       }
     }
     return {

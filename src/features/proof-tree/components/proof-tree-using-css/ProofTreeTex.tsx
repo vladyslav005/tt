@@ -16,21 +16,27 @@ export function ProofTreeComponentUsingCss(
   const isDef = node.rule === "T-Def";
   const [expanded, setExpanded] = useState(false);
 
+  // Collapsed, a T-Def should read as a plain T-Var leaf (the definition's
+  // proof is only revealed on expand) rather than as an empty "T-Def" box.
+  const showCollapsedAsVar = isDef && !expanded && node.collapsedChildren !== undefined;
+  const displayRule = showCollapsedAsVar ? (node.collapsedRule ?? node.rule) : node.rule;
+  const displayChildren = showCollapsedAsVar ? node.collapsedChildren : node.children;
+
   const isItRoot = root ? "root" : "not-root";
   const isItLeaf = node.children === undefined ? 'leaf-node' : 'not-leaf-node';
 
-  const showPremises = node.children && (!isDef || expanded);
+  const showPremises = displayChildren !== undefined && (!isDef || expanded || showCollapsedAsVar);
 
   return (
     <div className='proof-node'>
       {showPremises && (
         <div className={`premises`}>
-          {node.children!.map((premise, index) => (
+          {displayChildren!.map((premise, index) => (
             <Fragment key={`${premise.id}-${index}`}>
               <ProofTreeComponentUsingCss
                 root={false}
                 node={premise}/>
-              {node.children !== undefined && index !== node.children.length - 1 && (
+              {displayChildren !== undefined && index !== displayChildren.length - 1 && (
                 <div className="inter-proof"></div>
               )}
             </Fragment>
@@ -51,7 +57,7 @@ export function ProofTreeComponentUsingCss(
         />
 
         <div className="conclusion-right">
-          <p className="rule-name">{node.rule?.replaceAll('-', ' – ')}</p>
+          <p className="rule-name">{displayRule?.replaceAll('-', ' – ')}</p>
         </div>
       </div>
     </div>
