@@ -1,9 +1,15 @@
 import {Handle, Position} from "@xyflow/react";
 import type {CaseNodeData} from "@/shared/presentation/flow/types.ts";
+import {Input} from "@/shared/components/ui/input";
 import {cn} from "@/shared/lib/utils";
 import {LimitedHandle} from "./LimitedHandle.tsx";
 
 export function CaseFlowNode({data, selected}: { data: CaseNodeData; selected?: boolean }) {
+  const editable = !!data.editable;
+
+  const renameInl = (variable: string) => data.onChange?.({inl: {...data.term.inl, variable}} as any);
+  const renameInr = (variable: string) => data.onChange?.({inr: {...data.term.inr, variable}} as any);
+
   return (
     <div className={cn(
       "min-w-64 rounded-xl border-2 bg-gradient-to-br from-card to-indigo-500/5 text-card-foreground shadow-lg transition-all duration-150",
@@ -28,14 +34,32 @@ export function CaseFlowNode({data, selected}: { data: CaseNodeData; selected?: 
             className="!w-3 !h-3 !bg-indigo-500 !border-2 !border-background"/>
         </div>
 
-        <div className="relative flex items-center justify-between rounded-lg border border-indigo-200 dark:border-indigo-800 bg-background/50 px-3 py-2">
-          <code className="text-xs font-mono font-medium text-indigo-600 dark:text-indigo-400">inl {data.term.inl.variable} ⇒</code>
+        <div className="relative flex items-center justify-between gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-background/50 px-3 py-2">
+          {editable ? (
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 shrink-0">inl</span>
+              <Input value={data.term.inl.variable} onChange={(e) => renameInl(e.target.value)}
+                className="h-6 w-14 text-xs font-mono text-indigo-700 dark:text-indigo-300"/>
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 shrink-0">⇒</span>
+            </div>
+          ) : (
+            <code className="text-xs font-mono font-medium text-indigo-600 dark:text-indigo-400">inl {data.term.inl.variable} ⇒</code>
+          )}
           <LimitedHandle type="source" position={Position.Right} id="inl-term" maxConnections={1}
             className="!w-3 !h-3 !bg-indigo-500 !border-2 !border-background"/>
         </div>
 
-        <div className="relative flex items-center justify-between rounded-lg border border-indigo-200 dark:border-indigo-800 bg-background/50 px-3 py-2">
-          <code className="text-xs font-mono font-medium text-indigo-600 dark:text-indigo-400">inr {data.term.inr.variable} ⇒</code>
+        <div className="relative flex items-center justify-between gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-background/50 px-3 py-2">
+          {editable ? (
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 shrink-0">inr</span>
+              <Input value={data.term.inr.variable} onChange={(e) => renameInr(e.target.value)}
+                className="h-6 w-14 text-xs font-mono text-indigo-700 dark:text-indigo-300"/>
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 shrink-0">⇒</span>
+            </div>
+          ) : (
+            <code className="text-xs font-mono font-medium text-indigo-600 dark:text-indigo-400">inr {data.term.inr.variable} ⇒</code>
+          )}
           <LimitedHandle type="source" position={Position.Right} id="inr-term" maxConnections={1}
             className="!w-3 !h-3 !bg-indigo-500 !border-2 !border-background"/>
         </div>

@@ -2,6 +2,14 @@ import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
 import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyVar, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
+function unitLit(id: string): Term {
+  return {id, kind: "Lit", value: "unit"} as Term;
+}
+
+function boolLit(id: string, value: "true" | "false"): Term {
+  return {id, kind: "Lit", value} as Term;
+}
+
 type NodeMap = Map<string, AstFlowNode>;
 
 type ByHandle = Record<string, Edge[]>;
@@ -41,10 +49,12 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyVar", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
+
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
     const raw = node.data.term as any;
-    return (raw && (raw.kind === "TyVar" || raw.kind === "TyArrow")) ? (raw as Type) : defaultType(node.id);
+    return (raw && RECONSTRUCTIBLE_TYPE_KINDS.has(raw.kind)) ? (raw as Type) : defaultType(node.id);
   }
   visiting.add(node.id);
 
@@ -69,6 +79,45 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
     return ty;
   }
 
+  if (raw.kind === "SumType") {
+    const leftNode = firstTargetNode(byHandle, "left", nodeMap);
+    const rightNode = firstTargetNode(byHandle, "right", nodeMap);
+    const ty = {
+      id: raw.id ?? node.id,
+      kind: "SumType",
+      left: leftNode ? reconstructType(leftNode, nodeMap, edges, visiting) : defaultType(`${node.id}-left`),
+      right: rightNode ? reconstructType(rightNode, nodeMap, edges, visiting) : defaultType(`${node.id}-right`),
+    };
+    visiting.delete(node.id);
+    return ty as Type;
+  }
+
+  if (raw.kind === "TupleType") {
+    const count = Array.isArray(raw.elements) ? raw.elements.length : 0;
+    const elements: Type[] = [];
+    for (let i = 0; i < count; i++) {
+      const elNode = firstTargetNode(byHandle, `el-${i}`, nodeMap);
+      elements.push(elNode ? reconstructType(elNode, nodeMap, edges, visiting) : defaultType(`${node.id}-el-${i}`));
+    }
+    visiting.delete(node.id);
+    return { id: raw.id ?? node.id, kind: "TupleType", elements } as Type;
+  }
+
+  if (raw.kind === "VariantType" || raw.kind === "RecordType") {
+    const rawFields = raw.kind === "VariantType" ? raw.variants : raw.fields;
+    const count = Array.isArray(rawFields) ? rawFields.length : 0;
+    const fields: { label: string; type: Type }[] = [];
+    for (let i = 0; i < count; i++) {
+      const label = rawFields[i]?.label ?? `l${i + 1}`;
+      const fNode = firstTargetNode(byHandle, `field-${i}`, nodeMap);
+      fields.push({ label, type: fNode ? reconstructType(fNode, nodeMap, edges, visiting) : defaultType(`${node.id}-field-${i}`) });
+    }
+    visiting.delete(node.id);
+    return raw.kind === "VariantType"
+      ? ({ id: raw.id ?? node.id, kind: "VariantType", variants: fields } as Type)
+      : ({ id: raw.id ?? node.id, kind: "RecordType", fields } as Type);
+  }
+
   visiting.delete(node.id);
   return (raw as Type) ?? defaultType(node.id);
 }
@@ -82,7 +131,11 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
 
   switch (raw.kind) {
     case "TyVar":
-    case "TyArrow": {
+    case "TyArrow":
+    case "SumType":
+    case "TupleType":
+    case "VariantType":
+    case "RecordType": {
       visiting.delete(node.id);
       return reconstructType(node, nodeMap, edges, visiting) as any;
     }
@@ -212,6 +265,192 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
       const lit = { id: raw.id ?? node.id, kind: "Lit", value: String(raw.value ?? "0") };
       visiting.delete(node.id);
       return lit as any;
+    }
+
+    case "Inl":
+    case "Inr": {
+      const termNode = firstTargetNode(byHandle, "term", nodeMap);
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: raw.kind,
+        term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`),
+        type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : (raw.type as Type) ?? defaultType(`${node.id}-type`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Ascribe": {
+      const termNode = firstTargetNode(byHandle, "term", nodeMap);
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Ascribe",
+        term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`),
+        type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : (raw.type as Type) ?? defaultType(`${node.id}-type`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "TupleProjection": {
+      const tupleNode = firstTargetNode(byHandle, "tuple", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "TupleProjection",
+        tuple: tupleNode ? reconstruct(tupleNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-tuple`, "t"),
+        index: typeof raw.index === "number" ? raw.index : 1,
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "RecordProjection": {
+      const termNode = firstTargetNode(byHandle, "term", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "RecordProjection",
+        term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`, "r"),
+        label: raw.label ?? "l",
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Sequencing": {
+      const firstNode = firstTargetNode(byHandle, "first", nodeMap);
+      const secondNode = firstTargetNode(byHandle, "second", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Sequencing",
+        first: firstNode ? reconstruct(firstNode, nodeMap, edges, visiting) as Term : unitLit(`${node.id}-first`),
+        second: secondNode ? reconstruct(secondNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-second`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "DummyAbstraction": {
+      const paramTypeNode = firstTargetNode(byHandle, "paramType", nodeMap);
+      const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "DummyAbstraction",
+        paramType: paramTypeNode ? reconstructType(paramTypeNode, nodeMap, edges, visiting) : (raw.paramType as Type) ?? defaultType(`${node.id}-paramType`),
+        body: bodyNode ? reconstruct(bodyNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-body`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Tuple": {
+      const count = Array.isArray(raw.elements) ? raw.elements.length : 0;
+      const elements: Term[] = [];
+      for (let i = 0; i < count; i++) {
+        const elNode = firstTargetNode(byHandle, `el-${i}`, nodeMap);
+        elements.push(elNode ? reconstruct(elNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-el-${i}`));
+      }
+      const result = { id: raw.id ?? node.id, kind: "Tuple", elements };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Record": {
+      const count = Array.isArray(raw.fields) ? raw.fields.length : 0;
+      const fields: { label: string; term: Term }[] = [];
+      for (let i = 0; i < count; i++) {
+        const label = raw.fields[i]?.label ?? `l${i + 1}`;
+        const fNode = firstTargetNode(byHandle, `field-${i}`, nodeMap);
+        fields.push({ label, term: fNode ? reconstruct(fNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-field-${i}`) });
+      }
+      const result = { id: raw.id ?? node.id, kind: "Record", fields };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Variant": {
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      const count = Array.isArray(raw.variants) ? raw.variants.length : 0;
+      const variants: { label: string; term: Term }[] = [];
+      for (let i = 0; i < count; i++) {
+        const label = raw.variants[i]?.label ?? `l${i + 1}`;
+        const fNode = firstTargetNode(byHandle, `field-${i}`, nodeMap);
+        variants.push({ label, term: fNode ? reconstruct(fNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-field-${i}`) });
+      }
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Variant",
+        type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : (raw.type as Type) ?? defaultType(`${node.id}-type`),
+        variants,
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "IfCondition": {
+      const conditionNode = firstTargetNode(byHandle, "condition", nodeMap);
+      const thenNode = firstTargetNode(byHandle, "then", nodeMap);
+      const elifCount = Array.isArray(raw.elif) ? raw.elif.length : 0;
+      const elif: { condition: Term; then: Term }[] = [];
+      for (let i = 0; i < elifCount; i++) {
+        const cNode = firstTargetNode(byHandle, `elif-${i}-condition`, nodeMap);
+        const tNode = firstTargetNode(byHandle, `elif-${i}-then`, nodeMap);
+        elif.push({
+          condition: cNode ? reconstruct(cNode, nodeMap, edges, visiting) as Term : boolLit(`${node.id}-elif-${i}-cond`, "false"),
+          then: tNode ? reconstruct(tNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-elif-${i}-then`),
+        });
+      }
+      const result: any = {
+        id: raw.id ?? node.id,
+        kind: "IfCondition",
+        condition: conditionNode ? reconstruct(conditionNode, nodeMap, edges, visiting) as Term : boolLit(`${node.id}-cond`, "true"),
+        then: thenNode ? reconstruct(thenNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-then`),
+      };
+      if (elifCount > 0) result.elif = elif;
+      if (raw.else !== undefined && raw.else !== null) {
+        const elseNode = firstTargetNode(byHandle, "else", nodeMap);
+        result.else = elseNode ? reconstruct(elseNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-else`);
+      }
+      visiting.delete(node.id);
+      return result;
+    }
+
+    case "Case": {
+      const variableNode = firstTargetNode(byHandle, "variable", nodeMap);
+      const inlNode = firstTargetNode(byHandle, "inl-term", nodeMap);
+      const inrNode = firstTargetNode(byHandle, "inr-term", nodeMap);
+      const inlVar = raw.inl?.variable ?? "x";
+      const inrVar = raw.inr?.variable ?? "y";
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Case",
+        variable: variableNode ? reconstruct(variableNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-variable`, "s"),
+        inl: { variable: inlVar, term: inlNode ? reconstruct(inlNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-inl`, inlVar) },
+        inr: { variable: inrVar, term: inrNode ? reconstruct(inrNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-inr`, inrVar) },
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "VariantCase": {
+      const variableNode = firstTargetNode(byHandle, "variable", nodeMap);
+      const count = Array.isArray(raw.cases) ? raw.cases.length : 0;
+      const cases: { label: string; variable: string; body: Term }[] = [];
+      for (let i = 0; i < count; i++) {
+        const label = raw.cases[i]?.label ?? `l${i + 1}`;
+        const variable = raw.cases[i]?.variable ?? "x";
+        const cNode = firstTargetNode(byHandle, `case-${i}`, nodeMap);
+        cases.push({ label, variable, body: cNode ? reconstruct(cNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-case-${i}`, variable) });
+      }
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "VariantCase",
+        variable: variableNode ? reconstruct(variableNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-variable`, "s"),
+        cases,
+      };
+      visiting.delete(node.id);
+      return result as any;
     }
 
     default:

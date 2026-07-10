@@ -69,6 +69,15 @@ const HANDLE_LABELS: Record<string, string> = {
   "right": "arg",
   "from": "from",
   "to": "to",
+  "condition": "cond",
+  "then": "then",
+  "else": "else",
+  "variable": "scrutinee",
+  "inl-term": "inl",
+  "inr-term": "inr",
+  "tuple": "tuple",
+  "first": "1st",
+  "second": "2nd",
 };
 
 export interface AstProps {
@@ -126,28 +135,193 @@ export const nodeTypes: NodeTypes = {
 
 type AddOnDropKind = "decl" | "term" | "type";
 
-function kindFromSourceHandle(handleId?: string): AddOnDropKind | null {
+// Node kinds whose own handles always point at further *types* (as opposed to
+// term/program nodes, whose handles are term-context except "type"/"paramType").
+const TYPE_SOURCE_KINDS = new Set(["TyVar", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
+
+// A handful of handle names are reused across both term nodes and type nodes
+// (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
+// TupleType, "field-N" on Record/Variant vs. VariantType/RecordType) — so the
+// handle name alone can't tell us what kind of node belongs on the other end.
+// The source node's own kind disambiguates: handles coming off a type node are
+// always type-context, everything else defaults to term-context except the
+// handles that explicitly carry a nested type ("type", "paramType").
+function expectedChildKind(sourceKind: string | undefined, handleId: string | undefined): AddOnDropKind | null {
   if (!handleId) return null;
   if (handleId === "global-decl") return "decl";
-  if (handleId === "type" || handleId === "paramType" || handleId === "from" || handleId === "to") return "type";
-  if (handleId === "term" || handleId === "value" || handleId === "body" || handleId === "left" || handleId === "right") return "term";
-  return null;
+  if (sourceKind && TYPE_SOURCE_KINDS.has(sourceKind)) return "type";
+  if (handleId === "type" || handleId === "paramType") return "type";
+  return "term";
 }
 
-const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, Array<
-  | "funDecl"
-  | "varDecl"
-  | "abstraction"
-  | "application"
-  | "variable"
-  | "literal"
-  | "typeVar"
-  | "typeArrow"
->> = {
+const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
   decl: ["funDecl", "varDecl"],
-  term: ["abstraction", "application", "variable", "literal"],
-  type: ["typeVar", "typeArrow"],
+  term: [
+    "abstraction", "application", "variable", "literal",
+    "inl", "inr", "ifCondition", "case", "variantCase", "variant",
+    "ascribe", "tupleProjection", "recordProjection", "record",
+    "sequencing", "tuple", "dummyAbstraction",
+  ],
+  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType"],
 };
+
+// Skeleton (term, xyflow node "type" string) for each newly-added node kind,
+// shared by addStandaloneNode and commitAddNodeOnDrop. Returns null for the
+// original 8 kinds, which keep their existing inline construction below.
+function makeDefaultTermNode(nodeType: string, id: string): { type: string; term: any } | null {
+  switch (nodeType) {
+    case "inl":
+    case "inr":
+      return {
+        type: nodeType,
+        term: {
+          id, kind: nodeType === "inl" ? "Inl" : "Inr",
+          term: { id: `${id}-term`, kind: "Var", name: "x" },
+          type: {
+            id: `${id}-type`, kind: "SumType",
+            left: { id: `${id}-left`, kind: "TyVar", name: "A" },
+            right: { id: `${id}-right`, kind: "TyVar", name: "B" },
+          },
+        },
+      };
+    case "ifCondition":
+      return {
+        type: "ifCondition",
+        term: {
+          id, kind: "IfCondition",
+          condition: { id: `${id}-cond`, kind: "Lit", value: "true" },
+          then: { id: `${id}-then`, kind: "Var", name: "x" },
+        },
+      };
+    case "case":
+      return {
+        type: "case",
+        term: {
+          id, kind: "Case",
+          variable: { id: `${id}-variable`, kind: "Var", name: "s" },
+          inl: { variable: "x", term: { id: `${id}-inl`, kind: "Var", name: "x" } },
+          inr: { variable: "y", term: { id: `${id}-inr`, kind: "Var", name: "y" } },
+        },
+      };
+    case "variantCase":
+      return {
+        type: "variantCase",
+        term: {
+          id, kind: "VariantCase",
+          variable: { id: `${id}-variable`, kind: "Var", name: "s" },
+          cases: [{ label: "l1", variable: "x", body: { id: `${id}-case-0`, kind: "Var", name: "x" } }],
+        },
+      };
+    case "variant":
+      return {
+        type: "variant",
+        term: {
+          id, kind: "Variant",
+          type: {
+            id: `${id}-type`, kind: "VariantType",
+            variants: [{ label: "l1", type: { id: `${id}-type-f0`, kind: "TyVar", name: "T" } }],
+          },
+          variants: [{ label: "l1", term: { id: `${id}-field-0`, kind: "Var", name: "x" } }],
+        },
+      };
+    case "ascribe":
+      return {
+        type: "ascribe",
+        term: {
+          id, kind: "Ascribe",
+          term: { id: `${id}-term`, kind: "Var", name: "x" },
+          type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+        },
+      };
+    case "tupleProjection":
+      return {
+        type: "tupleProjection",
+        term: {
+          id, kind: "TupleProjection",
+          tuple: { id: `${id}-tuple`, kind: "Var", name: "t" },
+          index: 1,
+        },
+      };
+    case "recordProjection":
+      return {
+        type: "recordProjection",
+        term: {
+          id, kind: "RecordProjection",
+          term: { id: `${id}-term`, kind: "Var", name: "r" },
+          label: "l",
+        },
+      };
+    case "record":
+      return {
+        type: "record",
+        term: {
+          id, kind: "Record",
+          fields: [{ label: "l1", term: { id: `${id}-field-0`, kind: "Var", name: "x" } }],
+        },
+      };
+    case "sequencing":
+      return {
+        type: "sequencing",
+        term: {
+          id, kind: "Sequencing",
+          first: { id: `${id}-first`, kind: "Lit", value: "unit" },
+          second: { id: `${id}-second`, kind: "Var", name: "x" },
+        },
+      };
+    case "tuple":
+      return {
+        type: "tuple",
+        term: {
+          id, kind: "Tuple",
+          elements: [{ id: `${id}-el-0`, kind: "Var", name: "x" }],
+        },
+      };
+    case "dummyAbstraction":
+      return {
+        type: "dummyAbstraction",
+        term: {
+          id, kind: "DummyAbstraction",
+          paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+          body: { id: `${id}-body`, kind: "Var", name: "x" },
+        },
+      };
+    case "sumType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "SumType",
+          left: { id: `${id}-left`, kind: "TyVar", name: "A" },
+          right: { id: `${id}-right`, kind: "TyVar", name: "B" },
+        },
+      };
+    case "tupleType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "TupleType",
+          elements: [{ id: `${id}-el-0`, kind: "TyVar", name: "A" }],
+        },
+      };
+    case "variantType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "VariantType",
+          variants: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyVar", name: "T" } }],
+        },
+      };
+    case "recordType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "RecordType",
+          fields: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyVar", name: "T" } }],
+        },
+      };
+    default:
+      return null;
+  }
+}
 
 // Inner editor must run under ReactFlowProvider (required for useReactFlow)
 export function AstEditor({
@@ -160,17 +334,7 @@ export function AstEditor({
   const rf = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const [newNodeType_] = useState<
-    | "program"
-    | "funDecl"
-    | "varDecl"
-    | "abstraction"
-    | "application"
-    | "variable"
-    | "literal"
-    | "typeVar"
-    | "typeArrow"
-  >("variable");
+  const [newNodeType_] = useState<string>("variable");
   const pendingAstRef = useRef<Program | null>(null);
 
   const [connectDraft, setConnectDraft] = useState<null | {
@@ -255,21 +419,16 @@ export function AstEditor({
     const targetKind = (targetNode.data as any)?.term?.kind as string | undefined;
 
     const isDecl = (k?: string) => k === "VarDecl" || k === "FunDecl";
-    const isType = (k?: string) => k === "TyVar" || k === "TyArrow";
-    const isTerm = (k?: string) => k === "Var" || k === "Abs" || k === "App" || k === "Lit";
+    const isType = (k?: string) => !!k && TYPE_SOURCE_KINDS.has(k);
+    const isTerm = (k?: string) =>
+      !!k && !isDecl(k) && !isType(k) && k !== "Program";
 
-    const handle = params.sourceHandle;
-    const isGlobalHandle = handle === "global-decl";
-    const isTypeHandle = handle === "type" || handle === "paramType" || handle === "from" || handle === "to";
-    const isTermHandle = handle === "term" || handle === "value" || handle === "body" || handle === "left" || handle === "right";
+    const expected = expectedChildKind(sourceKind, params.sourceHandle);
+    if (!expected) return false;
 
-    if ((isDecl(targetKind) && !isGlobalHandle) || (!isDecl(targetKind) && isGlobalHandle)) return false;
-    if (isType(targetKind) && !isTypeHandle) return false;
-    if (isTypeHandle && !isType(targetKind)) return false;
-    if (isTermHandle && !isTerm(targetKind)) return false;
-    if (handle === "term" && sourceKind === "Program" && !isTerm(targetKind)) return false;
-
-    return true;
+    if (expected === "decl") return isDecl(targetKind);
+    if (expected === "type") return isType(targetKind);
+    return isTerm(targetKind);
   }, []);
 
   const isValidConnection = useCallback((params: Edge | Connection): boolean => {
@@ -449,6 +608,14 @@ export function AstEditor({
           data: { term: ty, editable: true, onChange: (patch: any) => updateNodeTerm(id, patch) },
         };
       }
+      const skeleton = makeDefaultTermNode(newNodeType, id);
+      if (skeleton) {
+        return {
+          id, type: skeleton.type, position,
+          data: { term: skeleton.term, editable: true, onChange: (patch: any) => updateNodeTerm(id, patch) },
+        };
+      }
+
       return {
         id, type: "variable", position,
         data: {
@@ -690,7 +857,9 @@ export function AstEditor({
 
   const onConnectStart: OnConnectStart = useCallback((_, params) => {
     if (!params.nodeId || !params.handleId) return;
-    const handleKind = kindFromSourceHandle(params.handleId);
+    const sourceNode = rf.getNodes().find((n) => n.id === params.nodeId);
+    const sourceKind = (sourceNode?.data as any)?.term?.kind as string | undefined;
+    const handleKind = expectedChildKind(sourceKind, params.handleId);
     if (!handleKind) return;
 
     setConnectDraft({
@@ -701,7 +870,7 @@ export function AstEditor({
       clientY: 0,
     });
     setAddOnDropChoice(null);
-  }, []);
+  }, [rf]);
 
   const onConnectEnd: OnConnectEnd = useCallback((event) => {
     if (!connectDraft) return;
@@ -842,6 +1011,14 @@ export function AstEditor({
           },
         };
       }
+      const skeleton = makeDefaultTermNode(nodeType, id);
+      if (skeleton) {
+        return {
+          id, type: skeleton.type, position,
+          data: { term: skeleton.term, editable: true, onChange: (patch: any) => updateNodeTerm(id, patch) },
+        };
+      }
+
       return {
         id, type: "variable", position,
         data: {
@@ -954,6 +1131,9 @@ export function AstEditor({
             { type: "application", label: "@", title: "Application (f x)" },
             { type: "variable",    label: "x", title: "Variable" },
             { type: "literal",     label: "#", title: "Literal (0, true, unit)" },
+            { type: "dummyAbstraction", label: "λ_", title: "Dummy Abstraction (λ_:T.t)" },
+            { type: "sequencing",  label: ";", title: "Sequencing (t1;t2)" },
+            { type: "ascribe",     label: "as", title: "Ascription (t as T)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}
@@ -965,16 +1145,75 @@ export function AstEditor({
 
         <Separator orientation="vertical" className="h-5" />
 
+        {/* Sum / variant terms */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Sums</span>
+          {([
+            { type: "inl",         label: "inl", title: "Left injection (inl t as T1+T2)" },
+            { type: "inr",         label: "inr", title: "Right injection (inr t as T1+T2)" },
+            { type: "case",        label: "case", title: "Case analysis on a sum type" },
+            { type: "variant",     label: "[l=]", title: "Variant literal ([l=t] as VariantType)" },
+            { type: "variantCase", label: "vcase", title: "Case analysis on a variant type" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        {/* Tuple / record terms */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Tuples/Records</span>
+          {([
+            { type: "tuple",            label: "⟨,⟩", title: "Tuple literal" },
+            { type: "tupleProjection",  label: ".i", title: "Tuple projection (t.i)" },
+            { type: "record",           label: "⟨l=⟩", title: "Record literal" },
+            { type: "recordProjection", label: ".l", title: "Record projection (t.l)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        {/* Control flow */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Control</span>
+          {([
+            { type: "ifCondition", label: "if", title: "Conditional (if/then/elseif/else)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
         {/* Type nodes */}
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground mr-0.5">Types</span>
           {([
-            { type: "typeVar",   label: "T", title: "Type Variable" },
-            { type: "typeArrow", label: "→", title: "Arrow Type (A→B)" },
+            { type: "typeVar",     label: "T", title: "Type Variable" },
+            { type: "typeArrow",   label: "→", title: "Arrow Type (A→B)" },
+            { type: "sumType",     label: "+", title: "Sum Type (A+B)" },
+            { type: "tupleType",   label: "⟨*⟩", title: "Tuple Type (A*B)" },
+            { type: "variantType", label: "[l:]", title: "Variant Type ([l:T,...])" },
+            { type: "recordType",  label: "{l:}", title: "Record Type (synthesized)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}
-              className="h-7 w-7 p-0 font-mono font-bold text-sm">
+              className="h-7 px-2 font-mono font-bold text-xs">
               {label}
             </Button>
           ))}
