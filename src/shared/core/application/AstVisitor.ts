@@ -1,4 +1,17 @@
-import type {Abs, App, ASTNode, GlobalDecl, Lit, Program, Var, Type} from "@/shared/core/domain/ast";
+import type {
+  Abs,
+  App,
+  ASTNode,
+  GlobalDecl,
+  Lit,
+  Program,
+  Var,
+  Type,
+  Inl,
+  Inr,
+  IfCondition, Case, Ascribe, RecordProjection, Tuple
+} from "@/shared/core/domain/ast";
+import type {Variant} from "framer-motion";
 
 export abstract class AstVisitor<R> {
 
@@ -42,6 +55,32 @@ export abstract class AstVisitor<R> {
   protected abstract visitApp(node: App): R
 
   protected abstract visitLit(node: Lit): R
+
+  protected abstract visitVariantCase(node: Variant): R
+
+  protected abstract visitInl(node: Inl): R
+
+  protected abstract visitInr(node: Inr): R
+
+  protected abstract visitIfCondition(node: IfCondition): R
+
+  protected abstract visitCase(node: Case): R
+
+  protected abstract visitVariant(node: Variant): R
+
+  protected abstract visitAscribe(node: Ascribe): R
+
+  protected abstract visitRecordProjection(node: RecordProjection): R
+
+  protected abstract visitRecord(node: RecordProjection): R
+
+  protected abstract visitTuple(node: Tuple): R
+
+  protected abstract visitTupleProjection(node: Tuple): R
+
+  protected abstract visitSequencing(node: Tuple): R
+
+  protected abstract visitDummyAbstraction(node: Tuple): R
 
 
   /* ===== Decls ===== */

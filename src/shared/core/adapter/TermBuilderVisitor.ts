@@ -2,11 +2,44 @@ import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
 import {
   type ApplicationContext,
-  LambdaAbstractionContext, LiteralContext,
+  AscribeContext,
+  CaseContext,
+  DummyAbstractionContext,
+  IfConditionContext,
+  InlContext,
+  InrContext,
+  LambdaAbstractionContext,
+  LiteralContext,
   ParenthesesContext,
-  VariableContext
+  RecordContext,
+  RecordProjectionContext,
+  SequencingContext,
+  TupleContext,
+  TupleProjectionContext,
+  VariableContext,
+  VariantCaseContext,
+  VariantContext, VariantTypeContext
 } from "@/shared/core/antlr/LambdaParser.ts";
-import type {Abs, App, Lit, Term, Var} from "@/shared/core/domain/ast";
+import type {
+  Abs,
+  App,
+  Ascribe,
+  Case,
+  DummyAbstraction,
+  IfCondition,
+  Inl,
+  Inr,
+  Lit,
+  Record,
+  RecordProjection,
+  Sequencing,
+  Term,
+  Tuple,
+  TupleProjection,
+  Var,
+  Variant,
+  VariantCase, VariantType
+} from "@/shared/core/domain/ast";
 
 export class TermBuilderVisitor
   extends LambdaVisitor<Term> {
@@ -51,4 +84,162 @@ export class TermBuilderVisitor
       value: ctx.getText()
     }
   }
+
+  visitVariantCase = (ctx: VariantCaseContext): VariantCase => {
+    const cases: any[] = [];
+
+    for (let i = 0; i < ctx.term_list().length - 1; i++) {
+      cases.push({
+        label: ctx.ID(i).getText(),
+        variable: ctx.ID(i + 1).getText(),
+        body: this.visit(ctx.term(i + 1))
+      })
+    }
+
+    return {
+      kind: "VariantCase",
+      id: crypto.randomUUID(),
+      variable: this.visit(ctx.term(0)),
+      cases: cases
+    }
+  }
+
+  visitInl = (ctx: InlContext): Inl => {
+    return {
+      kind: "Inl",
+      id: crypto.randomUUID(),
+      term: this.visit(ctx.term()),
+      type: new TypeBuilderVisitor().visit(ctx.type_())
+    }
+  }
+
+  visitInr = (ctx: InrContext): Inr => {
+    return {
+      kind: "Inr",
+      id: crypto.randomUUID(),
+      term: this.visit(ctx.term()),
+      type: new TypeBuilderVisitor().visit(ctx.type_())
+    }
+  }
+
+  visitIfCondition = (ctx: IfConditionContext): IfCondition => {
+    const node: IfCondition = {
+      kind: "IfCondition",
+      id: crypto.randomUUID(),
+      condition: this.visit(ctx.term(0)),
+      then: this.visit(ctx.term(1)),
+    }
+
+    if (ctx.ELSEIF_list().length > 0) {
+      const elif: any[] = []
+      for (let i = 0; i < ctx.ELSEIF_list().length; i++) {
+        elif.push({
+          condition: this.visit(ctx.term(i + 2)),
+          then: this.visit(ctx.term(i + 3)),
+        })
+      }
+
+      node.elif = elif
+    }
+
+    if (ctx.ELSE() != null) {
+      node.else = this.visit(ctx.term(ctx.THEN_list().length * 2 + 1))
+    }
+
+    return node
+  }
+
+  visitCase = (ctx: CaseContext): Case => {
+    return {
+      kind: "Case",
+      id: crypto.randomUUID(),
+      variable: this.visit(ctx.term(0)),
+      inl: {
+        variable: ctx.ID(0).getText(),
+        term: this.visit(ctx.term(1))
+      },
+      inr: {
+        variable: ctx.ID(1).getText(),
+        term: this.visit(ctx.term(2))
+      }
+    }
+  }
+
+  visitVariant = (ctx: VariantContext): Variant => {
+    return {
+      kind: "Variant",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+      variants: ctx.term_list().map((term, i) => ({
+        label: ctx.ID(i).getText(),
+        term: this.visit(term)
+      }))
+    }
+  }
+
+  visitAscribe = (ctx: AscribeContext): Ascribe => {
+    return {
+      kind: "Ascribe",
+      id: crypto.randomUUID(),
+      term: this.visit(ctx.term()),
+      type: new TypeBuilderVisitor().visit(ctx.type_())
+    }
+  }
+
+  visitTupleProjection = (ctx: TupleProjectionContext): TupleProjection => {
+    return {
+      kind: "TupleProjection",
+      id: crypto.randomUUID(),
+      tuple: this.visit(ctx.term()),
+      index: parseInt(ctx.NATURAL_NUMBER().getText())
+    }
+  }
+
+  visitRecordProjection = (ctx: RecordProjectionContext): RecordProjection => {
+    return {
+      kind: "RecordProjection",
+      id: crypto.randomUUID(),
+      term: this.visit(ctx.term()),
+      label: ctx.ID().getText()
+    }
+  }
+
+  visitRecord = (ctx: RecordContext): Record => {
+    return {
+      kind: "Record",
+      id: crypto.randomUUID(),
+      fields: ctx.term_list().map((term, i) => ({
+        label: ctx.ID(i).getText(),
+        term: this.visit(term)
+      }))
+    }
+  }
+
+  visitSequencing = (ctx: SequencingContext): Sequencing => {
+    return {
+      kind: "Sequencing",
+      id: crypto.randomUUID(),
+      first: this.visit(ctx.term(0)),
+      second: this.visit(ctx.term(1))
+    }
+  }
+
+  visitTuple = (ctx: TupleContext): Tuple => {
+    return {
+      kind: "Tuple",
+      id: crypto.randomUUID(),
+      elements: ctx.term_list().map((term) => this.visit(term))
+    }
+  }
+
+  visitDummyAbstraction = (ctx: DummyAbstractionContext): DummyAbstraction => {
+    return {
+      kind: "DummyAbstraction",
+      id: crypto.randomUUID(),
+      paramType: new TypeBuilderVisitor().visit(ctx.type_()),
+      body: this.visit(ctx.term()),
+    }
+  }
+
+
 }

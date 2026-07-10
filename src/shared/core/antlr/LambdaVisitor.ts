@@ -7,13 +7,29 @@ import {ParseTreeVisitor} from 'antlr4';
 import { ExprContext } from "./LambdaParser.js";
 import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
-import { LambdaAbstractionContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
+import { VariantCaseContext } from "./LambdaParser.js";
+import { InlContext } from "./LambdaParser.js";
+import { IfConditionContext } from "./LambdaParser.js";
+import { InrContext } from "./LambdaParser.js";
+import { CaseContext } from "./LambdaParser.js";
+import { LambdaAbstractionContext } from "./LambdaParser.js";
+import { VariantContext } from "./LambdaParser.js";
+import { AscribeContext } from "./LambdaParser.js";
+import { TupleProjectionContext } from "./LambdaParser.js";
+import { RecordProjectionContext } from "./LambdaParser.js";
 import { LiteralContext } from "./LambdaParser.js";
+import { RecordContext } from "./LambdaParser.js";
 import { ApplicationContext } from "./LambdaParser.js";
+import { SequencingContext } from "./LambdaParser.js";
+import { TupleContext } from "./LambdaParser.js";
 import { ParenthesesContext } from "./LambdaParser.js";
+import { DummyAbstractionContext } from "./LambdaParser.js";
+import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
+import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
+import { TupleTypeContext } from "./LambdaParser.js";
 import { ParenTypeContext } from "./LambdaParser.js";
 import { ConstantContext } from "./LambdaParser.js";
 
@@ -48,6 +64,48 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitGlobalFunctionDeclaration?: (ctx: GlobalFunctionDeclarationContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `Variable`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitVariable?: (ctx: VariableContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `VariantCase`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitVariantCase?: (ctx: VariantCaseContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Inl`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitInl?: (ctx: InlContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `IfCondition`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIfCondition?: (ctx: IfConditionContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Inr`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitInr?: (ctx: InrContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Case`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitCase?: (ctx: CaseContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `LambdaAbstraction`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
@@ -55,12 +113,33 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitLambdaAbstraction?: (ctx: LambdaAbstractionContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `Variable`
+	 * Visit a parse tree produced by the `Variant`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitVariable?: (ctx: VariableContext) => Result;
+	visitVariant?: (ctx: VariantContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Ascribe`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitAscribe?: (ctx: AscribeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `TupleProjection`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTupleProjection?: (ctx: TupleProjectionContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `RecordProjection`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitRecordProjection?: (ctx: RecordProjectionContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Literal`
 	 * labeled alternative in `LambdaParser.term`.
@@ -69,12 +148,33 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitLiteral?: (ctx: LiteralContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `Record`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitRecord?: (ctx: RecordContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `Application`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitApplication?: (ctx: ApplicationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Sequencing`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSequencing?: (ctx: SequencingContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Tuple`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTuple?: (ctx: TupleContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Parentheses`
 	 * labeled alternative in `LambdaParser.term`.
@@ -83,6 +183,20 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitParentheses?: (ctx: ParenthesesContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `DummyAbstraction`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDummyAbstraction?: (ctx: DummyAbstractionContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `SumType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSumType?: (ctx: SumTypeContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `TypeIdentifier`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -90,12 +204,26 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitTypeIdentifier?: (ctx: TypeIdentifierContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `VariantType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitVariantType?: (ctx: VariantTypeContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `FunctionType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitFunctionType?: (ctx: FunctionTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `TupleType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTupleType?: (ctx: TupleTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `ParenType`
 	 * labeled alternative in `LambdaParser.type`.
