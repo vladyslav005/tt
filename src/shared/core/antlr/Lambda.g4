@@ -15,6 +15,9 @@ term
     : term DOT NATURAL_NUMBER                                                        # TupleProjection
     | term DOT ID                                                                    # RecordProjection
 
+    // Let polymorphic
+    | LET ID EQ term IN term                                                         # LetExpression
+
     // 2. Application: high priority, left-associative
     | term term                                                                      # Application
 
@@ -71,6 +74,10 @@ constant
 
 
 LAMBDA         : 'λ' | '\\' ;
+
+LABMDA_CAPITALIZED     : 'Λ';
+LET            : 'let';
+IN             : 'in';
 
 CASE           : 'case';
 OF             : 'of';

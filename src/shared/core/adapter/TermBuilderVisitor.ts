@@ -8,7 +8,7 @@ import {
   IfConditionContext,
   InlContext,
   InrContext,
-  LambdaAbstractionContext,
+  LambdaAbstractionContext, LetExpressionContext,
   LiteralContext,
   ParenthesesContext,
   RecordContext,
@@ -28,7 +28,7 @@ import type {
   DummyAbstraction,
   IfCondition,
   Inl,
-  Inr,
+  Inr, Let,
   Lit,
   Record,
   RecordProjection,
@@ -248,4 +248,13 @@ export class TermBuilderVisitor
   }
 
 
+  visitLetExpression = (ctx: LetExpressionContext): Let => {
+    return {
+      kind: "Let",
+      id: crypto.randomUUID(),
+      name: ctx.ID().getText(),
+      value: this.visit(ctx.term(0)),
+      body: this.visit(ctx.term(1)),
+    }
+  }
 }

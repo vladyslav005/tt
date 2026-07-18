@@ -1,6 +1,13 @@
 import type {Node} from "@/shared/core/domain/ast/node.ts";
 
-export type Type = TyVar | TyArrow | TupleType | SumType | VariantType | RecordType
+export type Type =
+  TyVar |
+  TyArrow |
+  TupleType |
+  SumType |
+  VariantType |
+  TypeScheme |
+  TyMetaVar;
 
 export interface TyVar extends Node {
   kind: "TyVar"
@@ -40,4 +47,15 @@ export interface RecordType extends Node {
     label: string
     type: Type
   }[]
+}
+
+export interface TypeScheme extends Node {
+  kind: "TypeScheme";
+  vars: string[];
+  type: Type;
+}
+
+export interface TyMetaVar extends Node {
+  kind: "TyMetaVar";
+  name: string;
 }

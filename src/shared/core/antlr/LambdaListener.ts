@@ -19,6 +19,7 @@ import { AscribeContext } from "./LambdaParser.js";
 import { TupleProjectionContext } from "./LambdaParser.js";
 import { RecordProjectionContext } from "./LambdaParser.js";
 import { LiteralContext } from "./LambdaParser.js";
+import { LetExpressionContext } from "./LambdaParser.js";
 import { RecordContext } from "./LambdaParser.js";
 import { ApplicationContext } from "./LambdaParser.js";
 import { SequencingContext } from "./LambdaParser.js";
@@ -219,6 +220,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitLiteral?: (ctx: LiteralContext) => void;
+	/**
+	 * Enter a parse tree produced by the `LetExpression`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	enterLetExpression?: (ctx: LetExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `LetExpression`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	exitLetExpression?: (ctx: LetExpressionContext) => void;
 	/**
 	 * Enter a parse tree produced by the `Record`
 	 * labeled alternative in `LambdaParser.term`.

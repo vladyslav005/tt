@@ -18,7 +18,8 @@ export type Term =
   Record |
   Sequencing |
   Tuple |
-  DummyAbstraction
+  DummyAbstraction |
+  Let
 
 export interface Var extends Node {
   kind: "Var"
@@ -142,4 +143,15 @@ export interface DummyAbstraction extends Node {
   paramType: Type
   body: Term
   type?: Type
+}
+
+// =====================================================================
+// =                        LET POLYMORPHISM                           =
+// =====================================================================
+
+export interface Let extends Node {
+  kind: "Let";
+  name: string;
+  value: Term;
+  body: Term;
 }

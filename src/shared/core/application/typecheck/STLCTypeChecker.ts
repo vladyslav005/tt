@@ -9,7 +9,7 @@ import type {
   GlobalDecl,
   IfCondition,
   Inl,
-  Inr,
+  Inr, Let,
   Lit,
   Program,
   Record,
@@ -28,14 +28,12 @@ import type {
 } from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
-import {type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-
-// Sentinel type used as a placeholder when the real type cannot be inferred due to an error.
-const ERROR_TYPE: TyVar = { kind: "TyVar", id: "error-sentinel", name: "?" };
+import {ERROR_TYPE, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {LetPolymorphismInferenceVisitor} from "@/shared/core/application/typecheck/LetPolymorphismInferenceVisitor.ts";
 
 export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
-  private context: Gamma = new Gamma();
+  private context: Gamma<Type> = new Gamma<Type>();
   private errorBuffer: Error[] = [];
   private globalProofs: Map<string, ProofTree> = new Map();
 
@@ -606,6 +604,13 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     };
   }
 
+  protected visitLet(node: Let): ProofTree {
+    return new LetPolymorphismInferenceVisitor(
+      this.context,
+      this.errorBuffer,
+      this.globalProofs).visit(node)
+  }
+
   protected visitType(node: Type): ProofTree {
     return {
       rule: "Type" as any,
@@ -615,4 +620,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       premises: [],
     } as ProofTree;
   }
+
+
+
 }

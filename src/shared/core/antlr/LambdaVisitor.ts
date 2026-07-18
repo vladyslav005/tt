@@ -19,6 +19,7 @@ import { AscribeContext } from "./LambdaParser.js";
 import { TupleProjectionContext } from "./LambdaParser.js";
 import { RecordProjectionContext } from "./LambdaParser.js";
 import { LiteralContext } from "./LambdaParser.js";
+import { LetExpressionContext } from "./LambdaParser.js";
 import { RecordContext } from "./LambdaParser.js";
 import { ApplicationContext } from "./LambdaParser.js";
 import { SequencingContext } from "./LambdaParser.js";
@@ -147,6 +148,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitLiteral?: (ctx: LiteralContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `LetExpression`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLetExpression?: (ctx: LetExpressionContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Record`
 	 * labeled alternative in `LambdaParser.term`.

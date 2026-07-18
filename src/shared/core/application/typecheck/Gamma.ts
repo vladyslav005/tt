@@ -1,21 +1,20 @@
-import type {Type} from "@/shared/core/domain/ast";
 
-export class Gamma {
+export class Gamma<T> {
 
-  private hash: Map<string, Type>
+  private hash: Map<string, T>
 
   constructor() {
     this.hash = new Map()
   }
 
-  add(name: string, type: Type) {
+  add(name: string, type: T) {
     if (this.hash.has(name)) {
       throw new Error(`Variable ${name} is already defined in the current context.`)
     }
     this.hash.set(name, type)
   }
 
-  get(name: string): Type | undefined {
+  get(name: string): T | undefined {
     return this.hash.get(name)
   }
 
@@ -27,8 +26,8 @@ export class Gamma {
     this.hash.delete(name)
   }
 
-  copy(): Gamma {
-    const newGamma = new Gamma()
+  copy(): Gamma<T> {
+    const newGamma = new Gamma<T>()
     for (const [key, value] of this.hash.entries()) {
       newGamma.add(key, value)
     }
@@ -39,8 +38,12 @@ export class Gamma {
     this.hash.clear()
   }
 
-  serializeGamma(): Record<string, Type> {
+  serializeGamma(): Record<string, T> {
     return Object.fromEntries(this.hash.entries())
+  }
+
+  public entries(): IterableIterator<[string, T]> {
+    return this.hash.entries();
   }
 
   toString(): string {

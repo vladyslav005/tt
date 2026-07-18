@@ -8,7 +8,7 @@ import type {
   GlobalDecl,
   IfCondition,
   Inl,
-  Inr,
+  Inr, Let,
   Lit,
   Program,
   Record,
@@ -72,6 +72,10 @@ export abstract class AstVisitor<R> {
       case "VarDecl":
         return this.visitTypeDecl(node)
 
+      /* ===== Let ===== */
+      case "Let":
+        return this.visitLet(node)
+
       /* ===== Types ===== */
       case "TyVar":
       case "TyArrow":
@@ -121,6 +125,8 @@ export abstract class AstVisitor<R> {
 
   protected abstract visitDummyAbstraction(node: DummyAbstraction): R
 
+  /* ===== Let ===== */
+  protected abstract visitLet(node: Let): R
 
   /* ===== Decls ===== */
   protected abstract visitTermDecl(node: GlobalDecl): R
@@ -131,4 +137,5 @@ export abstract class AstVisitor<R> {
 
   /* ===== Types ===== */
   protected abstract visitType(node: Type): R
+
 }
