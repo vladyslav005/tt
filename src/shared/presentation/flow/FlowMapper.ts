@@ -10,6 +10,7 @@ import type {
   IfCondition,
   Inl,
   Inr,
+  Let,
   Lit,
   Program,
   Record as RecordTerm,
@@ -299,6 +300,12 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "body", "body", node.body);
   }
 
+  protected visitLet(node: Let): void {
+    this.pushNode(node);
+    this.visitChild(node, "value", "value", node.value);
+    this.visitChild(node, "body", "body", node.body);
+  }
+
   private visitChild(parent: ASTNode, handle: string, label: string, child: ASTNode): void {
     this.visit(child);
     this.pushEdge({
@@ -425,6 +432,9 @@ export class AstFlowMapper extends AstVisitor<void> {
         return;
       case "DummyAbstraction":
         this.nodes.push({id: node.id, type: "dummyAbstraction", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Let":
+        this.nodes.push({id: node.id, type: "let", position: {x: 0, y: 0}, data: {term: node}});
         return;
     }
   }

@@ -10,6 +10,7 @@ import type {
   IfCondition,
   Inl,
   Inr,
+  Let,
   Lit,
   Program,
   Record,
@@ -502,6 +503,53 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     return null;
   }
 
+  protected override visitLet(node: Let): ReductionStep | null {
+    /*
+     * `let x = t1 in t2` is a redex the moment it's formed — unlike App,
+     * it never needs to wait for anything to become an abstraction.
+     * Normal order and call by name substitute immediately, exactly like
+     * a beta-redex under those two strategies (see visitApp).
+     */
+    if (this.strategy !== EvaluationStrategy.CALL_BY_VALUE) {
+      return this.letReduce(node);
+    }
+
+    /*
+     * Call by value requires the bound value to be a value before
+     * substituting it into the body.
+     */
+    if (!this.isValue(node.value)) {
+      const valueStep = this.visit(node.value);
+
+      if (!valueStep) {
+        return null;
+      }
+
+      return {
+        before: node,
+        after: {
+          ...node,
+          value: valueStep.after,
+        },
+        selectedId: valueStep.selectedId,
+        resultId: valueStep.resultId,
+      };
+    }
+
+    return this.letReduce(node);
+  }
+
+  private letReduce(node: Let): ReductionStep {
+    const after = this.substitute(node.body, node.name, node.value);
+
+    return {
+      before: node,
+      after,
+      selectedId: node.id,
+      resultId: after.id,
+    };
+  }
+
   /**
    * Capture-avoiding substitution:
    *
@@ -682,6 +730,14 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "DummyAbstraction":
         // The bound name is anonymous and never occurs free in the body.
         return {...term, body: this.substitute(term.body, variable, replacement)};
+
+      case "Let": {
+        // `let` only binds its own name within `body` — `value` is evaluated
+        // in the outer scope, so it's substituted unconditionally.
+        const value = this.substitute(term.value, variable, replacement);
+        const bound = this.substituteUnderBinder(term.name, term.body, variable, replacement);
+        return {...term, value, name: bound.name, body: bound.body};
+      }
     }
   }
 
@@ -734,6 +790,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "TupleProjection":
       case "RecordProjection":
       case "Sequencing":
+      case "Let":
         return false;
 
       case "Inl":
@@ -846,6 +903,15 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "DummyAbstraction":
         return this.getFreeVariables(term.body, bound);
+
+      case "Let": {
+        const nextBound = new Set(bound);
+        nextBound.add(term.name);
+        return new Set([
+          ...this.getFreeVariables(term.value, bound),
+          ...this.getFreeVariables(term.body, nextBound),
+        ]);
+      }
     }
   }
 
@@ -983,6 +1049,18 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "DummyAbstraction":
         return {...term, body: this.renameBoundVariable(term.body, oldName, newName)};
+
+      case "Let":
+        if (term.name === oldName) {
+          // The let shadows the outer binder within its own body; the
+          // bound value is still evaluated in the outer scope though.
+          return {...term, value: this.renameBoundVariable(term.value, oldName, newName)};
+        }
+        return {
+          ...term,
+          value: this.renameBoundVariable(term.value, oldName, newName),
+          body: this.renameBoundVariable(term.body, oldName, newName),
+        };
     }
   }
 
@@ -1055,6 +1133,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "DummyAbstraction":
         return this.getAllNames(term.body);
+
+      case "Let":
+        return new Set([
+          term.name,
+          ...this.getAllNames(term.value),
+          ...this.getAllNames(term.body),
+        ]);
     }
   }
 
@@ -1212,12 +1297,21 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           paramType: this.cloneTypeWithFreshIds(term.paramType),
           type: term.type ? this.cloneTypeWithFreshIds(term.type) : undefined,
         };
+
+      case "Let":
+        return {
+          ...term,
+          id: crypto.randomUUID(),
+          value: this.cloneTermWithFreshIds(term.value),
+          body: this.cloneTermWithFreshIds(term.body),
+        };
     }
   }
 
   private cloneTypeWithFreshIds(type: Type): Type {
     switch (type.kind) {
       case "TyVar":
+      case "TyMetaVar":
         return {
           ...type,
           id: crypto.randomUUID(),

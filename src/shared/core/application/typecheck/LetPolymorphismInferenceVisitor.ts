@@ -44,7 +44,7 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
     this.globalProofs = globalProofs;
   }
 
-  public check(node: Let): ProofTree {
+  public check(node: Let): InferProofTree {
     const proof = this.visit(node);
 
     try {

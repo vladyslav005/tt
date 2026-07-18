@@ -56,6 +56,7 @@ import {RecordFlowNode} from "@/features/ast/components/ast/flow/RecordFlowNode"
 import {SequencingFlowNode} from "@/features/ast/components/ast/flow/SequencingFlowNode";
 import {TupleFlowNode} from "@/features/ast/components/ast/flow/TupleFlowNode";
 import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/DummyAbstractionFlowNode";
+import {LetFlowNode} from "@/features/ast/components/ast/flow/LetFlowNode";
 import {Undo2, Redo2, LayoutGrid, Maximize2, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -131,6 +132,7 @@ export const nodeTypes: NodeTypes = {
   sequencing: SequencingFlowNode,
   tuple: TupleFlowNode,
   dummyAbstraction: DummyAbstractionFlowNode,
+  let: LetFlowNode,
 } as NodeTypes;
 
 type AddOnDropKind = "decl" | "term" | "type";
@@ -160,7 +162,7 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "abstraction", "application", "variable", "literal",
     "inl", "inr", "ifCondition", "case", "variantCase", "variant",
     "ascribe", "tupleProjection", "recordProjection", "record",
-    "sequencing", "tuple", "dummyAbstraction",
+    "sequencing", "tuple", "dummyAbstraction", "let",
   ],
   type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType"],
 };
@@ -266,6 +268,15 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           id, kind: "Sequencing",
           first: { id: `${id}-first`, kind: "Lit", value: "unit" },
           second: { id: `${id}-second`, kind: "Var", name: "x" },
+        },
+      };
+    case "let":
+      return {
+        type: "let",
+        term: {
+          id, kind: "Let", name: "x",
+          value: { id: `${id}-value`, kind: "Lit", value: "0" },
+          body: { id: `${id}-body`, kind: "Var", name: "x" },
         },
       };
     case "tuple":
@@ -1134,6 +1145,7 @@ export function AstEditor({
             { type: "dummyAbstraction", label: "λ_", title: "Dummy Abstraction (λ_:T.t)" },
             { type: "sequencing",  label: ";", title: "Sequencing (t1;t2)" },
             { type: "ascribe",     label: "as", title: "Ascription (t as T)" },
+            { type: "let",         label: "let", title: "Let (let x = t1 in t2, with let-polymorphism)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}
@@ -1324,6 +1336,7 @@ export function AstEditor({
             if (node.type === 'recordProjection' || node.type === 'record') return 'hsl(25, 95%, 53%)';
             if (node.type === 'sequencing') return 'hsl(199, 89%, 48%)';
             if (node.type === 'dummyAbstraction') return 'hsl(258, 90%, 66%)';
+            if (node.type === 'let') return 'hsl(160, 84%, 39%)';
             return 'hsl(var(--muted))';
           }}
         />

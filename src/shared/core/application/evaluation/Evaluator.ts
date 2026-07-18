@@ -135,6 +135,9 @@ export class Evaluator {
 
       case "Sequencing":
         return this.findStuckTermId(term.first) ?? this.findStuckTermId(term.second);
+
+      case "Let":
+        return this.findStuckTermId(term.value) ?? this.findStuckTermId(term.body);
     }
   }
 
@@ -157,6 +160,7 @@ export class Evaluator {
       case "Sequencing":
       case "Tuple":
       case "DummyAbstraction":
+      case "Let":
         return ast;
 
       case "Program": {
@@ -181,6 +185,7 @@ export class Evaluator {
       case "SumType":
       case "VariantType":
       case "RecordType":
+      case "TyMetaVar":
         throw new Error(
           `Cannot evaluate type node ${ast.kind}`,
         );

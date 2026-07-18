@@ -9,6 +9,7 @@ import type {
   IfCondition,
   Inl,
   Inr,
+  Let,
   Lit,
   Program,
   Record,
@@ -105,6 +106,8 @@ export class AstPrettyPrinter {
         return this.printTuple(term);
       case "DummyAbstraction":
         return this.printDummyAbstraction(term);
+      case "Let":
+        return this.printLet(term);
     }
   }
 
@@ -169,6 +172,10 @@ export class AstPrettyPrinter {
 
   private printDummyAbstraction(t: DummyAbstraction): string {
     return `(λ _ : ${this.printType(t.paramType)} . ${this.printTerm(t.body)})`;
+  }
+
+  private printLet(t: Let): string {
+    return `(let ${t.name} = ${this.printTerm(t.value)} in ${this.printTerm(t.body)})`;
   }
 
   private printVar(v: Var): string {

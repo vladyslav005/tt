@@ -453,6 +453,20 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
       return result as any;
     }
 
+    case "Let": {
+      const valueNode = firstTargetNode(byHandle, "value", nodeMap);
+      const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Let",
+        name: raw.name ?? "x",
+        value: valueNode ? reconstruct(valueNode, nodeMap, edges, visiting) as Term : ({id: `${node.id}-value`, kind: "Lit", value: "0"} as Term),
+        body: bodyNode ? reconstruct(bodyNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-body`, raw.name ?? "x"),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
     default:
       visiting.delete(node.id);
       return node.data.term as ASTNode;

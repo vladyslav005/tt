@@ -9,6 +9,7 @@ import type {
   IfCondition,
   Inl,
   Inr,
+  Let,
   Lit,
   Program,
   Record,
@@ -84,6 +85,7 @@ export type RecordNodeData = { term: Record; editable?: boolean; onChange?: (pat
 export type SequencingNodeData = { term: Sequencing; editable?: boolean; onChange?: (patch: any) => void };
 export type TupleNodeData = { term: Tuple; editable?: boolean; onChange?: (patch: any) => void };
 export type DummyAbstractionNodeData = { term: DummyAbstraction; editable?: boolean; onChange?: (patch: any) => void };
+export type LetNodeData = { term: Let; editable?: boolean; onChange?: (patch: any) => void };
 
 export type ProgramFlowNode = Node<ProgramNodeData, "program">;
 export type FunDeclFlowNode = Node<FunDeclNodeData, "funDecl">;
@@ -106,6 +108,7 @@ export type RecordFlowNode = Node<RecordNodeData, "record">;
 export type SequencingFlowNode = Node<SequencingNodeData, "sequencing">;
 export type TupleFlowNode = Node<TupleNodeData, "tuple">;
 export type DummyAbstractionFlowNode = Node<DummyAbstractionNodeData, "dummyAbstraction">;
+export type LetFlowNode = Node<LetNodeData, "let">;
 
 export type AstFlowNode =
   | ProgramFlowNode
@@ -128,7 +131,8 @@ export type AstFlowNode =
   | RecordFlowNode
   | SequencingFlowNode
   | TupleFlowNode
-  | DummyAbstractionFlowNode;
+  | DummyAbstractionFlowNode
+  | LetFlowNode;
 
 // Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
@@ -152,6 +156,7 @@ export type RecordFlowNodeType = RecordNodeData;
 export type SequencingFlowNodeType = SequencingNodeData;
 export type TupleFlowNodeType = TupleNodeData;
 export type DummyAbstractionFlowNodeType = DummyAbstractionNodeData;
+export type LetFlowNodeType = LetNodeData;
 
 export type AstFlowGraph = {
   nodes: AstFlowNode[];

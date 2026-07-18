@@ -118,6 +118,21 @@ twice ((compose identity) identity);`,
     description: "λ_:T.t discards its argument",
     code: `((λ _ : Nat . true) 5);`,
   },
+  {
+    label: "Let Bindings",
+    description: "bind a name with let, then use it in the body",
+    code: `let x = true in (if x then 1 else 2);`,
+  },
+  {
+    label: "Let-bound Function",
+    description: "bind a function with let, then apply it in the body",
+    code: `let apply = λ f : Nat -> Nat . λ x : Nat . f x in (apply (λ y : Nat . y) 5);`,
+  },
+  {
+    label: "Nested Let",
+    description: "an inner let shadows the outer binding of the same name",
+    code: `let x = 1 in (let x = true in x);`,
+  },
 ];
 
 interface ExamplesDropdownProps {

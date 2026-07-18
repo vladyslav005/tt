@@ -1,12 +1,19 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
-import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
+import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {Term, Type} from "@/shared/core/domain/ast";
+import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 
 export class TexMapper extends ProofTreeVisitor<TexTree> {
 
 
   visit(node: ProofTree): TexTree {
+    // A constraint-typing (CT-*) proof tree — e.g. a `let` embedded in an
+    // otherwise plain-rule tree — belongs to LetPolymorphismTexMapper.
+    if (CT_RULES.has(node.rule)) {
+      return new LetPolymorphismTexMapper().visit(node);
+    }
+
     const tex = super.visit(node)
     if (node.error)
       tex.error = node.error;
@@ -251,10 +258,12 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\langle ${term.elements.map((e) => this.termToTex(e)).join(", ")} \\rangle`
       case "DummyAbstraction":
         return `(\\lambda \\_ : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
+      case "Let":
+        return `\\text{let}\\ ${term.name} = ${this.termToTex(term.value)}\\ \\text{in}\\ ${this.termToTex(term.body)}`
     }
   }
 
-  static gammaToTex(gamma: Record<string, Type>): string {
+  static gammaToTex(gamma: Record<string, Type | TypeScheme>): string {
     const entries = Object.entries(gamma);
 
     if (entries.length === 0) {
@@ -265,9 +274,17 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return `\\Gamma = \\{ ${formatted.join(", ")} \\}`;
   }
 
-  static typeToTex(type: Type): string {
+  static typeToTex(type: Type | TypeScheme): string {
+    if (type.kind === "TypeScheme") {
+      const body = this.typeToTex(type.type)
+      return type.vars.length > 0
+        ? `\\forall ${type.vars.join(", ")}.\\, ${body}`
+        : body
+    }
+
     switch (type.kind) {
       case "TyVar":
+      case "TyMetaVar":
         return type.name
       case "TyArrow": {
         // Parenthesize sub-arrow on the left (non-default grouping);
