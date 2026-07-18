@@ -608,7 +608,8 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     return new LetPolymorphismInferenceVisitor(
       this.context,
       this.errorBuffer,
-      this.globalProofs).visit(node)
+      this.globalProofs,
+    ).check(node);
   }
 
   protected visitType(node: Type): ProofTree {

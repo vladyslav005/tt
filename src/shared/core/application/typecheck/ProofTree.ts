@@ -1,4 +1,4 @@
-import type {Term, Type, TypeScheme, TyVar} from "@/shared/core/domain/ast";
+import type {Term, Type, TyVar} from "@/shared/core/domain/ast";
 
 export interface ProofTree {
   rule: Rule
@@ -15,7 +15,13 @@ export interface Constraint {
   right: Type;
 }
 
+export type Substitution = Map<string, Type>;
 
+export interface TypeScheme {
+  kind: "TypeScheme";
+  vars: string[];
+  type: Type;
+}
 
 export interface InferProofTree extends ProofTree {
   constraints: Constraint[];
@@ -40,6 +46,26 @@ export enum Rule {
   Sequencing = "Sequencing",
   DummyAbs = "DummyAbs",
   Let = "Let",
+
+  CtVarLet = "CtVarLet",
+  CtVar = "CtVar",
+  CtAbs = "CtAbs",
+  CtApp = "CtApp",
+  CtLit = "CtLit",
+  CtIf = "CtIf",
+  CtInl = "CtInl",
+  CtInr = "CtInr",
+  CtCase = "CtCase",
+  CtVariantCase = "CtVariantCase",
+  CtVariant = "CtVariant",
+  CtAscribe = "CtAscribe",
+  CtTuple = "CtTuple",
+  CtTupleProjection = "CtTupleProjection",
+  CtRecord = "CtRecord",
+  CtRecordProjection = "CtRecordProjection",
+  CtSequencing = "CtSequencing",
+  CtDummyAbs = "CtDummyAbs",
+  CtLet = "CtLet",
 }
 
 // Sentinel type used as a placeholder when the real type cannot be inferred due to an error.

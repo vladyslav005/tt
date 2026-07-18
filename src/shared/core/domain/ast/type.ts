@@ -6,7 +6,7 @@ export type Type =
   TupleType |
   SumType |
   VariantType |
-  TypeScheme |
+  RecordType |
   TyMetaVar;
 
 export interface TyVar extends Node {
@@ -49,11 +49,6 @@ export interface RecordType extends Node {
   }[]
 }
 
-export interface TypeScheme extends Node {
-  kind: "TypeScheme";
-  vars: string[];
-  type: Type;
-}
 
 export interface TyMetaVar extends Node {
   kind: "TyMetaVar";

@@ -43,6 +43,10 @@ export function typeEquals(a: Type, b: Type): boolean {
         return match !== undefined && typeEquals(f.type, match.type);
       });
     }
+
+    case "TyMetaVar" : {
+      return a.name === (b as any).name;
+    }
   }
 }
 
@@ -68,5 +72,8 @@ export function typeToString(a: Type): string {
 
     case "RecordType":
       return `{${a.fields.map((f) => `${f.label}:${typeToString(f.type)}`).join(", ")}}`;
+
+    case "TyMetaVar":
+      return `?${a.name}`;
   }
 }
