@@ -1,17 +1,25 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
 import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
+import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
 
 export class TexMapper extends ProofTreeVisitor<TexTree> {
 
+  private readonly gammaRegistry = new GammaRegistry();
+  private registryBuilt = false;
 
   visit(node: ProofTree): TexTree {
     // A constraint-typing (CT-*) proof tree — e.g. a `let` embedded in an
     // otherwise plain-rule tree — belongs to LetPolymorphismTexMapper.
     if (CT_RULES.has(node.rule)) {
       return new LetPolymorphismTexMapper().visit(node);
+    }
+
+    if (!this.registryBuilt) {
+      this.buildGammaRegistry(node, null);
+      this.registryBuilt = true;
     }
 
     const tex = super.visit(node)
@@ -21,9 +29,24 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return tex;
   }
 
+  // One pass building Γ_n labels for the whole plain-rule subtree, mirroring
+  // LetPolymorphismTexMapper's registry so a Γ_n reference is numbered and
+  // independently expandable the same way whether or not it's inside a
+  // `let`. CT-rule premises (an embedded let) are skipped — those get their
+  // own independent registry via the LetPolymorphismTexMapper delegation.
+  private buildGammaRegistry(node: ProofTree, parent: ProofTree | null): void {
+    this.gammaRegistry.register(node.gamma, parent?.gamma ?? null);
+
+    for (const premise of node.premises) {
+      if (!CT_RULES.has(premise.rule)) {
+        this.buildGammaRegistry(premise, node);
+      }
+    }
+  }
+
   protected visitAbs(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Abs",
       children: node.premises.map(child => this.visit(child))
     }
@@ -31,7 +54,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitApp(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-App",
       children: node.premises.map(child => this.visit(child))
     }
@@ -40,7 +63,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   protected visitVar(node: ProofTree): TexTree {
     if (node.premises.length > 0) {
       return {
-        ...TexMapper.judgements(node),
+        ...this.judgements(node),
         rule: "T-Def",
         meta: (node.term as any).name as string,
         children: node.premises.map(child => this.visit(child)),
@@ -51,7 +74,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       }
     }
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Var",
       children: [this.variableMembershipTex(node)]
     }
@@ -63,7 +86,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       : (value === "true" || value === "True" || value === "false" || value === "False") ? "T-Bool"
       : "T-Nat"
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule,
       children: []
     }
@@ -71,7 +94,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitIfCondition(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-If",
       children: node.premises.map(child => this.visit(child))
     }
@@ -79,7 +102,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitInl(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Inl",
       children: node.premises.map(child => this.visit(child))
     }
@@ -87,7 +110,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitInr(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Inr",
       children: node.premises.map(child => this.visit(child))
     }
@@ -95,7 +118,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitCase(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Case",
       children: node.premises.map(child => this.visit(child))
     }
@@ -103,7 +126,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitVariantCase(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-VariantCase",
       children: node.premises.map(child => this.visit(child))
     }
@@ -111,7 +134,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitVariant(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Variant",
       children: node.premises.map(child => this.visit(child))
     }
@@ -119,7 +142,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitAscribe(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Ascribe",
       children: node.premises.map(child => this.visit(child))
     }
@@ -127,7 +150,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitTuple(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Tuple",
       children: node.premises.map(child => this.visit(child))
     }
@@ -135,7 +158,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitTupleProjection(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Proj",
       children: node.premises.map(child => this.visit(child))
     }
@@ -143,7 +166,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitRecord(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Record",
       children: node.premises.map(child => this.visit(child))
     }
@@ -151,7 +174,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitRecordProjection(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-RecordProj",
       children: node.premises.map(child => this.visit(child))
     }
@@ -159,7 +182,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitSequencing(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Seq",
       children: node.premises.map(child => this.visit(child))
     }
@@ -167,7 +190,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   protected visitDummyAbstraction(node: ProofTree): TexTree {
     return {
-      ...TexMapper.judgements(node),
+      ...this.judgements(node),
       rule: "T-Abs",
       children: node.premises.map(child => this.visit(child))
     }
@@ -176,39 +199,35 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)
-    const entries = Object.entries(node.gamma)
-
-    const judgementFull = entries.length > 0
-      ? `${variableName} : ${variableType} \\in \\{ ${entries.map(([n, t]) => `${n} : ${TexMapper.typeToTex(t)}`).join(", ")} \\}`
-      : undefined
+    const gammaRef = this.gammaRegistry.refFor(node.gamma)
+    const gammaTex = gammaRef ? gammaRef.shortTex : "\\Gamma"
 
     return {
-      judgement: `${variableName} : ${variableType} \\in \\Gamma`,
-      judgementFull,
+      judgement: `${variableName} : ${variableType} \\in ${gammaTex}`,
       rule: ""
     }
   }
 
-  static judgementToTex(node: ProofTree): string {
-    const gamma = this.gammaToTex(node.gamma)
-    const term = this.termToTex(node.term)
-    const type = this.typeToTex(node.type)
-    return `${gamma} \\vdash ${term} : ${type}`
-  }
+  private judgements(node: ProofTree): Pick<TexTree, "judgement" | "judgementSegments" | "registry"> {
+    const gammaRef = this.gammaRegistry.refFor(node.gamma)
+    const term = TexMapper.termToTex(node.term)
+    const type = TexMapper.typeToTex(node.type)
 
-  static judgementCollapsedToTex(node: ProofTree): string {
-    const hasEntries = Object.keys(node.gamma).length > 0
-    const gamma = hasEntries ? "\\Gamma" : "\\emptyset"
-    const term = this.termToTex(node.term)
-    const type = this.typeToTex(node.type)
-    return `${gamma} \\vdash ${term} : ${type}`
-  }
+    const gammaSeg: TexSegment = gammaRef
+      ? {kind: "ref", key: gammaRef.key}
+      : {kind: "tex", value: "\\emptyset"}
 
-  static judgements(node: ProofTree): { judgement: string; judgementFull?: string } {
-    const hasEntries = Object.keys(node.gamma).length > 0
+    const judgementSegments: TexSegment[] = [
+      gammaSeg,
+      {kind: "tex", value: ` \\vdash ${term} : ${type}`},
+    ]
+
+    const gammaTex = gammaRef ? gammaRef.shortTex : "\\emptyset"
+
     return {
-      judgement: this.judgementCollapsedToTex(node),
-      judgementFull: hasEntries ? this.judgementToTex(node) : undefined,
+      judgement: `${gammaTex} \\vdash ${term} : ${type}`,
+      judgementSegments,
+      registry: this.gammaRegistry.registry,
     }
   }
 

@@ -13,6 +13,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/components/ui/context-menu.tsx";
+import {JudgementSegments} from "@/features/proof-tree/components/proof-tree-using-css/JudgementSegments.tsx";
 
 interface ConclusionCenterProps {
   isItLeaf: string;
@@ -26,7 +27,10 @@ interface ConclusionCenterProps {
 export const Conclusion = (props: ConclusionCenterProps) => {
   const {isDef = false, isExpanded = false, onToggle} = props;
   const containsError = props.node.error !== undefined;
-  const hasExpandableGamma = !!props.node.judgementFull;
+  const hasSegments = !!props.node.judgementSegments;
+  // The old "expand context" menu item is superseded by clicking a Γ_n/C_n
+  // label directly wherever judgementSegments are available.
+  const hasExpandableGamma = !hasSegments && !!props.node.judgementFull;
   const hasContextMenu = containsError || hasExpandableGamma;
   const [gammaExpanded, setGammaExpanded] = useState(false);
 
@@ -56,9 +60,18 @@ export const Conclusion = (props: ConclusionCenterProps) => {
         </span>
       )}
 
-      <MathJax className="flex-1" key={judgementTex}>
-        {`\\[ ${judgementTex} \\]`}
-      </MathJax>
+      {hasSegments ? (
+        <JudgementSegments
+          className="flex-1"
+          segments={props.node.judgementSegments!}
+          registry={props.node.registry}
+          nodeId={props.node.id ?? ""}
+        />
+      ) : (
+        <MathJax className="flex-1" key={judgementTex}>
+          {`\\[ ${judgementTex} \\]`}
+        </MathJax>
+      )}
 
       {containsError && (
         <TooltipProvider>

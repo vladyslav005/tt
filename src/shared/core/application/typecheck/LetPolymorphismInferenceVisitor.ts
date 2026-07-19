@@ -7,6 +7,7 @@ import type {
   Abs,
   App,
   Ascribe,
+  ASTNode,
   Case,
   DummyAbstraction, GlobalDecl,
   IfCondition,
@@ -42,6 +43,14 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
     this.schemeContext = this.engine.toSchemeGamma(context);
     this.errorBuffer = errorBuffer;
     this.globalProofs = globalProofs;
+  }
+
+  // Matches STLCTypeChecker.visit()'s override — every returned proof node
+  // needs the originating term's id (used e.g. to key UI state per node).
+  override visit(node: ASTNode): InferProofTree {
+    const proof = super.visit(node);
+    proof.id = node.id;
+    return proof;
   }
 
   public check(node: Let): InferProofTree {

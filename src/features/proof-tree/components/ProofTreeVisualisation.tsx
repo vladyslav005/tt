@@ -15,6 +15,7 @@ import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {useRef} from "react";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
+import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 
 
 interface ProofTreeVisualisationProps {
@@ -138,7 +139,14 @@ export function ProofTreeVisualisation({
                         wrapperStyle={{ width: '100%', height: '100%', overflow: 'hidden', minHeight: '600px' }}
                       >
                         <div className="flex items-center justify-center p-6">
-                          {texTree && <ProofTreeComponentUsingCss node={texTree}/>}
+                          {texTree && (
+                            // Keyed by the proof's own id so Γ/C expand state
+                            // resets instead of leaking stale labels when the
+                            // underlying derivation changes.
+                            <TexRefExpansionProvider key={proof?.id ?? "none"}>
+                              <ProofTreeComponentUsingCss node={texTree}/>
+                            </TexRefExpansionProvider>
+                          )}
                         </div>
                       </TransformComponent>
                     </>
