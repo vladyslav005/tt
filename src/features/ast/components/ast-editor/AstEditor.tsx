@@ -57,6 +57,7 @@ import {SequencingFlowNode} from "@/features/ast/components/ast/flow/SequencingF
 import {TupleFlowNode} from "@/features/ast/components/ast/flow/TupleFlowNode";
 import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/DummyAbstractionFlowNode";
 import {LetFlowNode} from "@/features/ast/components/ast/flow/LetFlowNode";
+import {BinOpFlowNode} from "@/features/ast/components/ast/flow/BinOpFlowNode";
 import {Undo2, Redo2, LayoutGrid, Maximize2, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -79,6 +80,8 @@ const HANDLE_LABELS: Record<string, string> = {
   "tuple": "tuple",
   "first": "1st",
   "second": "2nd",
+  "leftOperand": "left",
+  "rightOperand": "right",
 };
 
 export interface AstProps {
@@ -133,6 +136,7 @@ export const nodeTypes: NodeTypes = {
   tuple: TupleFlowNode,
   dummyAbstraction: DummyAbstractionFlowNode,
   let: LetFlowNode,
+  binOp: BinOpFlowNode,
 } as NodeTypes;
 
 type AddOnDropKind = "decl" | "term" | "type";
@@ -162,7 +166,7 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "abstraction", "application", "variable", "literal",
     "inl", "inr", "ifCondition", "case", "variantCase", "variant",
     "ascribe", "tupleProjection", "recordProjection", "record",
-    "sequencing", "tuple", "dummyAbstraction", "let",
+    "sequencing", "tuple", "dummyAbstraction", "let", "binOp",
   ],
   type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType"],
 };
@@ -277,6 +281,15 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           id, kind: "Let", name: "x",
           value: { id: `${id}-value`, kind: "Lit", value: "0" },
           body: { id: `${id}-body`, kind: "Var", name: "x" },
+        },
+      };
+    case "binOp":
+      return {
+        type: "binOp",
+        term: {
+          id, kind: "BinOp", operator: "+",
+          left: { id: `${id}-leftOperand`, kind: "Lit", value: "1" },
+          right: { id: `${id}-rightOperand`, kind: "Lit", value: "1" },
         },
       };
     case "tuple":
@@ -1157,6 +1170,22 @@ export function AstEditor({
 
         <Separator orientation="vertical" className="h-5" />
 
+        {/* Arithmetic / comparison */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Math</span>
+          {([
+            { type: "binOp", label: "+/<", title: "Arithmetic or comparison (t1 op t2)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
         {/* Sum / variant terms */}
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground mr-0.5">Sums</span>
@@ -1337,6 +1366,7 @@ export function AstEditor({
             if (node.type === 'sequencing') return 'hsl(199, 89%, 48%)';
             if (node.type === 'dummyAbstraction') return 'hsl(258, 90%, 66%)';
             if (node.type === 'let') return 'hsl(160, 84%, 39%)';
+            if (node.type === 'binOp') return 'hsl(38, 92%, 50%)';
             return 'hsl(var(--muted))';
           }}
         />

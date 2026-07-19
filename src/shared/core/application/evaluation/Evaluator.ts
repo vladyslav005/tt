@@ -68,17 +68,14 @@ export class Evaluator {
   }
 
   private collectErrors(term: Term): EvaluationError[] {
-    const stuckTermId = this.findStuckTermId(term);
-    if (stuckTermId) {
-      return [{
-        message: "Evaluation stuck: a non-function value (literal) was applied as a function",
-        stuckTermId,
-      }];
+    const stuck = this.findStuckTerm(term);
+    if (stuck) {
+      return [{message: stuck.message, stuckTermId: stuck.id}];
     }
     return [];
   }
 
-  private findStuckTermId(term: Term): string | undefined {
+  private findStuckTerm(term: Term): {id: string; message: string} | undefined {
     switch (term.kind) {
       case "Var":
       case "Abs":
@@ -88,18 +85,18 @@ export class Evaluator {
 
       case "App":
         if (term.func.kind === "Lit") {
-          return term.id;
+          return {id: term.id, message: "Evaluation stuck: a non-function value (literal) was applied as a function"};
         }
-        return this.findStuckTermId(term.func) ?? this.findStuckTermId(term.arg);
+        return this.findStuckTerm(term.func) ?? this.findStuckTerm(term.arg);
 
       case "Inl":
       case "Inr":
       case "Ascribe":
       case "RecordProjection":
-        return this.findStuckTermId(term.term);
+        return this.findStuckTerm(term.term);
 
       case "TupleProjection":
-        return this.findStuckTermId(term.tuple);
+        return this.findStuckTerm(term.tuple);
 
       case "IfCondition": {
         const subterms = [
@@ -108,36 +105,50 @@ export class Evaluator {
           ...(term.elif ?? []).flatMap((b) => [b.condition, b.then]),
           ...(term.else ? [term.else] : []),
         ];
-        return subterms.reduce<string | undefined>((found, t) => found ?? this.findStuckTermId(t), undefined);
+        return subterms.reduce<{id: string; message: string} | undefined>((found, t) => found ?? this.findStuckTerm(t), undefined);
       }
 
       case "Case":
         return (
-          this.findStuckTermId(term.variable) ??
-          this.findStuckTermId(term.inl.term) ??
-          this.findStuckTermId(term.inr.term)
+          this.findStuckTerm(term.variable) ??
+          this.findStuckTerm(term.inl.term) ??
+          this.findStuckTerm(term.inr.term)
         );
 
       case "VariantCase":
-        return term.cases.reduce<string | undefined>(
-          (found, c) => found ?? this.findStuckTermId(c.body),
-          this.findStuckTermId(term.variable),
+        return term.cases.reduce<{id: string; message: string} | undefined>(
+          (found, c) => found ?? this.findStuckTerm(c.body),
+          this.findStuckTerm(term.variable),
         );
 
       case "Variant":
-        return term.variants.reduce<string | undefined>((found, v) => found ?? this.findStuckTermId(v.term), undefined);
+        return term.variants.reduce<{id: string; message: string} | undefined>((found, v) => found ?? this.findStuckTerm(v.term), undefined);
 
       case "Tuple":
-        return term.elements.reduce<string | undefined>((found, e) => found ?? this.findStuckTermId(e), undefined);
+        return term.elements.reduce<{id: string; message: string} | undefined>((found, e) => found ?? this.findStuckTerm(e), undefined);
 
       case "Record":
-        return term.fields.reduce<string | undefined>((found, f) => found ?? this.findStuckTermId(f.term), undefined);
+        return term.fields.reduce<{id: string; message: string} | undefined>((found, f) => found ?? this.findStuckTerm(f.term), undefined);
 
       case "Sequencing":
-        return this.findStuckTermId(term.first) ?? this.findStuckTermId(term.second);
+        return this.findStuckTerm(term.first) ?? this.findStuckTerm(term.second);
 
       case "Let":
-        return this.findStuckTermId(term.value) ?? this.findStuckTermId(term.body);
+        return this.findStuckTerm(term.value) ?? this.findStuckTerm(term.body);
+
+      case "BinOp": {
+        const found = this.findStuckTerm(term.left) ?? this.findStuckTerm(term.right);
+        if (found) return found;
+
+        const isNatLiteral = (t: Term) => t.kind === "Lit" && /^\d+$/.test(t.value);
+        if (!isNatLiteral(term.left) || !isNatLiteral(term.right)) {
+          return {id: term.id, message: `Evaluation stuck: operator "${term.operator}" requires both operands to be Nat literals`};
+        }
+        if (term.operator === "/" && (term.right as Extract<Term, {kind: "Lit"}>).value === "0") {
+          return {id: term.id, message: "Evaluation stuck: division by zero"};
+        }
+        return undefined;
+      }
     }
   }
 
@@ -161,6 +172,7 @@ export class Evaluator {
       case "Tuple":
       case "DummyAbstraction":
       case "Let":
+      case "BinOp":
         return ast;
 
       case "Program": {

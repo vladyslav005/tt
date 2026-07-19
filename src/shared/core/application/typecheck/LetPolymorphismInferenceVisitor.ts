@@ -8,6 +8,7 @@ import type {
   App,
   Ascribe,
   ASTNode,
+  BinOp,
   Case,
   DummyAbstraction, GlobalDecl,
   IfCondition,
@@ -20,7 +21,7 @@ import type {
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {TypeInferenceEngine} from "@/shared/core/application/typecheck/TypeInferenceEngine.ts";
-import {typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {isArithmeticOperator, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 
 // Whether a variable was bound by an ordinary binder (a lambda parameter,
 // monomorphic within its scope) or by `let` (looked up as a TypeScheme and
@@ -156,10 +157,14 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
 
   protected visitAbs(node: Abs): InferProofTree {
     const outerGamma = this.schemeContext.serializeGamma();
+    // An omitted annotation (λx.t) gets a fresh metavariable instead of a
+    // rigid, given type — this is the one thing that lets `generalize` at
+    // the enclosing `let` find something genuinely free to quantify over.
+    const paramType = node.paramType ?? this.engine.freshTyMetaVar();
 
     const bodyProof = this.withBinding(
       node.param,
-      {kind: "TypeScheme", vars: [], type: node.paramType},
+      {kind: "TypeScheme", vars: [], type: paramType},
       Rule.CtVar,
       () => this.visit(node.body),
     );
@@ -167,12 +172,12 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
     const type: TyArrow = {
       kind: "TyArrow",
       id: crypto.randomUUID(),
-      from: node.paramType,
+      from: paramType,
       to: bodyProof.type,
     };
 
     return {
-      rule: Rule.CtAbs,
+      rule: node.paramType ? Rule.CtAbs : Rule.CtAbsInf,
       term: node,
       type,
       gamma: outerGamma,
@@ -679,6 +684,28 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
       gamma: this.schemeContext.serializeGamma(),
       premises: [bodyProof],
       constraints: bodyProof.constraints,
+    };
+  }
+
+  protected visitBinOp(node: BinOp): InferProofTree {
+    const natType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Nat"};
+    const boolType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Bool"};
+
+    const leftProof = this.visit(node.left);
+    const rightProof = this.visit(node.right);
+
+    return {
+      rule: Rule.CtBinOp,
+      term: node,
+      type: isArithmeticOperator(node.operator) ? natType : boolType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [leftProof, rightProof],
+      constraints: [
+        ...leftProof.constraints,
+        ...rightProof.constraints,
+        {left: leftProof.type, right: natType},
+        {left: rightProof.type, right: natType},
+      ],
     };
   }
 

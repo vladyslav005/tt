@@ -21,6 +21,10 @@ term
     // 2. Application: high priority, left-associative
     | term term                                                                      # Application
 
+    // Arithmetic and comparison: all in one rule/alternative, same
+    // precedence, left-associative (e.g. "1 + 2 * 3" parses as "(1+2)*3").
+    | term op=(PLUS|MINUS|MUL|DIV|LT|MT|LEQ|GEQ|EQEQ|NEQ) term                       # BinaryOp
+
     // 3. Type ascription: lower than application
     | term AS type                                                                   # Ascribe
 
@@ -30,6 +34,7 @@ term
     // 5. Prefix / complex terms
     | LAMBDA UNDERSCORE COLON type DOT term                                          # DummyAbstraction
     | LAMBDA ID COLON type DOT term                                                  # LambdaAbstraction
+    | LAMBDA ID DOT term                                                             # LambdaAbstractionUntyped
     | IF term THEN term (ELSEIF term THEN term)* (ELSE term)?                        # IfCondition
     | CASE term OR INL ID DOUBLEARROW term OR INR ID DOUBLEARROW term                # Case
     | CASE term OF LBRACK ID EQ ID RBRACK DOUBLEARROW term (OR LBRACK ID EQ ID RBRACK DOUBLEARROW term)*     # VariantCase
@@ -94,11 +99,17 @@ ELSE           : 'else';
 
 UNDERSCORE     : '_';
 
+EQEQ           : '==';
+NEQ            : '!=';
+LEQ            : '<=';
+GEQ            : '>=';
 EQ             : '=';
 LT             : '<';
 MT             : '>';
 MUL            : '*' | '×';
 PLUS           : '+';
+MINUS          : '-';
+DIV            : '/';
 
 LBRACK         : '[';
 RBRACK         : ']';

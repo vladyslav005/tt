@@ -3,12 +3,14 @@ import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
 import {
   type ApplicationContext,
   AscribeContext,
+  BinaryOpContext,
   CaseContext,
   DummyAbstractionContext,
   IfConditionContext,
   InlContext,
   InrContext,
-  LambdaAbstractionContext, LetExpressionContext,
+  LambdaAbstractionContext,
+  LambdaAbstractionUntypedContext, LetExpressionContext,
   LiteralContext,
   ParenthesesContext,
   RecordContext,
@@ -24,6 +26,8 @@ import type {
   Abs,
   App,
   Ascribe,
+  BinaryOperator,
+  BinOp,
   Case,
   DummyAbstraction,
   IfCondition,
@@ -61,6 +65,18 @@ export class TermBuilderVisitor
       paramType: new TypeBuilderVisitor().visit(ctx.type_()),
       body: this.visit(ctx.term()),
       // type: {} as TyArrow // TODO: handle this properly
+    }
+  }
+
+  // λx.t — no parameter annotation. Only meaningful inside a `let`-bound
+  // value/body, where LetPolymorphismInferenceVisitor infers paramType as a
+  // fresh metavariable; STLCTypeChecker reports an error if one reaches it.
+  visitLambdaAbstractionUntyped = (ctx: LambdaAbstractionUntypedContext): Abs => {
+    return {
+      kind: "Abs",
+      id: crypto.randomUUID(),
+      param: ctx.ID().getText(),
+      body: this.visit(ctx.term()),
     }
   }
 
@@ -247,6 +263,16 @@ export class TermBuilderVisitor
     }
   }
 
+
+  visitBinaryOp = (ctx: BinaryOpContext): BinOp => {
+    return {
+      kind: "BinOp",
+      id: crypto.randomUUID(),
+      operator: ctx._op.text as BinaryOperator,
+      left: this.visit(ctx.term(0)),
+      right: this.visit(ctx.term(1)),
+    }
+  }
 
   visitLetExpression = (ctx: LetExpressionContext): Let => {
     return {

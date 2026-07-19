@@ -6,7 +6,7 @@ import {
 } from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {Type, TyMetaVar} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
-import {typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {metaVarName, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 
 export class TypeInferenceEngine {
 
@@ -266,12 +266,13 @@ export class TypeInferenceEngine {
   }
 
    freshTyMetaVar(): TyMetaVar {
+    const name = metaVarName(this.freshCounter);
     this.freshCounter++;
 
     return {
       kind: "TyMetaVar",
       id: crypto.randomUUID(),
-      name: `?t${this.freshCounter}`,
+      name,
     };
   }
 

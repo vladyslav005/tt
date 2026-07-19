@@ -4,6 +4,7 @@ import type {
   App,
   Ascribe,
   ASTNode,
+  BinOp,
   Case,
   DummyAbstraction,
   GlobalDecl,
@@ -77,14 +78,16 @@ export class AstFlowMapper extends AstVisitor<void> {
   protected visitAbs(node: Abs): void {
     this.pushNode(node);
 
-    // paramType
-    this.visit(node.paramType as any);
-    this.pushEdge({
-      id: `e-${node.id}-paramType-${(node.paramType as any).id}`,
-      source: node.id,
-      sourceHandle: "paramType",
-      target: (node.paramType as any).id,
-    });
+    // paramType (omitted for an unannotated parameter, e.g. inside a let)
+    if (node.paramType) {
+      this.visit(node.paramType as any);
+      this.pushEdge({
+        id: `e-${node.id}-paramType-${(node.paramType as any).id}`,
+        source: node.id,
+        sourceHandle: "paramType",
+        target: (node.paramType as any).id,
+      });
+    }
 
     // result type (if present)
     if (node.type) {
@@ -302,8 +305,15 @@ export class AstFlowMapper extends AstVisitor<void> {
 
   protected visitLet(node: Let): void {
     this.pushNode(node);
-    this.visitChild(node, "value", "value", node.value);
     this.visitChild(node, "body", "body", node.body);
+    this.visitChild(node, "value", "value", node.value);
+
+  }
+
+  protected visitBinOp(node: BinOp): void {
+    this.pushNode(node);
+    this.visitChild(node, "rightOperand", "right", node.right);
+    this.visitChild(node, "leftOperand", "left", node.left);
   }
 
   private visitChild(parent: ASTNode, handle: string, label: string, child: ASTNode): void {
@@ -436,6 +446,9 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "Let":
         this.nodes.push({id: node.id, type: "let", position: {x: 0, y: 0}, data: {term: node}});
         return;
+      case "BinOp":
+        this.nodes.push({id: node.id, type: "binOp", position: {x: 0, y: 0}, data: {term: node}});
+        return;
     }
   }
 
@@ -448,6 +461,8 @@ export class AstFlowMapper extends AstVisitor<void> {
     "value": "value",
     "left": "fn",
     "right": "arg",
+    "leftOperand": "left",
+    "rightOperand": "right",
     "from": "from",
     "to": "to",
   };

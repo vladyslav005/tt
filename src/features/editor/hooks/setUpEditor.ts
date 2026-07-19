@@ -5,7 +5,7 @@ export function useSetUpEditor() {
 
     const keywords: string[] = [
       "as", "case", "of", "if", "then", "else", "inl", "inr", "nil",
-      "isnil", "head", "tail", "cons", "typedef", "fix"
+      "isnil", "head", "tail", "cons", "typedef", "fix", "let", "in"
     ];
 
     monaco.languages.setMonarchTokensProvider("lambda", {
@@ -28,6 +28,8 @@ export function useSetUpEditor() {
           [/>=/, "geq"],
           [/<=/, "leq"],
           [/==/, "eq"],
+          [/!=/, "neq"],
+          [/\//, "div"],
           [/\^/, "pow"],
           [/\+/, "plus"],
           [/-/, "minus"],
@@ -64,6 +66,8 @@ export function useSetUpEditor() {
         {token: 'geq', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'leq', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'eq', foreground: '#dc2626', fontStyle: 'bold'},
+        {token: 'neq', foreground: '#dc2626', fontStyle: 'bold'},
+        {token: 'div', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'plus', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'minus', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'pow', foreground: '#dc2626', fontStyle: 'bold'},
@@ -119,6 +123,8 @@ export function useSetUpEditor() {
         {token: 'geq', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'leq', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'eq', foreground: '#f87171', fontStyle: 'bold'},
+        {token: 'neq', foreground: '#f87171', fontStyle: 'bold'},
+        {token: 'div', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'plus', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'minus', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'pow', foreground: '#f87171', fontStyle: 'bold'},

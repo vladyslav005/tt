@@ -8,6 +8,7 @@ import { ExprContext } from "./LambdaParser.js";
 import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
+import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
 import { InlContext } from "./LambdaParser.js";
 import { IfConditionContext } from "./LambdaParser.js";
@@ -26,6 +27,7 @@ import { SequencingContext } from "./LambdaParser.js";
 import { TupleContext } from "./LambdaParser.js";
 import { ParenthesesContext } from "./LambdaParser.js";
 import { DummyAbstractionContext } from "./LambdaParser.js";
+import { BinaryOpContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
@@ -71,6 +73,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitVariable?: (ctx: VariableContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `LambdaAbstractionUntyped`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLambdaAbstractionUntyped?: (ctx: LambdaAbstractionUntypedContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `VariantCase`
 	 * labeled alternative in `LambdaParser.term`.
@@ -197,6 +206,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitDummyAbstraction?: (ctx: DummyAbstractionContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `BinaryOp`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBinaryOp?: (ctx: BinaryOpContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `SumType`
 	 * labeled alternative in `LambdaParser.type`.

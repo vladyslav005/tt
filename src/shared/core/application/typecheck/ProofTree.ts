@@ -46,10 +46,16 @@ export enum Rule {
   Sequencing = "Sequencing",
   DummyAbs = "DummyAbs",
   Let = "Let",
+  // Single tag for all arithmetic/comparison operators — the operator on
+  // the term itself picks the displayed rule name (T-Plus, T-Lt, ...).
+  BinOp = "BinOp",
 
   CtVarLet = "CtVarLet",
   CtVar = "CtVar",
   CtAbs = "CtAbs",
+  // λx.t with no parameter annotation — the parameter's type is a fresh
+  // metavariable rather than a rigid, given one (CtAbs).
+  CtAbsInf = "CtAbsInf",
   CtApp = "CtApp",
   CtLit = "CtLit",
   CtIf = "CtIf",
@@ -66,6 +72,7 @@ export enum Rule {
   CtSequencing = "CtSequencing",
   CtDummyAbs = "CtDummyAbs",
   CtLet = "CtLet",
+  CtBinOp = "CtBinOp",
 }
 
 // Sentinel type used as a placeholder when the real type cannot be inferred due to an error.

@@ -126,12 +126,22 @@ twice ((compose identity) identity);`,
   {
     label: "Let-bound Function",
     description: "bind a function with let, then apply it in the body",
-    code: `let apply = λ f : Nat -> Nat . λ x : Nat . f x in (apply (λ y : Nat . y) 5);`,
+    code: `let apply = λ f . λ x . f x in (apply (λ y : Nat . y) 5);`,
   },
   {
     label: "Nested Let",
     description: "an inner let shadows the outer binding of the same name",
     code: `let x = 1 in (let x = true in x);`,
+  },
+  {
+    label: "Arithmetic",
+    description: "+ - * / over Nat (all one precedence level, so group with parens)",
+    code: `((2 + 3) * 4 - 1) / 3;`,
+  },
+  {
+    label: "Comparison",
+    description: "< <= > >= == != over Nat, producing Bool",
+    code: `if (2 + 3) >= 5 then (10 == 10) else (10 != 10);`,
   },
 ];
 

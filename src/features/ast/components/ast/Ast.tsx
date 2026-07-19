@@ -32,6 +32,7 @@ import {SequencingFlowNode} from "@/features/ast/components/ast/flow/SequencingF
 import {TupleFlowNode} from "@/features/ast/components/ast/flow/TupleFlowNode";
 import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/DummyAbstractionFlowNode";
 import {LetFlowNode} from "@/features/ast/components/ast/flow/LetFlowNode";
+import {BinOpFlowNode} from "@/features/ast/components/ast/flow/BinOpFlowNode";
 
 
 export interface AstProps {
@@ -80,6 +81,7 @@ export const nodeTypes: NodeTypes = {
   tuple: TupleFlowNode,
   dummyAbstraction: DummyAbstractionFlowNode,
   let: LetFlowNode,
+  binOp: BinOpFlowNode,
 } as NodeTypes;
 
 export function Ast({
@@ -156,6 +158,7 @@ export function Ast({
             if (node.type === 'sequencing') return 'hsl(199, 89%, 48%)';
             if (node.type === 'dummyAbstraction') return 'hsl(258, 90%, 66%)';
             if (node.type === 'let') return 'hsl(160, 84%, 39%)';
+            if (node.type === 'binOp') return 'hsl(38, 92%, 50%)';
             return 'hsl(var(--muted))';
           }}
         />

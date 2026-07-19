@@ -19,7 +19,8 @@ export type Term =
   Sequencing |
   Tuple |
   DummyAbstraction |
-  Let
+  Let |
+  BinOp
 
 export interface Var extends Node {
   kind: "Var"
@@ -29,7 +30,11 @@ export interface Var extends Node {
 export interface Abs extends Node {
   kind: "Abs"
   param: string
-  paramType: Type
+  // Omitted for an unannotated parameter (λx. t) — only legal as (part of)
+  // a `let`-bound value, where LetPolymorphismInferenceVisitor infers it as
+  // a fresh metavariable; STLCTypeChecker has no way to make sense of a
+  // missing annotation and reports an error if one reaches it directly.
+  paramType?: Type
   body: Term
   type?: Type
 }
@@ -154,4 +159,20 @@ export interface Let extends Node {
   name: string;
   value: Term;
   body: Term;
+}
+
+// =====================================================================
+// =                    ARITHMETIC AND COMPARISON                      =
+// =====================================================================
+
+// Arithmetic and comparison operators share a single AST node/visitor
+// method — the operator alone selects the typing rule, evaluation
+// behaviour, and displayed proof-tree rule name.
+export type BinaryOperator = "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "==" | "!=";
+
+export interface BinOp extends Node {
+  kind: "BinOp";
+  operator: BinaryOperator;
+  left: Term;
+  right: Term;
 }

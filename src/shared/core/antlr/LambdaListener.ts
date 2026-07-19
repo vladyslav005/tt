@@ -8,6 +8,7 @@ import { ExprContext } from "./LambdaParser.js";
 import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
+import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
 import { InlContext } from "./LambdaParser.js";
 import { IfConditionContext } from "./LambdaParser.js";
@@ -26,6 +27,7 @@ import { SequencingContext } from "./LambdaParser.js";
 import { TupleContext } from "./LambdaParser.js";
 import { ParenthesesContext } from "./LambdaParser.js";
 import { DummyAbstractionContext } from "./LambdaParser.js";
+import { BinaryOpContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
@@ -88,6 +90,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitVariable?: (ctx: VariableContext) => void;
+	/**
+	 * Enter a parse tree produced by the `LambdaAbstractionUntyped`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	enterLambdaAbstractionUntyped?: (ctx: LambdaAbstractionUntypedContext) => void;
+	/**
+	 * Exit a parse tree produced by the `LambdaAbstractionUntyped`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	exitLambdaAbstractionUntyped?: (ctx: LambdaAbstractionUntypedContext) => void;
 	/**
 	 * Enter a parse tree produced by the `VariantCase`
 	 * labeled alternative in `LambdaParser.term`.
@@ -304,6 +318,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitDummyAbstraction?: (ctx: DummyAbstractionContext) => void;
+	/**
+	 * Enter a parse tree produced by the `BinaryOp`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	enterBinaryOp?: (ctx: BinaryOpContext) => void;
+	/**
+	 * Exit a parse tree produced by the `BinaryOp`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	exitBinaryOp?: (ctx: BinaryOpContext) => void;
 	/**
 	 * Enter a parse tree produced by the `SumType`
 	 * labeled alternative in `LambdaParser.type`.

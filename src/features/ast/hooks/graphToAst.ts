@@ -467,6 +467,20 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
       return result as any;
     }
 
+    case "BinOp": {
+      const leftNode = firstTargetNode(byHandle, "leftOperand", nodeMap);
+      const rightNode = firstTargetNode(byHandle, "rightOperand", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "BinOp",
+        operator: raw.operator ?? "+",
+        left: leftNode ? reconstruct(leftNode, nodeMap, edges, visiting) as Term : ({id: `${node.id}-leftOperand`, kind: "Lit", value: "0"} as Term),
+        right: rightNode ? reconstruct(rightNode, nodeMap, edges, visiting) as Term : ({id: `${node.id}-rightOperand`, kind: "Lit", value: "0"} as Term),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
     default:
       visiting.delete(node.id);
       return node.data.term as ASTNode;

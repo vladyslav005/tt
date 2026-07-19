@@ -3,6 +3,7 @@ import type {
   App,
   Ascribe,
   ASTNode,
+  BinOp,
   Case,
   DummyAbstraction,
   GlobalDecl,
@@ -65,6 +66,8 @@ export abstract class AstVisitor<R> {
         return this.visitTuple(node)
       case "DummyAbstraction":
         return this.visitDummyAbstraction(node)
+      case "BinOp":
+        return this.visitBinOp(node)
 
       /* ===== Declarations ===== */
       case "FunDecl":
@@ -124,6 +127,8 @@ export abstract class AstVisitor<R> {
   protected abstract visitSequencing(node: Sequencing): R
 
   protected abstract visitDummyAbstraction(node: DummyAbstraction): R
+
+  protected abstract visitBinOp(node: BinOp): R
 
   /* ===== Let ===== */
   protected abstract visitLet(node: Let): R

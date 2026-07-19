@@ -45,7 +45,9 @@ export function AbstractionFlowNode({data, selected}: { data: AbstractionNodeDat
             <div className="h-9 rounded-lg border border-dashed border-purple-300 dark:border-purple-700 bg-background/30"/>
           ) : (
             <div className="rounded-lg border border-purple-200 dark:border-purple-800 bg-background px-3 py-2">
-              <code className="text-xs font-mono text-foreground/80">{typeToString(data.term.paramType)}</code>
+              <code className="text-xs font-mono text-foreground/80">
+                {data.term.paramType ? typeToString(data.term.paramType) : "(inferred)"}
+              </code>
             </div>
           )}
           <LimitedHandle type="source" position={Position.Right} id="paramType" maxConnections={1}

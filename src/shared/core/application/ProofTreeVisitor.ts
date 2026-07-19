@@ -41,6 +41,8 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitSequencing(node)
       case "DummyAbs":
         return this.visitDummyAbstraction(node)
+      case "BinOp":
+        return this.visitBinOp(node)
 
 
       default:
@@ -82,5 +84,7 @@ export abstract class ProofTreeVisitor<R> {
   protected abstract visitSequencing(node: ProofTree): R
 
   protected abstract visitDummyAbstraction(node: ProofTree): R
+
+  protected abstract visitBinOp(node: ProofTree): R
 
 }

@@ -93,8 +93,12 @@ function TermView({
           <>
             <span className="text-purple-600 dark:text-purple-400">λ</span>
             <span> {term.param}</span>
-            <span className="text-muted-foreground"> : </span>
-            <TypeView type={term.paramType} />
+            {term.paramType && (
+              <>
+                <span className="text-muted-foreground"> : </span>
+                <TypeView type={term.paramType} />
+              </>
+            )}
             <span className="text-muted-foreground"> . </span>
             <TermView term={term.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
           </>
@@ -107,6 +111,17 @@ function TermView({
             <span className="text-muted-foreground"> </span>
             <TermView term={term.arg} selectedId={selectedId} resultId={resultId} errorId={errorId} />
             <span className="text-muted-foreground">)</span>
+          </>
+        );
+      case "Let":
+        return (
+          <>
+            <span className="text-emerald-600 dark:text-emerald-400">let </span>
+            <span>{term.name}</span>
+            <span className="text-muted-foreground"> = </span>
+            <TermView term={term.value} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-emerald-600 dark:text-emerald-400"> in </span>
+            <TermView term={term.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
           </>
         );
       case "Inl":
@@ -255,6 +270,16 @@ function TermView({
             <TypeView type={term.paramType} />
             <span className="text-muted-foreground"> . </span>
             <TermView term={term.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "BinOp":
+        return (
+          <>
+            <span className="text-muted-foreground">(</span>
+            <TermView term={term.left} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-amber-600 dark:text-amber-400"> {term.operator} </span>
+            <TermView term={term.right} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-muted-foreground">)</span>
           </>
         );
     }

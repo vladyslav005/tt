@@ -4,6 +4,7 @@ import type {
   Abs,
   App,
   Ascribe,
+  BinOp,
   Case,
   DummyAbstraction,
   GlobalDecl,
@@ -35,6 +36,27 @@ const isTrueLiteral = (term: Term): boolean =>
 
 const isFalseLiteral = (term: Term): boolean =>
   term.kind === "Lit" && (term.value === "false" || term.value === "False");
+
+const isNatLiteral = (term: Term): term is Lit =>
+  term.kind === "Lit" && /^\d+$/.test(term.value);
+
+// Nat subtraction is monus (truncated at zero) — there's no negative Nat.
+// Division by zero returns null so the caller can leave the term stuck
+// rather than producing a bogus result.
+function evalBinOp(operator: BinOp["operator"], left: number, right: number): string | null {
+  switch (operator) {
+    case "+": return String(left + right);
+    case "-": return String(Math.max(0, left - right));
+    case "*": return String(left * right);
+    case "/": return right === 0 ? null : String(Math.floor(left / right));
+    case "<": return String(left < right);
+    case ">": return String(left > right);
+    case "<=": return String(left <= right);
+    case ">=": return String(left >= right);
+    case "==": return String(left === right);
+    case "!=": return String(left !== right);
+  }
+}
 
 export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
@@ -503,6 +525,44 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     return null;
   }
 
+  protected override visitBinOp(node: BinOp): ReductionStep | null {
+    if (!this.isValue(node.left)) {
+      const step = this.visit(node.left);
+      if (!step) return null;
+      return {
+        before: node,
+        after: {...node, left: step.after},
+        selectedId: step.selectedId,
+        resultId: step.resultId,
+      };
+    }
+
+    if (!this.isValue(node.right)) {
+      const step = this.visit(node.right);
+      if (!step) return null;
+      return {
+        before: node,
+        after: {...node, right: step.after},
+        selectedId: step.selectedId,
+        resultId: step.resultId,
+      };
+    }
+
+    if (!isNatLiteral(node.left) || !isNatLiteral(node.right)) {
+      // Stuck: both sides are values, but at least one isn't a Nat literal.
+      return null;
+    }
+
+    const result = evalBinOp(node.operator, Number(node.left.value), Number(node.right.value));
+    if (result === null) {
+      // Stuck: e.g. division by zero.
+      return null;
+    }
+
+    const after: Lit = {kind: "Lit", id: crypto.randomUUID(), value: result};
+    return {before: node, after, selectedId: node.id, resultId: after.id};
+  }
+
   protected override visitLet(node: Let): ReductionStep | null {
     /*
      * `let x = t1 in t2` is a redex the moment it's formed — unlike App,
@@ -738,6 +798,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         const bound = this.substituteUnderBinder(term.name, term.body, variable, replacement);
         return {...term, value, name: bound.name, body: bound.body};
       }
+
+      case "BinOp":
+        return {
+          ...term,
+          left: this.substitute(term.left, variable, replacement),
+          right: this.substitute(term.right, variable, replacement),
+        };
     }
   }
 
@@ -805,6 +872,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "Variant":
         return term.variants.every((v) => this.isValue(v.term));
+
+      case "BinOp":
+        return false;
     }
   }
 
@@ -912,6 +982,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...this.getFreeVariables(term.body, nextBound),
         ]);
       }
+
+      case "BinOp":
+        return new Set([
+          ...this.getFreeVariables(term.left, bound),
+          ...this.getFreeVariables(term.right, bound),
+        ]);
     }
   }
 
@@ -1061,6 +1137,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           value: this.renameBoundVariable(term.value, oldName, newName),
           body: this.renameBoundVariable(term.body, oldName, newName),
         };
+
+      case "BinOp":
+        return {
+          ...term,
+          left: this.renameBoundVariable(term.left, oldName, newName),
+          right: this.renameBoundVariable(term.right, oldName, newName),
+        };
     }
   }
 
@@ -1140,6 +1223,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...this.getAllNames(term.value),
           ...this.getAllNames(term.body),
         ]);
+
+      case "BinOp":
+        return new Set([
+          ...this.getAllNames(term.left),
+          ...this.getAllNames(term.right),
+        ]);
     }
   }
 
@@ -1185,7 +1274,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...term,
           id: crypto.randomUUID(),
           body: this.cloneTermWithFreshIds(term.body),
-          paramType: this.cloneTypeWithFreshIds(term.paramType),
+          paramType: term.paramType
+            ? this.cloneTypeWithFreshIds(term.paramType)
+            : undefined,
           type: term.type
             ? this.cloneTypeWithFreshIds(term.type)
             : undefined,
@@ -1304,6 +1395,14 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           id: crypto.randomUUID(),
           value: this.cloneTermWithFreshIds(term.value),
           body: this.cloneTermWithFreshIds(term.body),
+        };
+
+      case "BinOp":
+        return {
+          ...term,
+          id: crypto.randomUUID(),
+          left: this.cloneTermWithFreshIds(term.left),
+          right: this.cloneTermWithFreshIds(term.right),
         };
     }
   }

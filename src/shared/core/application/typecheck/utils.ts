@@ -1,4 +1,22 @@
-import type {Type} from "@/shared/core/domain/ast";
+import type {BinaryOperator, Type} from "@/shared/core/domain/ast";
+
+const ARITHMETIC_OPERATORS: ReadonlySet<BinaryOperator> = new Set(["+", "-", "*", "/"]);
+
+// Arithmetic operators type as Nat -> Nat -> Nat; the rest (comparisons)
+// type as Nat -> Nat -> Bool. Shared by both type checkers so the one
+// BinOp visitor method in each picks the right result/rule per operator.
+export function isArithmeticOperator(operator: BinaryOperator): boolean {
+  return ARITHMETIC_OPERATORS.has(operator);
+}
+
+// 'C' is skipped: it's reserved for constraint sets (C_1, C_2, ...) in proof-tree rendering.
+const META_VAR_ALPHABET = "ABDEFGHIJKLMNOPQRSTUVWXYZ";
+
+export function metaVarName(index: number): string {
+  const letter = META_VAR_ALPHABET[index % META_VAR_ALPHABET.length - 1];
+  const cycle = Math.floor(index / META_VAR_ALPHABET.length);
+  return cycle === 0 ? `'${letter}` : `'${letter}_${cycle}`;
+}
 
 export function typeEquals(a: Type, b: Type): boolean {
   if (a.kind !== b.kind) return false;
@@ -74,6 +92,6 @@ export function typeToString(a: Type): string {
       return `{${a.fields.map((f) => `${f.label}:${typeToString(f.type)}`).join(", ")}}`;
 
     case "TyMetaVar":
-      return `?${a.name}`;
+      return a.name;
   }
 }

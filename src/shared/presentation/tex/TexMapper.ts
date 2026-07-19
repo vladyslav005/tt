@@ -1,9 +1,38 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
 import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {Term, Type} from "@/shared/core/domain/ast";
+import type {BinaryOperator, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+
+const BINOP_TEX_SYMBOLS: Record<BinaryOperator, string> = {
+  "+": "+",
+  "-": "-",
+  "*": "\\times",
+  "/": "/",
+  "<": "<",
+  ">": ">",
+  "<=": "\\leq",
+  ">=": "\\geq",
+  "==": "=",
+  "!=": "\\neq",
+};
+
+// Suffix only — callers prefix "T-" (plain rules) or "CT-" (constraint
+// rules), so the one BinOp visitor method still displays a distinct rule
+// per operator without duplicating this table in both TeX mappers.
+const BINOP_RULE_NAMES: Record<BinaryOperator, string> = {
+  "+": "Plus",
+  "-": "Minus",
+  "*": "Times",
+  "/": "Div",
+  "<": "Lt",
+  ">": "Gt",
+  "<=": "Leq",
+  ">=": "Geq",
+  "==": "Eq",
+  "!=": "Neq",
+};
 
 export class TexMapper extends ProofTreeVisitor<TexTree> {
 
@@ -196,6 +225,19 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  protected visitBinOp(node: ProofTree): TexTree {
+    const operator = (node.term as any).operator as BinaryOperator;
+    return {
+      ...this.judgements(node),
+      rule: `T-${BINOP_RULE_NAMES[operator]}`,
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  static binOpRuleName(operator: BinaryOperator): string {
+    return BINOP_RULE_NAMES[operator];
+  }
+
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)
@@ -238,7 +280,9 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       case "Lit":
         return term.value.toString()
       case "Abs":
-        return `(\\lambda ${term.param} : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
+        return term.paramType
+          ? `(\\lambda ${term.param} : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
+          : `(\\lambda ${term.param} . ${this.termToTex(term.body)})`
       case "App":
         return `(${this.termToTex(term.func)}\\ ${this.termToTex(term.arg)})`
       case "Inl":
@@ -279,6 +323,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `(\\lambda \\_ : ${this.typeToTex(term.paramType)} . ${this.termToTex(term.body)})`
       case "Let":
         return `\\text{let}\\ ${term.name} = ${this.termToTex(term.value)}\\ \\text{in}\\ ${this.termToTex(term.body)}`
+      case "BinOp":
+        return `(${this.termToTex(term.left)} ${BINOP_TEX_SYMBOLS[term.operator]} ${this.termToTex(term.right)})`
     }
   }
 
@@ -297,14 +343,15 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     if (type.kind === "TypeScheme") {
       const body = this.typeToTex(type.type)
       return type.vars.length > 0
-        ? `\\forall ${type.vars.join(", ")}.\\, ${body}`
+        ? `\\forall ${type.vars.map((v) => `\\text{${v}}`).join(", ")}.\\, ${body}`
         : body
     }
 
     switch (type.kind) {
       case "TyVar":
-      case "TyMetaVar":
         return type.name
+      case "TyMetaVar":
+        return `\\text{${type.name}}`
       case "TyArrow": {
         // Parenthesize sub-arrow on the left (non-default grouping);
         // also parenthesize on the right so right-assoc default is explicit.

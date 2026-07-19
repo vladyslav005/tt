@@ -2,6 +2,7 @@ import type {
   Abs,
   App,
   Ascribe,
+  BinOp,
   Case,
   DummyAbstraction,
   FunDecl,
@@ -108,6 +109,8 @@ export class AstPrettyPrinter {
         return this.printDummyAbstraction(term);
       case "Let":
         return this.printLet(term);
+      case "BinOp":
+        return this.printBinOp(term);
     }
   }
 
@@ -178,6 +181,10 @@ export class AstPrettyPrinter {
     return `(let ${t.name} = ${this.printTerm(t.value)} in ${this.printTerm(t.body)})`;
   }
 
+  private printBinOp(t: BinOp): string {
+    return `(${this.printTerm(t.left)} ${t.operator} ${this.printTerm(t.right)})`;
+  }
+
   private printVar(v: Var): string {
     return v.name;
   }
@@ -190,7 +197,8 @@ export class AstPrettyPrinter {
     // Parser example in repo uses: (λ x : T . (x) : T -> T)
     const body = this.printTerm(abs.body);
     const annotatedType = abs.type ? ` : ${this.printType(abs.type)}` : "";
-    return `(λ ${abs.param} : ${this.printType(abs.paramType)} . ${body}${annotatedType})`;
+    const param = abs.paramType ? `${abs.param} : ${this.printType(abs.paramType)}` : abs.param;
+    return `(λ ${param} . ${body}${annotatedType})`;
   }
 
   private printApp(app: App): string {

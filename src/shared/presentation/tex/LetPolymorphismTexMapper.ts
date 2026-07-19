@@ -10,6 +10,7 @@ export const CT_RULES: ReadonlySet<Rule> = new Set([
   Rule.CtVar,
   Rule.CtVarLet,
   Rule.CtAbs,
+  Rule.CtAbsInf,
   Rule.CtApp,
   Rule.CtLit,
   Rule.CtIf,
@@ -26,6 +27,7 @@ export const CT_RULES: ReadonlySet<Rule> = new Set([
   Rule.CtSequencing,
   Rule.CtDummyAbs,
   Rule.CtLet,
+  Rule.CtBinOp,
 ]);
 
 // Renders the constraint-typing (CT) proof trees produced by
@@ -151,6 +153,7 @@ export class LetPolymorphismTexMapper {
       case Rule.CtVarLet:
         return this.visitVar(node);
       case Rule.CtAbs:
+      case Rule.CtAbsInf:
       case Rule.CtDummyAbs:
         return this.visitAbs(node);
       case Rule.CtApp:
@@ -183,6 +186,8 @@ export class LetPolymorphismTexMapper {
         return this.visitChildren(node, "CT-Seq");
       case Rule.CtLet:
         return this.visitLet(node);
+      case Rule.CtBinOp:
+        return this.visitBinOp(node);
       default:
         throw new Error("Unknown constraint-typing rule: " + node.rule);
     }
@@ -212,9 +217,10 @@ export class LetPolymorphismTexMapper {
   }
 
   private visitAbs(node: InferProofTree): TexTree {
+    const rule = node.rule === Rule.CtAbsInf ? "CT-AbsInf" : "CT-Abs";
     return {
       ...this.judgements(node),
-      rule: "CT-Abs",
+      rule,
       children: node.premises.map((child) => this.visit(child)),
     };
   }
@@ -265,9 +271,26 @@ export class LetPolymorphismTexMapper {
     };
   }
 
+  private visitBinOp(node: InferProofTree): TexTree {
+    const operator = (node.term as any).operator;
+    return this.visitChildren(node, `CT-${TexMapper.binOpRuleName(operator)}`);
+  }
+
   private visitLet(node: InferProofTree): TexTree {
     const [valueProof, bodyProof] = node.premises;
     const letName = (node.term as any).name as string;
+
+    // The value itself may have failed to type-check (e.g. an occurs-check
+    // or unification failure while solving its own constraints) — that
+    // error path returns only the value's proof, with no body to
+    // generalize into.
+    if (!bodyProof) {
+      return {
+        ...this.judgements(node),
+        rule: "CT-Let",
+        children: [this.visit(valueProof)],
+      };
+    }
 
     return {
       ...this.judgements(node),

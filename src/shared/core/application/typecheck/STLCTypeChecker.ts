@@ -4,6 +4,7 @@ import type {
   App,
   Ascribe,
   ASTNode,
+  BinOp,
   Case,
   DummyAbstraction,
   GlobalDecl,
@@ -27,7 +28,7 @@ import type {
   VariantCase,
 } from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
-import {typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {isArithmeticOperator, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 import {ERROR_TYPE, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {LetPolymorphismInferenceVisitor} from "@/shared/core/application/typecheck/LetPolymorphismInferenceVisitor.ts";
 
@@ -39,6 +40,30 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   public getErrors(): Error[] {
     return this.errorBuffer;
+  }
+
+  // Binds `name` for the duration of `fn`, then restores whatever was there
+  // before (or removes the binding entirely if there was nothing) — even if
+  // `fn` throws. Needed because Gamma.add throws on a name already present,
+  // so a lambda/case parameter shadowing an outer binding of the same name
+  // would otherwise crash instead of shadowing it.
+  private withBinding<T>(name: string, type: Type, fn: () => T): T {
+    const hadPrevious = this.context.has(name);
+    const previous = hadPrevious ? this.context.get(name) : undefined;
+
+    if (hadPrevious) {
+      this.context.delete(name);
+    }
+    this.context.add(name, type);
+
+    try {
+      return fn();
+    } finally {
+      this.context.delete(name);
+      if (hadPrevious) {
+        this.context.add(name, previous!);
+      }
+    }
   }
 
   visit(node: ASTNode): ProofTree {
@@ -70,9 +95,25 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitAbs(node: Abs): ProofTree {
-    this.context.add(node.param, node.paramType);
-    const bodyProof: ProofTree = this.visit(node.body);
-    this.context.delete(node.param);
+    if (!node.paramType) {
+      const msg = `Lambda parameter "${node.param}" needs a type annotation (λ${node.param}:T. ...) — an unannotated parameter is only allowed inside a let-bound value, where its type can be inferred`;
+      this.errorBuffer.push(new Error(msg));
+
+      return {
+        rule: Rule.Abs,
+        term: node,
+        type: ERROR_TYPE,
+        gamma: this.context.serializeGamma(),
+        premises: [],
+        error: msg,
+      };
+    }
+
+    const bodyProof: ProofTree = this.withBinding(
+      node.param,
+      node.paramType,
+      () => this.visit(node.body),
+    );
 
     const abstractionType: TyArrow = {
       kind: "TyArrow",
@@ -329,13 +370,17 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       return returnProof;
     }
 
-    this.context.add(node.inl.variable, scrutineeType.left);
-    const inlProof = this.visit(node.inl.term);
-    this.context.delete(node.inl.variable);
+    const inlProof = this.withBinding(
+      node.inl.variable,
+      scrutineeType.left,
+      () => this.visit(node.inl.term),
+    );
 
-    this.context.add(node.inr.variable, scrutineeType.right);
-    const inrProof = this.visit(node.inr.term);
-    this.context.delete(node.inr.variable);
+    const inrProof = this.withBinding(
+      node.inr.variable,
+      scrutineeType.right,
+      () => this.visit(node.inr.term),
+    );
 
     returnProof.premises = [scrutineeProof, inlProof, inrProof];
     returnProof.type = inlProof.type;
@@ -381,9 +426,11 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
         continue;
       }
 
-      this.context.add(c.variable, field.type);
-      const branchProof = this.visit(c.body);
-      this.context.delete(c.variable);
+      const branchProof = this.withBinding(
+        c.variable,
+        field.type,
+        () => this.visit(c.body),
+      );
       premises.push(branchProof);
 
       if (resultType === undefined) {
@@ -602,6 +649,30 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       gamma: this.context.serializeGamma(),
       premises: [bodyProof],
     };
+  }
+
+  protected visitBinOp(node: BinOp): ProofTree {
+    const natType: TyVar = {kind: "TyVar", id: "nat-sentinel", name: "Nat"};
+    const boolType: TyVar = {kind: "TyVar", id: "bool-sentinel", name: "Bool"};
+
+    const leftProof = this.visit(node.left);
+    const rightProof = this.visit(node.right);
+
+    const returnProof: ProofTree = {
+      rule: Rule.BinOp,
+      term: node,
+      type: isArithmeticOperator(node.operator) ? natType : boolType,
+      gamma: this.context.serializeGamma(),
+      premises: [leftProof, rightProof],
+    };
+
+    if (!typeEquals(leftProof.type, natType) || !typeEquals(rightProof.type, natType)) {
+      const msg = `Operator "${node.operator}" expects both operands to have type Nat, but got ${typeToString(leftProof.type)} and ${typeToString(rightProof.type)}`;
+      this.errorBuffer.push(new Error(msg));
+      returnProof.error = msg;
+    }
+
+    return returnProof;
   }
 
   protected visitLet(node: Let): ProofTree {
