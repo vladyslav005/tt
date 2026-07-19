@@ -6,6 +6,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   GlobalDecl,
   IfCondition,
   Inl,
@@ -68,6 +69,8 @@ export abstract class AstVisitor<R> {
         return this.visitDummyAbstraction(node)
       case "BinOp":
         return this.visitBinOp(node)
+      case "Fix":
+        return this.visitFix(node)
 
       /* ===== Declarations ===== */
       case "FunDecl":
@@ -129,6 +132,8 @@ export abstract class AstVisitor<R> {
   protected abstract visitDummyAbstraction(node: DummyAbstraction): R
 
   protected abstract visitBinOp(node: BinOp): R
+
+  protected abstract visitFix(node: Fix): R
 
   /* ===== Let ===== */
   protected abstract visitLet(node: Let): R

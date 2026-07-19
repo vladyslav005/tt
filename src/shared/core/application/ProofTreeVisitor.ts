@@ -43,6 +43,8 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitDummyAbstraction(node)
       case "BinOp":
         return this.visitBinOp(node)
+      case "Fix":
+        return this.visitFix(node)
 
 
       default:
@@ -86,5 +88,7 @@ export abstract class ProofTreeVisitor<R> {
   protected abstract visitDummyAbstraction(node: ProofTree): R
 
   protected abstract visitBinOp(node: ProofTree): R
+
+  protected abstract visitFix(node: ProofTree): R
 
 }

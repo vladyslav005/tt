@@ -7,6 +7,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   GlobalDecl,
   IfCondition,
   Inl,
@@ -563,6 +564,24 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     return {before: node, after, selectedId: node.id, resultId: after.id};
   }
 
+  protected override visitFix(node: Fix): ReductionStep | null {
+    if (node.term.kind === "Abs") {
+      // E-fixBeta: fix (λx:T.t) -> [x ↦ fix (λx:T.t)] t — strategy-independent.
+      const after = this.substitute(node.term.body, node.term.param, node);
+      return {before: node, after, selectedId: node.id, resultId: after.id};
+    }
+
+    // E-fix: reduce the wrapped term.
+    const step = this.visit(node.term);
+    if (!step) return null;
+    return {
+      before: node,
+      after: {...node, term: step.after},
+      selectedId: step.selectedId,
+      resultId: step.resultId,
+    };
+  }
+
   protected override visitLet(node: Let): ReductionStep | null {
     /*
      * `let x = t1 in t2` is a redex the moment it's formed — unlike App,
@@ -805,6 +824,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           left: this.substitute(term.left, variable, replacement),
           right: this.substitute(term.right, variable, replacement),
         };
+
+      case "Fix":
+        return {...term, term: this.substitute(term.term, variable, replacement)};
     }
   }
 
@@ -874,6 +896,11 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         return term.variants.every((v) => this.isValue(v.term));
 
       case "BinOp":
+        return false;
+
+      case "Fix":
+        // "fix v nie je hodnota" — fix is never a value, even when its
+        // argument already is (only application of the unfolded result is).
         return false;
     }
   }
@@ -988,6 +1015,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...this.getFreeVariables(term.left, bound),
           ...this.getFreeVariables(term.right, bound),
         ]);
+
+      case "Fix":
+        return this.getFreeVariables(term.term, bound);
     }
   }
 
@@ -1144,6 +1174,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           left: this.renameBoundVariable(term.left, oldName, newName),
           right: this.renameBoundVariable(term.right, oldName, newName),
         };
+
+      case "Fix":
+        return {...term, term: this.renameBoundVariable(term.term, oldName, newName)};
     }
   }
 
@@ -1229,6 +1262,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...this.getAllNames(term.left),
           ...this.getAllNames(term.right),
         ]);
+
+      case "Fix":
+        return this.getAllNames(term.term);
     }
   }
 
@@ -1404,6 +1440,9 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           left: this.cloneTermWithFreshIds(term.left),
           right: this.cloneTermWithFreshIds(term.right),
         };
+
+      case "Fix":
+        return {...term, id: crypto.randomUUID(), term: this.cloneTermWithFreshIds(term.term)};
     }
   }
 

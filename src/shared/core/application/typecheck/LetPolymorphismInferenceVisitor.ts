@@ -10,7 +10,7 @@ import type {
   ASTNode,
   BinOp,
   Case,
-  DummyAbstraction, GlobalDecl,
+  DummyAbstraction, Fix, GlobalDecl,
   IfCondition,
   Inl,
   Inr, Let,
@@ -706,6 +706,26 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
         {left: leftProof.type, right: natType},
         {left: rightProof.type, right: natType},
       ],
+    };
+  }
+
+  protected visitFix(node: Fix): InferProofTree {
+    const termProof = this.visit(node.term);
+    const resultType = this.engine.freshTyMetaVar();
+    const expectedType: TyArrow = {
+      kind: "TyArrow",
+      id: crypto.randomUUID(),
+      from: resultType,
+      to: resultType,
+    };
+
+    return {
+      rule: Rule.CtFix,
+      term: node,
+      type: resultType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: expectedType}],
     };
   }
 

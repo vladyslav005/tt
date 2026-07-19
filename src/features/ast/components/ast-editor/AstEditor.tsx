@@ -58,6 +58,7 @@ import {TupleFlowNode} from "@/features/ast/components/ast/flow/TupleFlowNode";
 import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/DummyAbstractionFlowNode";
 import {LetFlowNode} from "@/features/ast/components/ast/flow/LetFlowNode";
 import {BinOpFlowNode} from "@/features/ast/components/ast/flow/BinOpFlowNode";
+import {FixFlowNode} from "@/features/ast/components/ast/flow/FixFlowNode";
 import {Undo2, Redo2, LayoutGrid, Maximize2, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -137,6 +138,7 @@ export const nodeTypes: NodeTypes = {
   dummyAbstraction: DummyAbstractionFlowNode,
   let: LetFlowNode,
   binOp: BinOpFlowNode,
+  fix: FixFlowNode,
 } as NodeTypes;
 
 type AddOnDropKind = "decl" | "term" | "type";
@@ -166,7 +168,7 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "abstraction", "application", "variable", "literal",
     "inl", "inr", "ifCondition", "case", "variantCase", "variant",
     "ascribe", "tupleProjection", "recordProjection", "record",
-    "sequencing", "tuple", "dummyAbstraction", "let", "binOp",
+    "sequencing", "tuple", "dummyAbstraction", "let", "binOp", "fix",
   ],
   type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType"],
 };
@@ -290,6 +292,18 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           id, kind: "BinOp", operator: "+",
           left: { id: `${id}-leftOperand`, kind: "Lit", value: "1" },
           right: { id: `${id}-rightOperand`, kind: "Lit", value: "1" },
+        },
+      };
+    case "fix":
+      return {
+        type: "fix",
+        term: {
+          id, kind: "Fix",
+          term: {
+            id: `${id}-term`, kind: "Abs", param: "f",
+            paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+            body: { id: `${id}-body`, kind: "Var", name: "f" },
+          },
         },
       };
     case "tuple":
@@ -1175,6 +1189,7 @@ export function AstEditor({
           <span className="text-xs text-muted-foreground mr-0.5">Math</span>
           {([
             { type: "binOp", label: "+/<", title: "Arithmetic or comparison (t1 op t2)" },
+            { type: "fix",   label: "fix", title: "Fixpoint operator (fix t, t : T -> T)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}
@@ -1367,6 +1382,7 @@ export function AstEditor({
             if (node.type === 'dummyAbstraction') return 'hsl(258, 90%, 66%)';
             if (node.type === 'let') return 'hsl(160, 84%, 39%)';
             if (node.type === 'binOp') return 'hsl(38, 92%, 50%)';
+            if (node.type === 'fix') return 'hsl(0, 84%, 60%)';
             return 'hsl(var(--muted))';
           }}
         />

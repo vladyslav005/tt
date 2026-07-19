@@ -282,6 +282,13 @@ function TermView({
             <span className="text-muted-foreground">)</span>
           </>
         );
+      case "Fix":
+        return (
+          <>
+            <span className="text-red-600 dark:text-red-400">fix </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
     }
   })();
 

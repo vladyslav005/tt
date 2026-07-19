@@ -6,6 +6,7 @@ import {
   BinaryOpContext,
   CaseContext,
   DummyAbstractionContext,
+  FixContext,
   IfConditionContext,
   InlContext,
   InrContext,
@@ -30,6 +31,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   IfCondition,
   Inl,
   Inr, Let,
@@ -271,6 +273,14 @@ export class TermBuilderVisitor
       operator: ctx._op.text as BinaryOperator,
       left: this.visit(ctx.term(0)),
       right: this.visit(ctx.term(1)),
+    }
+  }
+
+  visitFix = (ctx: FixContext): Fix => {
+    return {
+      kind: "Fix",
+      id: crypto.randomUUID(),
+      term: this.visit(ctx.term()),
     }
   }
 

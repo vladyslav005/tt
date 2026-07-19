@@ -149,6 +149,15 @@ export class Evaluator {
         }
         return undefined;
       }
+
+      case "Fix": {
+        const found = this.findStuckTerm(term.term);
+        if (found) return found;
+        if (term.term.kind !== "Abs") {
+          return {id: term.id, message: "Evaluation stuck: \"fix\" requires a λ-abstraction to unfold, but got a non-function value"};
+        }
+        return undefined;
+      }
     }
   }
 
@@ -173,6 +182,7 @@ export class Evaluator {
       case "DummyAbstraction":
       case "Let":
       case "BinOp":
+      case "Fix":
         return ast;
 
       case "Program": {

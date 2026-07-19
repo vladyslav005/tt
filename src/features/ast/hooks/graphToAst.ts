@@ -481,6 +481,17 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
       return result as any;
     }
 
+    case "Fix": {
+      const termNode = firstTargetNode(byHandle, "term", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Fix",
+        term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`, "f"),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
     default:
       visiting.delete(node.id);
       return node.data.term as ASTNode;

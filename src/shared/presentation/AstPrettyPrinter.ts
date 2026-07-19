@@ -5,6 +5,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   FunDecl,
   GlobalDecl,
   IfCondition,
@@ -111,6 +112,8 @@ export class AstPrettyPrinter {
         return this.printLet(term);
       case "BinOp":
         return this.printBinOp(term);
+      case "Fix":
+        return this.printFix(term);
     }
   }
 
@@ -183,6 +186,10 @@ export class AstPrettyPrinter {
 
   private printBinOp(t: BinOp): string {
     return `(${this.printTerm(t.left)} ${t.operator} ${this.printTerm(t.right)})`;
+  }
+
+  private printFix(t: Fix): string {
+    return `(fix ${this.printTerm(t.term)})`;
   }
 
   private printVar(v: Var): string {

@@ -7,6 +7,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   GlobalDecl,
   IfCondition,
   Inl,
@@ -316,6 +317,11 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "leftOperand", "left", node.left);
   }
 
+  protected visitFix(node: Fix): void {
+    this.pushNode(node);
+    this.visitChild(node, "term", "t", node.term);
+  }
+
   private visitChild(parent: ASTNode, handle: string, label: string, child: ASTNode): void {
     this.visit(child);
     this.pushEdge({
@@ -448,6 +454,9 @@ export class AstFlowMapper extends AstVisitor<void> {
         return;
       case "BinOp":
         this.nodes.push({id: node.id, type: "binOp", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Fix":
+        this.nodes.push({id: node.id, type: "fix", position: {x: 0, y: 0}, data: {term: node}});
         return;
     }
   }

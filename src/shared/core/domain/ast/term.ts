@@ -20,7 +20,8 @@ export type Term =
   Tuple |
   DummyAbstraction |
   Let |
-  BinOp
+  BinOp |
+  Fix
 
 export interface Var extends Node {
   kind: "Var"
@@ -175,4 +176,13 @@ export interface BinOp extends Node {
   operator: BinaryOperator;
   left: Term;
   right: Term;
+}
+
+// =====================================================================
+// =                        FIXPOINT OPERATOR                          =
+// =====================================================================
+
+export interface Fix extends Node {
+  kind: "Fix";
+  term: Term;
 }

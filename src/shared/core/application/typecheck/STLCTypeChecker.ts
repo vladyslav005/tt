@@ -7,6 +7,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   GlobalDecl,
   IfCondition,
   Inl,
@@ -672,6 +673,28 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       returnProof.error = msg;
     }
 
+    return returnProof;
+  }
+
+  protected visitFix(node: Fix): ProofTree {
+    const termProof = this.visit(node.term);
+
+    const returnProof: ProofTree = {
+      rule: Rule.Fix,
+      term: node,
+      type: ERROR_TYPE,
+      gamma: this.context.serializeGamma(),
+      premises: [termProof],
+    };
+
+    if (termProof.type.kind !== "TyArrow" || !typeEquals(termProof.type.from, termProof.type.to)) {
+      const msg = `"fix" requires a function of type T -> T, but got ${typeToString(termProof.type)}`;
+      this.errorBuffer.push(new Error(msg));
+      returnProof.error = msg;
+      return returnProof;
+    }
+
+    returnProof.type = termProof.type.from;
     return returnProof;
   }
 

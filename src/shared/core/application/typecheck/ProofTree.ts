@@ -49,6 +49,7 @@ export enum Rule {
   // Single tag for all arithmetic/comparison operators — the operator on
   // the term itself picks the displayed rule name (T-Plus, T-Lt, ...).
   BinOp = "BinOp",
+  Fix = "Fix",
 
   CtVarLet = "CtVarLet",
   CtVar = "CtVar",
@@ -73,6 +74,7 @@ export enum Rule {
   CtDummyAbs = "CtDummyAbs",
   CtLet = "CtLet",
   CtBinOp = "CtBinOp",
+  CtFix = "CtFix",
 }
 
 // Sentinel type used as a placeholder when the real type cannot be inferred due to an error.

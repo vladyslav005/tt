@@ -238,6 +238,14 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return BINOP_RULE_NAMES[operator];
   }
 
+  protected visitFix(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Fix",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)
@@ -325,6 +333,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\text{let}\\ ${term.name} = ${this.termToTex(term.value)}\\ \\text{in}\\ ${this.termToTex(term.body)}`
       case "BinOp":
         return `(${this.termToTex(term.left)} ${BINOP_TEX_SYMBOLS[term.operator]} ${this.termToTex(term.right)})`
+      case "Fix":
+        return `\\mathit{fix}\\ ${this.termToTex(term.term)}`
     }
   }
 

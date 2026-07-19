@@ -17,6 +17,7 @@ import { CaseContext } from "./LambdaParser.js";
 import { LambdaAbstractionContext } from "./LambdaParser.js";
 import { VariantContext } from "./LambdaParser.js";
 import { AscribeContext } from "./LambdaParser.js";
+import { FixContext } from "./LambdaParser.js";
 import { TupleProjectionContext } from "./LambdaParser.js";
 import { RecordProjectionContext } from "./LambdaParser.js";
 import { LiteralContext } from "./LambdaParser.js";
@@ -136,6 +137,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitAscribe?: (ctx: AscribeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Fix`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFix?: (ctx: FixContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `TupleProjection`
 	 * labeled alternative in `LambdaParser.term`.

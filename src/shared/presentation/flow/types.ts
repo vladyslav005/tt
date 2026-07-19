@@ -6,6 +6,7 @@ import type {
   BinOp,
   Case,
   DummyAbstraction,
+  Fix,
   FunDecl,
   IfCondition,
   Inl,
@@ -88,6 +89,7 @@ export type TupleNodeData = { term: Tuple; editable?: boolean; onChange?: (patch
 export type DummyAbstractionNodeData = { term: DummyAbstraction; editable?: boolean; onChange?: (patch: any) => void };
 export type LetNodeData = { term: Let; editable?: boolean; onChange?: (patch: any) => void };
 export type BinOpNodeData = { term: BinOp; editable?: boolean; onChange?: (patch: any) => void };
+export type FixNodeData = { term: Fix; editable?: boolean; onChange?: (patch: any) => void };
 
 export type ProgramFlowNode = Node<ProgramNodeData, "program">;
 export type FunDeclFlowNode = Node<FunDeclNodeData, "funDecl">;
@@ -112,6 +114,7 @@ export type TupleFlowNode = Node<TupleNodeData, "tuple">;
 export type DummyAbstractionFlowNode = Node<DummyAbstractionNodeData, "dummyAbstraction">;
 export type LetFlowNode = Node<LetNodeData, "let">;
 export type BinOpFlowNode = Node<BinOpNodeData, "binOp">;
+export type FixFlowNode = Node<FixNodeData, "fix">;
 
 export type AstFlowNode =
   | ProgramFlowNode
@@ -136,7 +139,8 @@ export type AstFlowNode =
   | TupleFlowNode
   | DummyAbstractionFlowNode
   | LetFlowNode
-  | BinOpFlowNode;
+  | BinOpFlowNode
+  | FixFlowNode;
 
 // Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
@@ -162,6 +166,7 @@ export type TupleFlowNodeType = TupleNodeData;
 export type DummyAbstractionFlowNodeType = DummyAbstractionNodeData;
 export type LetFlowNodeType = LetNodeData;
 export type BinOpFlowNodeType = BinOpNodeData;
+export type FixFlowNodeType = FixNodeData;
 
 export type AstFlowGraph = {
   nodes: AstFlowNode[];

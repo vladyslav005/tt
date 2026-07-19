@@ -40,6 +40,7 @@ term
     | CASE term OF LBRACK ID EQ ID RBRACK DOUBLEARROW term (OR LBRACK ID EQ ID RBRACK DOUBLEARROW term)*     # VariantCase
     | INL term AS type                                                               # Inl
     | INR term AS type                                                               # Inr
+    | FIX term                                                                       # Fix
 
     // 6. Atomic / grouped terms
     | LT ID EQ term (COMMA ID EQ term)* MT                                           # Record
@@ -83,6 +84,7 @@ LAMBDA         : 'λ' | '\\' ;
 LABMDA_CAPITALIZED     : 'Λ';
 LET            : 'let';
 IN             : 'in';
+FIX            : 'fix';
 
 CASE           : 'case';
 OF             : 'of';

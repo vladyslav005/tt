@@ -17,6 +17,7 @@ import { CaseContext } from "./LambdaParser.js";
 import { LambdaAbstractionContext } from "./LambdaParser.js";
 import { VariantContext } from "./LambdaParser.js";
 import { AscribeContext } from "./LambdaParser.js";
+import { FixContext } from "./LambdaParser.js";
 import { TupleProjectionContext } from "./LambdaParser.js";
 import { RecordProjectionContext } from "./LambdaParser.js";
 import { LiteralContext } from "./LambdaParser.js";
@@ -198,6 +199,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitAscribe?: (ctx: AscribeContext) => void;
+	/**
+	 * Enter a parse tree produced by the `Fix`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	enterFix?: (ctx: FixContext) => void;
+	/**
+	 * Exit a parse tree produced by the `Fix`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	exitFix?: (ctx: FixContext) => void;
 	/**
 	 * Enter a parse tree produced by the `TupleProjection`
 	 * labeled alternative in `LambdaParser.term`.

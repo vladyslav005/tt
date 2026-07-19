@@ -143,6 +143,18 @@ twice ((compose identity) identity);`,
     description: "< <= > >= == != over Nat, producing Bool",
     code: `if (2 + 3) >= 5 then (10 == 10) else (10 != 10);`,
   },
+  {
+    label: "Factorial (fix)",
+    description: "classic fix g factorial, g : (Nat->Nat)->Nat->Nat",
+    code: `g = λ f : Nat -> Nat . λ n : Nat . if n == 0 then 1 else n * (f (n - 1)) : (Nat -> Nat) -> Nat -> Nat;
+
+(fix g) 5;`,
+  },
+  {
+    label: "Non-terminating (fix)",
+    description: "fix (λx:Nat.x) unfolds to itself forever — hits the step limit",
+    code: `fix (λ x : Nat . x);`,
+  },
 ];
 
 interface ExamplesDropdownProps {
