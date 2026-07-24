@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { BookOpen, ChevronDown } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
@@ -219,6 +219,7 @@ export function ExamplesDropdown({ onSelect }: ExamplesDropdownProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1">
+          <BookOpen className="h-3.5 w-3.5" />
           Examples
           <ChevronDown className="h-3.5 w-3.5" />
         </Button>
