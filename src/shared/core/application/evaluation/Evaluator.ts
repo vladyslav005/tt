@@ -201,7 +201,7 @@ export class Evaluator {
       case "FunDecl":
         return ast.value;
 
-      case "TyVar":
+      case "TyIdentifier":
       case "TyArrow":
       case "TupleType":
       case "SumType":

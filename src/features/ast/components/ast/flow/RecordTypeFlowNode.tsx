@@ -12,7 +12,7 @@ export function RecordTypeFlowNode({data, selected}: { data: TypeNodeData; selec
   const addField = () => {
     const i = term.fields.length;
     const id = `${term.id}-field-${i}-${Date.now()}`;
-    data.onChange?.({fields: [...term.fields, {label: `l${i + 1}`, type: {id, kind: "TyVar", name: "T"}}]} as any);
+    data.onChange?.({fields: [...term.fields, {label: `l${i + 1}`, type: {id, kind: "TyIdentifier", name: "T"}}]} as any);
   };
 
   const removeField = (index: number) => {

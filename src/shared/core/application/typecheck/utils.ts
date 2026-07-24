@@ -22,7 +22,7 @@ export function typeEquals(a: Type, b: Type): boolean {
   if (a.kind !== b.kind) return false;
 
   switch (a.kind) {
-    case "TyVar":
+    case "TyIdentifier":
       return a.name === (b as any).name;
 
     case "TyArrow":
@@ -70,7 +70,7 @@ export function typeEquals(a: Type, b: Type): boolean {
 
 export function typeToString(a: Type): string {
   switch (a.kind) {
-    case "TyVar":
+    case "TyIdentifier":
       return a.name;
 
     case "TyArrow": {

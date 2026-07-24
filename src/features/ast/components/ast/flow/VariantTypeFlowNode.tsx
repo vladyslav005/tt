@@ -12,7 +12,7 @@ export function VariantTypeFlowNode({data, selected}: { data: TypeNodeData; sele
   const addVariant = () => {
     const i = term.variants.length;
     const id = `${term.id}-field-${i}-${Date.now()}`;
-    data.onChange?.({variants: [...term.variants, {label: `l${i + 1}`, type: {id, kind: "TyVar", name: "T"}}]} as any);
+    data.onChange?.({variants: [...term.variants, {label: `l${i + 1}`, type: {id, kind: "TyIdentifier", name: "T"}}]} as any);
   };
 
   const removeVariant = (index: number) => {

@@ -38,7 +38,7 @@ export class TypeInferenceEngine {
         return this.applySubstitution(replacement, substitution);
       }
 
-      case "TyVar":
+      case "TyIdentifier":
         return type;
 
       case "TyArrow":
@@ -116,7 +116,7 @@ export class TypeInferenceEngine {
       return this.bindTypeVariable(b.name, a, substitution);
     }
 
-    if (a.kind === "TyVar" && b.kind === "TyVar") {
+    if (a.kind === "TyIdentifier" && b.kind === "TyIdentifier") {
       if (a.name === b.name) {
         return substitution;
       }
@@ -326,7 +326,7 @@ export class TypeInferenceEngine {
       case "TyMetaVar":
         return new Set([type.name]);
 
-      case "TyVar":
+      case "TyIdentifier":
         return new Set();
 
       case "TyArrow":

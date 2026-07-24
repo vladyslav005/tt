@@ -15,26 +15,29 @@ term
     : term DOT NATURAL_NUMBER                                                        # TupleProjection
     | term DOT ID                                                                    # RecordProjection
 
-    // Let polymorphic
-    | LET ID EQ term IN term                                                         # LetExpression
-
-    // 2. Application: high priority, left-associative
+    // 2. Application: term application and type application (System F)
+    // share this precedence tier, left-associative, so "t u [T] v" parses
+    // as "((t u) [T]) v".
     | term term                                                                      # Application
+    | term LBRACK type RBRACK                                                        # TypeApplication
 
-    // Arithmetic and comparison: all in one rule/alternative, same
+    // 3. Arithmetic and comparison: all in one rule/alternative, same
     // precedence, left-associative (e.g. "1 + 2 * 3" parses as "(1+2)*3").
     | term op=(PLUS|MINUS|MUL|DIV|LT|MT|LEQ|GEQ|EQEQ|NEQ) term                       # BinaryOp
 
-    // 3. Type ascription: lower than application
+    // 4. Type ascription: lower than application
     | term AS type                                                                   # Ascribe
 
-    // 4. Sequencing: lowest priority
+    // 5. Sequencing: lowest priority
     | <assoc=right> term SEMI term                                                   # Sequencing
 
-    // 5. Prefix / complex terms
+    // 6. Prefix / complex terms: keyword-led forms whose body extends
+    // maximally to the right, so relative order among them doesn't matter.
     | LAMBDA UNDERSCORE COLON type DOT term                                          # DummyAbstraction
     | LAMBDA ID COLON type DOT term                                                  # LambdaAbstraction
     | LAMBDA ID DOT term                                                             # LambdaAbstractionUntyped
+    | LAMBDA_CAPITALIZED typeVariable DOT term                                       # TypeAbstraction
+    | LET ID EQ term IN term                                                         # LetExpression
     | IF term THEN term (ELSEIF term THEN term)* (ELSE term)?                        # IfCondition
     | CASE term OR INL ID DOUBLEARROW term OR INR ID DOUBLEARROW term                # Case
     | CASE term OF LBRACK ID EQ ID RBRACK DOUBLEARROW term (OR LBRACK ID EQ ID RBRACK DOUBLEARROW term)*     # VariantCase
@@ -42,7 +45,7 @@ term
     | INR term AS type                                                               # Inr
     | FIX term                                                                       # Fix
 
-    // 6. Atomic / grouped terms
+    // 7. Atomic / grouped terms
     | LT ID EQ term (COMMA ID EQ term)* MT                                           # Record
     | LT term (COMMA term)* MT                                                       # Tuple
     | LBRACK ID EQ term (COMMA ID EQ term)* RBRACK AS type                           # Variant
@@ -55,17 +58,23 @@ type
     // 1. Sum type has higher priority than arrow
     : type PLUS type                                             # SumType
 
-    // 2. Arrow type is lowest and right-associative
+    // 2. Arrow type is lowest operator precedence, right-associative
     | <assoc=right> type ARROW type                              # FunctionType
 
-    // 3. Atomic / grouped types
+    // 3. Prefix / binder types: body extends maximally to the right, so
+    // "forall X. X -> X" is "forall X. (X -> X)".
+    | FORALL typeVariable DOT type                               # ForallType
+
+    // 4. Atomic / grouped types
     | LT type (MUL type)* MT                                     # TupleType
     | LBRACK ID COLON type (COMMA ID COLON type)* RBRACK         # VariantType
     | LPAREN type RPAREN                                         # ParenType
     | (GREEK | ID | 'Nat' | 'Bool' | 'Unit')                     # TypeIdentifier
     ;
 
-
+typeVariable
+    :  GREEK | ID
+    ;
 
 constant
     : NATURAL_NUMBER | '0'
@@ -81,10 +90,14 @@ constant
 
 LAMBDA         : 'λ' | '\\' ;
 
-LABMDA_CAPITALIZED     : 'Λ';
+LAMBDA_CAPITALIZED     : 'Λ';
 LET            : 'let';
 IN             : 'in';
 FIX            : 'fix';
+
+APOSTROPHE      : '\'';
+
+FORALL         : '∀';
 
 CASE           : 'case';
 OF             : 'of';

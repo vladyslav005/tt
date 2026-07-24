@@ -369,7 +369,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
 
     switch (type.kind) {
-      case "TyVar":
+      case "TyIdentifier":
         return type.name
       case "TyMetaVar":
         return `\\text{${type.name}}`

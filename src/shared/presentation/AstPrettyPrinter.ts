@@ -214,7 +214,7 @@ export class AstPrettyPrinter {
   }
 
   printType(type: Type): string {
-    // Reuse existing typeToString implementation (TyVar/TyArrow)
+    // Reuse existing typeToString implementation (TyIdentifier/TyArrow)
     return typeToString(type);
   }
 }

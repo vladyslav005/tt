@@ -1,16 +1,20 @@
 import type {Node} from "@/shared/core/domain/ast/node.ts";
 
 export type Type =
-  TyVar |
+  TyIdentifier |
   TyArrow |
   TupleType |
   SumType |
   VariantType |
   RecordType |
+  TyForall |
   TyMetaVar;
 
-export interface TyVar extends Node {
-  kind: "TyVar"
+// A nullary type referred to by name — either a base type constant (Nat,
+// Bool, Unit) or a bound/free type variable (e.g. X in a TyForall). Which
+// one it is depends on context, not on this node.
+export interface TyIdentifier extends Node {
+  kind: "TyIdentifier"
   name: string
 }
 
@@ -53,4 +57,10 @@ export interface RecordType extends Node {
 export interface TyMetaVar extends Node {
   kind: "TyMetaVar";
   name: string;
+}
+
+export interface TyForall extends Node {
+  kind: "TyForall";
+  typeVariable: string;
+  type: Type;
 }

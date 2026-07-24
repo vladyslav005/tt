@@ -1,6 +1,7 @@
-import type {SumType, TupleType, TyArrow, Type, TyVar, VariantType} from "@/shared/core/domain/ast";
+import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall} from "@/shared/core/domain/ast";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {
+  ForallTypeContext,
   FunctionTypeContext,
   ParenTypeContext,
   SumTypeContext,
@@ -11,14 +12,14 @@ import {
 export class TypeBuilderVisitor
   extends LambdaVisitor<Type> {
 
-  visitTypeIdentifier = (ctx: TypeIdentifierContext): TyVar => {
+  visitTypeIdentifier = (ctx: TypeIdentifierContext): TyIdentifier => {
     const text = ctx.getText()
 
     if (text === "Nat" || text === "Bool" || text === "Unit") {
-      return { kind: "TyVar", id: crypto.randomUUID(), name: text as any }
+      return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text as any }
     }
 
-    return { kind: "TyVar", id: crypto.randomUUID(), name: text }
+    return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text }
   }
 
   visitFunctionType = (ctx: FunctionTypeContext): TyArrow => {
@@ -59,6 +60,16 @@ export class TypeBuilderVisitor
         label: id.getText(),
         type: this.visit(ctx.type_(index))
       }))
+    }
+  }
+
+  visitForallType = (ctx: ForallTypeContext): TyForall => {
+    return {
+      kind: "TyForall",
+      id: crypto.randomUUID(),
+      typeVariable: ctx.typeVariable().getText(),
+      type: this.visit(ctx.type_())
+
     }
   }
 }

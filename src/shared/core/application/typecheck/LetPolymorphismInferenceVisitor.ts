@@ -16,7 +16,7 @@ import type {
   Inr, Let,
   Lit, Program,
   Record,
-  RecordProjection, RecordType, Sequencing, Tuple, TupleProjection, TupleType, TyArrow, TyVar, Type, Var, Variant, VariantCase
+  RecordProjection, RecordType, Sequencing, Tuple, TupleProjection, TupleType, TyArrow, TyIdentifier, Type, Var, Variant, VariantCase
 } from "@/shared/core/domain/ast";
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
@@ -222,8 +222,8 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
         ? "Bool"
         : "Nat";
 
-    const litType: TyVar = {
-      kind: "TyVar",
+    const litType: TyIdentifier = {
+      kind: "TyIdentifier",
       id: crypto.randomUUID(),
       name: typeName,
     };
@@ -366,8 +366,8 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
   }
 
   protected visitIfCondition(node: IfCondition): InferProofTree {
-    const boolType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Bool"};
-    const unitType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Unit"};
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Bool"};
+    const unitType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Unit"};
 
     const conditionProof = this.visit(node.condition);
     const thenProof = this.visit(node.then);
@@ -648,7 +648,7 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
   }
 
   protected visitSequencing(node: Sequencing): InferProofTree {
-    const unitType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Unit"};
+    const unitType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Unit"};
 
     const firstProof = this.visit(node.first);
     const secondProof = this.visit(node.second);
@@ -688,8 +688,8 @@ export class LetPolymorphismInferenceVisitor extends AstVisitor<InferProofTree> 
   }
 
   protected visitBinOp(node: BinOp): InferProofTree {
-    const natType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Nat"};
-    const boolType: TyVar = {kind: "TyVar", id: crypto.randomUUID(), name: "Bool"};
+    const natType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Nat"};
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Bool"};
 
     const leftProof = this.visit(node.left);
     const rightProof = this.visit(node.right);

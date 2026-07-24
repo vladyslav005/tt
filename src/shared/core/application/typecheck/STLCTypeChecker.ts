@@ -23,7 +23,7 @@ import type {
   TupleType,
   TyArrow,
   Type,
-  TyVar,
+  TyIdentifier,
   Var,
   Variant,
   VariantCase,
@@ -236,8 +236,8 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
         ? "Bool"
         : "Nat";
 
-    const litType: TyVar = {
-      kind: "TyVar",
+    const litType: TyIdentifier = {
+      kind: "TyIdentifier",
       id: crypto.randomUUID(),
       name: typeName,
     };
@@ -252,8 +252,8 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitIfCondition(node: IfCondition): ProofTree {
-    const boolType: TyVar = {kind: "TyVar", id: "bool-sentinel", name: "Bool"};
-    const unitType: TyVar = {kind: "TyVar", id: "unit-sentinel", name: "Unit"};
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: "bool-sentinel", name: "Bool"};
+    const unitType: TyIdentifier = {kind: "TyIdentifier", id: "unit-sentinel", name: "Unit"};
 
     const conditionProof = this.visit(node.condition);
     const thenProof = this.visit(node.then);
@@ -622,7 +622,7 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitSequencing(node: Sequencing): ProofTree {
-    const unitType: TyVar = {kind: "TyVar", id: "unit-sentinel", name: "Unit"};
+    const unitType: TyIdentifier = {kind: "TyIdentifier", id: "unit-sentinel", name: "Unit"};
 
     const firstProof = this.visit(node.first);
     const secondProof = this.visit(node.second);
@@ -664,8 +664,8 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitBinOp(node: BinOp): ProofTree {
-    const natType: TyVar = {kind: "TyVar", id: "nat-sentinel", name: "Nat"};
-    const boolType: TyVar = {kind: "TyVar", id: "bool-sentinel", name: "Bool"};
+    const natType: TyIdentifier = {kind: "TyIdentifier", id: "nat-sentinel", name: "Nat"};
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: "bool-sentinel", name: "Bool"};
 
     const leftProof = this.visit(node.left);
     const rightProof = this.visit(node.right);

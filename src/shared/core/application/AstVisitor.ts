@@ -18,7 +18,7 @@ import type {
   Sequencing,
   Tuple,
   TupleProjection,
-  Type,
+  Type, TypeAbs, TypeApp,
   Var,
   Variant,
   VariantCase,
@@ -82,13 +82,20 @@ export abstract class AstVisitor<R> {
       case "Let":
         return this.visitLet(node)
 
+      /* ===== System F ===== */
+      case "TypeAbs":
+        return this.visitTypeAbstraction(node)
+      case "TypeApp":
+        return this.visitTypeApplication(node)
+
       /* ===== Types ===== */
-      case "TyVar":
+      case "TyIdentifier":
       case "TyArrow":
       case "TupleType":
       case "SumType":
       case "VariantType":
       case "RecordType":
+      case "TyForall":
         return this.visitType(node)
 
       default:
@@ -144,6 +151,11 @@ export abstract class AstVisitor<R> {
   protected abstract visitTypeDecl(node: GlobalDecl): R
 
   protected abstract visitProgram(node: Program): R
+
+  /* ===== System F ===== */
+  protected abstract visitTypeAbstraction(node: TypeAbs): R
+
+  protected abstract visitTypeApplication(node: TypeApp): R
 
   /* ===== Types ===== */
   protected abstract visitType(node: Type): R

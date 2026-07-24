@@ -36,6 +36,7 @@ export function useSetUpEditor() {
           [/=/, "delimiter"],
 
           [/λ/, "lambda"],
+          [/Λ/, "lambda"],
           [/\*/, "times"],
           [/</, "langle"],
           [/>/, "rangle"],
@@ -43,6 +44,8 @@ export function useSetUpEditor() {
           [/\[/, "lb"],
           [/\./, "dot"],
           [/:/, "semi"],
+
+          [/∀/, "forall"],
           {include: "@whitespace"},
         ],
         whitespace: [
@@ -72,6 +75,7 @@ export function useSetUpEditor() {
         {token: 'minus', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'pow', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'times', foreground: '#dc2626', fontStyle: 'bold'},
+        {token: 'forall', foreground: '#dc2626', fontStyle: 'bold'},
 
         {token: 'lb', foreground: '#64748b', fontStyle: 'bold'}, // slate-500
         {token: 'rb', foreground: '#64748b', fontStyle: 'bold'},
@@ -129,6 +133,7 @@ export function useSetUpEditor() {
         {token: 'minus', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'pow', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'times', foreground: '#f87171', fontStyle: 'bold'},
+        {token: 'forall', foreground: '#f87171', fontStyle: 'bold'},
 
         {token: 'lb', foreground: '#94a3b8', fontStyle: 'bold'}, // slate-400
         {token: 'rb', foreground: '#94a3b8', fontStyle: 'bold'},
@@ -356,6 +361,13 @@ export function useSetUpEditor() {
         );
 
         const suggestions = [
+          {
+            label: '\\forall',
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: '∀',
+            detail: 'Forall',
+            range: slashRange
+          },
           {
             label: '\\alpha',
             kind: monaco.languages.CompletionItemKind.Text,

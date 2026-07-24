@@ -36,8 +36,8 @@ import {
 } from "@/shared/components/ui/select.tsx";
 import {graphToAst} from "@/features/ast/hooks/graphToAst";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
-import type {TyArrow, TyVar} from "@/shared/core/domain/ast";
-import {TyVarFlowNode} from "@/features/ast/components/ast/flow/TyVarFlowNode";
+import type {TyArrow, TyIdentifier} from "@/shared/core/domain/ast";
+import {TyIdentifierFlowNode} from "@/features/ast/components/ast/flow/TyIdentifierFlowNode";
 import {TyArrowFlowNode} from "@/features/ast/components/ast/flow/TyArrowFlowNode";
 import {SumTypeFlowNode} from "@/features/ast/components/ast/flow/SumTypeFlowNode";
 import {TupleTypeFlowNode} from "@/features/ast/components/ast/flow/TupleTypeFlowNode";
@@ -107,7 +107,7 @@ function TypeFlowNodeDispatch(props: any) {
     case "RecordType":
       return <RecordTypeFlowNode {...props} />;
     default:
-      return <TyVarFlowNode {...props} />;
+      return <TyIdentifierFlowNode {...props} />;
   }
 }
 
@@ -145,7 +145,7 @@ type AddOnDropKind = "decl" | "term" | "type";
 
 // Node kinds whose own handles always point at further *types* (as opposed to
 // term/program nodes, whose handles are term-context except "type"/"paramType").
-const TYPE_SOURCE_KINDS = new Set(["TyVar", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
+const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
 
 // A handful of handle names are reused across both term nodes and type nodes
 // (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
@@ -187,8 +187,8 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           term: { id: `${id}-term`, kind: "Var", name: "x" },
           type: {
             id: `${id}-type`, kind: "SumType",
-            left: { id: `${id}-left`, kind: "TyVar", name: "A" },
-            right: { id: `${id}-right`, kind: "TyVar", name: "B" },
+            left: { id: `${id}-left`, kind: "TyIdentifier", name: "A" },
+            right: { id: `${id}-right`, kind: "TyIdentifier", name: "B" },
           },
         },
       };
@@ -227,7 +227,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           id, kind: "Variant",
           type: {
             id: `${id}-type`, kind: "VariantType",
-            variants: [{ label: "l1", type: { id: `${id}-type-f0`, kind: "TyVar", name: "T" } }],
+            variants: [{ label: "l1", type: { id: `${id}-type-f0`, kind: "TyIdentifier", name: "T" } }],
           },
           variants: [{ label: "l1", term: { id: `${id}-field-0`, kind: "Var", name: "x" } }],
         },
@@ -238,7 +238,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         term: {
           id, kind: "Ascribe",
           term: { id: `${id}-term`, kind: "Var", name: "x" },
-          type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
         },
       };
     case "tupleProjection":
@@ -301,7 +301,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           id, kind: "Fix",
           term: {
             id: `${id}-term`, kind: "Abs", param: "f",
-            paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+            paramType: { id: `${id}-paramType`, kind: "TyIdentifier", name: "T" },
             body: { id: `${id}-body`, kind: "Var", name: "f" },
           },
         },
@@ -319,7 +319,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         type: "dummyAbstraction",
         term: {
           id, kind: "DummyAbstraction",
-          paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+          paramType: { id: `${id}-paramType`, kind: "TyIdentifier", name: "T" },
           body: { id: `${id}-body`, kind: "Var", name: "x" },
         },
       };
@@ -328,8 +328,8 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         type: "type",
         term: {
           id, kind: "SumType",
-          left: { id: `${id}-left`, kind: "TyVar", name: "A" },
-          right: { id: `${id}-right`, kind: "TyVar", name: "B" },
+          left: { id: `${id}-left`, kind: "TyIdentifier", name: "A" },
+          right: { id: `${id}-right`, kind: "TyIdentifier", name: "B" },
         },
       };
     case "tupleType":
@@ -337,7 +337,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         type: "type",
         term: {
           id, kind: "TupleType",
-          elements: [{ id: `${id}-el-0`, kind: "TyVar", name: "A" }],
+          elements: [{ id: `${id}-el-0`, kind: "TyIdentifier", name: "A" }],
         },
       };
     case "variantType":
@@ -345,7 +345,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         type: "type",
         term: {
           id, kind: "VariantType",
-          variants: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyVar", name: "T" } }],
+          variants: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyIdentifier", name: "T" } }],
         },
       };
     case "recordType":
@@ -353,7 +353,7 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         type: "type",
         term: {
           id, kind: "RecordType",
-          fields: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyVar", name: "T" } }],
+          fields: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyIdentifier", name: "T" } }],
         },
       };
     default:
@@ -567,7 +567,7 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "FunDecl", name: "f",
-              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
               value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
@@ -581,7 +581,7 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "VarDecl", name: "x",
-              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
               value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
@@ -595,9 +595,9 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "Abs", param: "x",
-              paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+              paramType: { id: `${id}-paramType`, kind: "TyIdentifier", name: "T" },
               body: { id: `${id}-body`, kind: "Var", name: "x" },
-              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
@@ -629,7 +629,7 @@ export function AstEditor({
         };
       }
       if (newNodeType === "typeVar") {
-        const ty: TyVar = { id, kind: "TyVar", name: "T" };
+        const ty: TyIdentifier = { id, kind: "TyIdentifier", name: "T" };
         return {
           id, type: "type", position,
           data: { term: ty, editable: true, onChange: (patch: any) => updateNodeTerm(id, patch) },
@@ -638,8 +638,8 @@ export function AstEditor({
       if (newNodeType === "typeArrow") {
         const ty: TyArrow = {
           id, kind: "TyArrow",
-          from: { id: `${id}-from`, kind: "TyVar", name: "A" },
-          to: { id: `${id}-to`, kind: "TyVar", name: "B" },
+          from: { id: `${id}-from`, kind: "TyIdentifier", name: "A" },
+          to: { id: `${id}-to`, kind: "TyIdentifier", name: "B" },
         };
         return {
           id, type: "type", position,
@@ -964,7 +964,7 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "FunDecl", name: "f",
-              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
               value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
@@ -978,7 +978,7 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "VarDecl", name: "x",
-              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
               value: { id: `${id}-value`, kind: "Var", name: "x" },
             },
             editable: true,
@@ -992,9 +992,9 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "Abs", param: "x",
-              paramType: { id: `${id}-paramType`, kind: "TyVar", name: "T" },
+              paramType: { id: `${id}-paramType`, kind: "TyIdentifier", name: "T" },
               body: { id: `${id}-body`, kind: "Var", name: "x" },
-              type: { id: `${id}-type`, kind: "TyVar", name: "T" },
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
@@ -1029,7 +1029,7 @@ export function AstEditor({
         return {
           id, type: "type", position,
           data: {
-            term: { id, kind: "TyVar", name: "T" },
+            term: { id, kind: "TyIdentifier", name: "T" },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),
           },
@@ -1041,8 +1041,8 @@ export function AstEditor({
           data: {
             term: {
               id, kind: "TyArrow",
-              from: { id: `${id}-from`, kind: "TyVar", name: "A" },
-              to: { id: `${id}-to`, kind: "TyVar", name: "B" },
+              from: { id: `${id}-from`, kind: "TyIdentifier", name: "A" },
+              to: { id: `${id}-to`, kind: "TyIdentifier", name: "B" },
             },
             editable: true,
             onChange: (patch: any) => updateNodeTerm(id, patch),

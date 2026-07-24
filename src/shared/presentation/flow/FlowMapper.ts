@@ -209,7 +209,7 @@ export class AstFlowMapper extends AstVisitor<void> {
         });
         return;
 
-      case "TyVar":
+      case "TyIdentifier":
         return;
     }
   }
@@ -397,7 +397,7 @@ export class AstFlowMapper extends AstVisitor<void> {
           data: {term: node},
         });
         return;
-      case "TyVar":
+      case "TyIdentifier":
       case "TyArrow":
       case "TupleType":
       case "SumType":

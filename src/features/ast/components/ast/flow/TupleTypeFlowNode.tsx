@@ -10,7 +10,7 @@ export function TupleTypeFlowNode({data, selected}: { data: TypeNodeData; select
 
   const addElement = () => {
     const id = `${term.id}-el-${term.elements.length}-${Date.now()}`;
-    data.onChange?.({elements: [...term.elements, {id, kind: "TyVar", name: "T"}]} as any);
+    data.onChange?.({elements: [...term.elements, {id, kind: "TyIdentifier", name: "T"}]} as any);
   };
 
   const removeElement = (index: number) => {

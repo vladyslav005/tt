@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyVar, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyIdentifier, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;
@@ -37,19 +37,19 @@ function parseGlobalIndex(handle: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function defaultTyVar(id: string, name = "T"): TyVar {
-  return { id, kind: "TyVar", name };
+function defaultTyIdentifier(id: string, name = "T"): TyIdentifier {
+  return { id, kind: "TyIdentifier", name };
 }
 
 function defaultType(id: string): Type {
-  return defaultTyVar(id);
+  return defaultTyIdentifier(id);
 }
 
 function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
-const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyVar", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
 
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
@@ -61,9 +61,9 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
   const raw = node.data.term as any;
   const byHandle = groupOutgoingByHandle(edges, node.id);
 
-  if (raw.kind === "TyVar") {
+  if (raw.kind === "TyIdentifier") {
     visiting.delete(node.id);
-    return { id: raw.id ?? node.id, kind: "TyVar", name: raw.name ?? "T" };
+    return { id: raw.id ?? node.id, kind: "TyIdentifier", name: raw.name ?? "T" };
   }
 
   if (raw.kind === "TyArrow") {
@@ -130,7 +130,7 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
   const byHandle = groupOutgoingByHandle(edges, node.id);
 
   switch (raw.kind) {
-    case "TyVar":
+    case "TyIdentifier":
     case "TyArrow":
     case "SumType":
     case "TupleType":

@@ -18,7 +18,7 @@ import {
   RecordProjectionContext,
   SequencingContext,
   TupleContext,
-  TupleProjectionContext,
+  TupleProjectionContext, TypeAbstractionContext, TypeApplicationContext,
   VariableContext,
   VariantCaseContext,
   VariantContext
@@ -41,7 +41,7 @@ import type {
   Sequencing,
   Term,
   Tuple,
-  TupleProjection,
+  TupleProjection, TypeAbs, TypeApp,
   Var,
   Variant,
   VariantCase
@@ -293,4 +293,23 @@ export class TermBuilderVisitor
       body: this.visit(ctx.term(1)),
     }
   }
+
+  visitTypeAbstraction = (ctx: TypeAbstractionContext): TypeAbs => {
+    return {
+      kind: "TypeAbs",
+      id: crypto.randomUUID(),
+      typeParam: ctx.typeVariable().getText(),
+      body: this.visit(ctx.term()),
+    }
+  }
+
+  visitTypeApplication = (ctx: TypeApplicationContext): TypeApp => {
+    return {
+      kind: "TypeApp",
+      id: crypto.randomUUID(),
+      typeArg: new TypeBuilderVisitor().visit(ctx.type_()),
+      term: this.visit(ctx.term()),
+    }
+  }
+
 }

@@ -7,7 +7,7 @@ import { cn } from "@/shared/lib/utils";
 
 function TypeView({ type }: { type: Type }) {
   switch (type.kind) {
-    case "TyVar":
+    case "TyIdentifier":
       return <span className="text-blue-600 dark:text-blue-400">{type.name}</span>;
     case "TyArrow":
       return (

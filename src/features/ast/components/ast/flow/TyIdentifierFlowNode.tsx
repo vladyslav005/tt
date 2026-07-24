@@ -3,7 +3,7 @@ import {Input} from "@/shared/components/ui/input";
 import type {TypeNodeData} from "@/shared/presentation/flow/types";
 import {cn} from "@/shared/lib/utils";
 
-export function TyVarFlowNode({data, selected}: { data: TypeNodeData; selected?: boolean }) {
+export function TyIdentifierFlowNode({data, selected}: { data: TypeNodeData; selected?: boolean }) {
   const term = data.term as any;
 
   return (

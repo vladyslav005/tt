@@ -12,7 +12,7 @@ import {VarDeclFlowNode} from "@/features/ast/components/ast/flow/VarDeclFlowNod
 import {LiteralFlowNode} from "@/features/ast/components/ast/flow/LiteralFlowNode.tsx";
 import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
-import {TyVarFlowNode} from "@/features/ast/components/ast/flow/TyVarFlowNode";
+import {TyIdentifierFlowNode} from "@/features/ast/components/ast/flow/TyIdentifierFlowNode";
 import {TyArrowFlowNode} from "@/features/ast/components/ast/flow/TyArrowFlowNode";
 import {SumTypeFlowNode} from "@/features/ast/components/ast/flow/SumTypeFlowNode";
 import {TupleTypeFlowNode} from "@/features/ast/components/ast/flow/TupleTypeFlowNode";
@@ -55,7 +55,7 @@ function TypeFlowNodeDispatch(props: any) {
     case "RecordType":
       return <RecordTypeFlowNode {...props} />;
     default:
-      return <TyVarFlowNode {...props} />;
+      return <TyIdentifierFlowNode {...props} />;
   }
 }
 

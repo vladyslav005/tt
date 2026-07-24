@@ -21,6 +21,8 @@ export type Term =
   DummyAbstraction |
   Let |
   BinOp |
+  TypeAbs |
+  TypeApp |
   Fix
 
 export interface Var extends Node {
@@ -185,4 +187,20 @@ export interface BinOp extends Node {
 export interface Fix extends Node {
   kind: "Fix";
   term: Term;
+}
+
+// =====================================================================
+// =                        SYSTEM F                                   =
+// =====================================================================
+
+export interface TypeAbs extends Node {
+  kind: "TypeAbs";
+  typeParam: string;
+  body: Term;
+}
+
+export interface TypeApp extends Node {
+  kind: "TypeApp";
+  term: Term;
+  typeArg: Type;
 }

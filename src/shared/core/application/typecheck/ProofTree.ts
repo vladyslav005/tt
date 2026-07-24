@@ -1,4 +1,4 @@
-import type {Term, Type, TyVar} from "@/shared/core/domain/ast";
+import type {Term, Type, TyIdentifier} from "@/shared/core/domain/ast";
 
 export interface ProofTree {
   rule: Rule
@@ -78,6 +78,6 @@ export enum Rule {
 }
 
 // Sentinel type used as a placeholder when the real type cannot be inferred due to an error.
-export const ERROR_TYPE: TyVar = { kind: "TyVar", id: "error-sentinel", name: "?" };
+export const ERROR_TYPE: TyIdentifier = { kind: "TyIdentifier", id: "error-sentinel", name: "?" };
 
 

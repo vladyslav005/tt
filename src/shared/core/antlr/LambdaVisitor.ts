@@ -11,6 +11,7 @@ import { VariableContext } from "./LambdaParser.js";
 import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
 import { InlContext } from "./LambdaParser.js";
+import { TypeAbstractionContext } from "./LambdaParser.js";
 import { IfConditionContext } from "./LambdaParser.js";
 import { InrContext } from "./LambdaParser.js";
 import { CaseContext } from "./LambdaParser.js";
@@ -29,12 +30,15 @@ import { TupleContext } from "./LambdaParser.js";
 import { ParenthesesContext } from "./LambdaParser.js";
 import { DummyAbstractionContext } from "./LambdaParser.js";
 import { BinaryOpContext } from "./LambdaParser.js";
+import { TypeApplicationContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
+import { ForallTypeContext } from "./LambdaParser.js";
 import { ParenTypeContext } from "./LambdaParser.js";
+import { TypeVariableContext } from "./LambdaParser.js";
 import { ConstantContext } from "./LambdaParser.js";
 
 
@@ -95,6 +99,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitInl?: (ctx: InlContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `TypeAbstraction`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeAbstraction?: (ctx: TypeAbstractionContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `IfCondition`
 	 * labeled alternative in `LambdaParser.term`.
@@ -222,6 +233,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitBinaryOp?: (ctx: BinaryOpContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `TypeApplication`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeApplication?: (ctx: TypeApplicationContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `SumType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -257,12 +275,25 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitTupleType?: (ctx: TupleTypeContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `ForallType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitForallType?: (ctx: ForallTypeContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `ParenType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitParenType?: (ctx: ParenTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by `LambdaParser.typeVariable`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeVariable?: (ctx: TypeVariableContext) => Result;
 	/**
 	 * Visit a parse tree produced by `LambdaParser.constant`.
 	 * @param ctx the parse tree

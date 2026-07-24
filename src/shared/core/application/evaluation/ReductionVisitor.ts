@@ -1448,7 +1448,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
   private cloneTypeWithFreshIds(type: Type): Type {
     switch (type.kind) {
-      case "TyVar":
+      case "TyIdentifier":
       case "TyMetaVar":
         return {
           ...type,
