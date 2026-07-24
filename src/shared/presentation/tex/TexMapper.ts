@@ -246,6 +246,17 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  // Only reached when Let-polymorphism is disabled — STLCTypeChecker.visitLet
+  // rejects the term with Rule.Let (no premises) instead of delegating to
+  // LetPolymorphismInferenceVisitor's Rule.CtLet judgment.
+  protected visitLet(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Let",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)

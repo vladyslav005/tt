@@ -32,15 +32,26 @@ import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {isArithmeticOperator, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 import {ERROR_TYPE, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {LetPolymorphismInferenceVisitor} from "@/shared/core/application/typecheck/LetPolymorphismInferenceVisitor.ts";
+import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@/shared/core/domain/typeTheory.ts";
 
 export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
   private context: Gamma<Type> = new Gamma<Type>();
   private errorBuffer: Error[] = [];
   private globalProofs: Map<string, ProofTree> = new Map();
+  private theories: TypeTheoryConfig = DEFAULT_TYPE_THEORY_CONFIG;
 
   public getErrors(): Error[] {
     return this.errorBuffer;
+  }
+
+  // Which optional type theories (beyond core STLC, which is always on) the
+  // next check() run should honor. Set before visiting — a visitLet (or a
+  // future System F construct) that belongs to a disabled theory is rejected
+  // as a type error instead of being checked, so switching a theory off
+  // shows the user how the very same term stops typechecking.
+  public setTheories(theories: TypeTheoryConfig): void {
+    this.theories = theories;
   }
 
   // Binds `name` for the duration of `fn`, then restores whatever was there
@@ -699,6 +710,19 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
   }
 
   protected visitLet(node: Let): ProofTree {
+    if (!this.theories.letPolymorphism) {
+      const msg = `"let" is not part of plain STLC — enable the Let-polymorphism theory to use it`;
+      this.errorBuffer.push(new Error(msg));
+      return {
+        rule: Rule.Let,
+        term: node,
+        type: ERROR_TYPE,
+        gamma: this.context.serializeGamma(),
+        premises: [],
+        error: msg,
+      };
+    }
+
     return new LetPolymorphismInferenceVisitor(
       this.context,
       this.errorBuffer,

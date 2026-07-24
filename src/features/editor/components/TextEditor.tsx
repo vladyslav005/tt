@@ -5,6 +5,7 @@ import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
 import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
+import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
@@ -197,6 +198,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
                 editorRef.current?.setValue(code);
                 dispatch(setTermText(code));
               }} />
+              <TypeTheoriesDropdown />
               <TypeCheckButton />
               <EvaluateButton />
             </div>

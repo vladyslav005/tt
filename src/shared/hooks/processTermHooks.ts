@@ -17,12 +17,14 @@ export function useTermHooks() {
   const dispatch = useAppDispatch()
   const termText = useAppSelector((state) => state.term.termText);
   const ast = useAppSelector((state) => state.term.ast);
+  const enabledTheories = useAppSelector((state) => state.term.enabledTheories);
 
   function parseTerm(term: string): Program {
     return parser.parseExpression(term)
   }
 
   function typecheckTerm(ast: Program): ProofTree {
+    typeCheckerSLTC.setTheories(enabledTheories);
     return typeCheckerSLTC.visit(ast);
   }
 
@@ -56,6 +58,7 @@ export function useTermHooks() {
         return;
       }
 
+      typeCheckerSLTC.setTheories(enabledTheories);
       proof = typeCheckerSLTC.visit(ast);
 
       typeCheckerSLTC.getErrors().forEach(e => dispatch(pushProcessingError(e)));
