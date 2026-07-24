@@ -34,10 +34,9 @@ export function MainPage() {
 
       <EvaluationVisualisation className="flex-1 p-4 m-4"></EvaluationVisualisation>
 
-      <div className="mt-4 flex md:flex-row flex-col">
-        <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>
-        <AstVisualisation className="flex-1 p-4 m-4 "/>
-      </div>
+      <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>
+
+      <AstVisualisation className="flex-1 p-4 m-4 "/>
 
       <AstEditorContainer className="p-4 m-4" editorRef={editorRef}></AstEditorContainer>
 
