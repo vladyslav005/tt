@@ -51,6 +51,13 @@ export enum Rule {
   BinOp = "BinOp",
   Fix = "Fix",
 
+  // System F is explicit/syntax-directed (no unification involved), so it
+  // gets plain (non-Ct) rule names regardless of whether it appears inside
+  // a `let` — TexMapper renders these directly rather than delegating to
+  // LetPolymorphismTexMapper.
+  TypeAbs = "TypeAbs",
+  TypeApp = "TypeApp",
+
   CtVarLet = "CtVarLet",
   CtVar = "CtVar",
   CtAbs = "CtAbs",

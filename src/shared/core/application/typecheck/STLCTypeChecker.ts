@@ -15,79 +15,183 @@ import type {
   Lit,
   Program,
   Record,
-  RecordProjection,
-  RecordType,
+  RecordProjection, RecordType,
   Sequencing,
   Tuple,
-  TupleProjection,
-  TupleType,
-  TyArrow,
+  TupleProjection, TupleType,
+  TyArrow, TyForall, TyIdentifier,
   Type,
-  TyIdentifier,
+  TypeAbs,
+  TypeApp,
   Var,
   Variant,
   VariantCase,
 } from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
-import {isArithmeticOperator, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
-import {ERROR_TYPE, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-import {LetPolymorphismInferenceVisitor} from "@/shared/core/application/typecheck/LetPolymorphismInferenceVisitor.ts";
+import {isArithmeticOperator, substituteTypeVariable, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {
+  type Constraint,
+  ERROR_TYPE,
+  type InferProofTree,
+  type ProofTree,
+  Rule,
+  type Substitution,
+  type TypeScheme,
+} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {TypeInferenceEngine} from "@/shared/core/application/typecheck/TypeInferenceEngine.ts";
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@/shared/core/domain/typeTheory.ts";
 
-export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
+// Whether a variable was bound by an ordinary binder (a lambda parameter,
+// monomorphic within its scope) or by `let` (looked up as a TypeScheme and
+// freshly instantiated on every use) — purely for labeling the proof tree
+// with the matching CT-Var / CT-VarLet rule; it has no effect on the type
+// that gets computed.
+type VarOrigin = Rule.CtVar | Rule.CtVarLet;
 
-  private context: Gamma<Type> = new Gamma<Type>();
+// Single typechecker for the whole language: every rule is written once, in
+// constraint-generation/unification style, so that theories compose freely
+// (a System F type application inside a `let`-bound value works because
+// there's only one traversal — not two visitors blind to each other's node
+// kinds). "Plain STLC" isn't a different algorithm here, just this same
+// engine with `inferring` false: no metavariables get introduced (an
+// unannotated lambda is rejected instead), so unification degenerates to
+// ordinary type equality checking, and proof nodes keep their plain (T-*)
+// rule labels instead of the constraint (CT-*) ones.
+export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
+
+  private schemeContext: Gamma<TypeScheme> = new Gamma<TypeScheme>();
+  private varOrigin: Gamma<VarOrigin> = new Gamma<VarOrigin>();
   private errorBuffer: Error[] = [];
   private globalProofs: Map<string, ProofTree> = new Map();
   private theories: TypeTheoryConfig = DEFAULT_TYPE_THEORY_CONFIG;
+  private readonly engine: TypeInferenceEngine = new TypeInferenceEngine();
+
+  // >0 while checking a `let`'s value+body (nesting-safe via a counter, not
+  // a boolean, since a `let` can appear inside another `let`'s value). While
+  // true — or while the Type inference theory is on — rules use their CT-*
+  // label and an unannotated lambda parameter is allowed.
+  private polymorphicScope = 0;
+
+  private get inferring(): boolean {
+    return this.polymorphicScope > 0 || this.theories.typeInference;
+  }
+
+  private ruleFor(plain: Rule, ct: Rule): Rule {
+    return this.inferring ? ct : plain;
+  }
 
   public getErrors(): Error[] {
     return this.errorBuffer;
   }
 
   // Which optional type theories (beyond core STLC, which is always on) the
-  // next check() run should honor. Set before visiting — a visitLet (or a
-  // future System F construct) that belongs to a disabled theory is rejected
-  // as a type error instead of being checked, so switching a theory off
-  // shows the user how the very same term stops typechecking.
+  // next check() run should honor. Set before checking — a visitLet or
+  // visitTypeAbstraction/visitTypeApplication belonging to a disabled theory
+  // is rejected as a type error instead of being checked, so switching a
+  // theory off shows the user how the very same term stops typechecking.
   public setTheories(theories: TypeTheoryConfig): void {
     this.theories = theories;
   }
 
-  // Binds `name` for the duration of `fn`, then restores whatever was there
-  // before (or removes the binding entirely if there was nothing) — even if
-  // `fn` throws. Needed because Gamma.add throws on a name already present,
-  // so a lambda/case parameter shadowing an outer binding of the same name
-  // would otherwise crash instead of shadowing it.
-  private withBinding<T>(name: string, type: Type, fn: () => T): T {
-    const hadPrevious = this.context.has(name);
-    const previous = hadPrevious ? this.context.get(name) : undefined;
+  // Public entry point: runs inference over the whole program, then solves
+  // whatever constraints are still outstanding once, at the end, and
+  // applies the resulting substitution to the whole proof tree. (A nested
+  // `let` still solves+generalizes its own value eagerly, via checkLet —
+  // this only closes out whatever constraints that process legitimately
+  // deferred, e.g. from an App or BinOp outside of any let.)
+  public check(program: Program): InferProofTree {
+    this.schemeContext = new Gamma<TypeScheme>();
+    this.varOrigin = new Gamma<VarOrigin>();
+    this.errorBuffer = [];
+    this.globalProofs = new Map();
+    this.polymorphicScope = 0;
+    this.engine.reset();
 
-    if (hadPrevious) {
-      this.context.delete(name);
-    }
-    this.context.add(name, type);
+    const proof = this.visit(program);
 
     try {
-      return fn();
-    } finally {
-      this.context.delete(name);
-      if (hadPrevious) {
-        this.context.add(name, previous!);
-      }
+      const substitution = this.engine.solve(proof.constraints);
+      return this.engine.applySubstitutionToProof(proof, substitution);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.errorBuffer.push(new Error(msg));
+      return {...proof, type: ERROR_TYPE, error: msg};
     }
   }
 
-  visit(node: ASTNode): ProofTree {
+  visit(node: ASTNode): InferProofTree {
     const proof = super.visit(node);
     proof.id = node.id;
     return proof;
   }
 
-  protected visitProgram(node: Program): ProofTree {
-    this.context.clear();
-    this.errorBuffer = [];
-    this.globalProofs = new Map();
+  // Extends both the type context and the var-origin tracking with a single
+  // binding for the duration of `fn`, then restores both — even if `fn`
+  // throws. Handles shadowing (Gamma.add throws on a name already present).
+  private withBinding<T>(
+    name: string,
+    scheme: TypeScheme,
+    origin: VarOrigin,
+    fn: () => T,
+  ): T {
+    const previousContext = this.schemeContext;
+    const previousVarOrigin = this.varOrigin;
+
+    const childContext = previousContext.copy();
+    if (childContext.has(name)) {
+      childContext.delete(name);
+    }
+    childContext.add(name, scheme);
+
+    const childVarOrigin = previousVarOrigin.copy();
+    if (childVarOrigin.has(name)) {
+      childVarOrigin.delete(name);
+    }
+    childVarOrigin.add(name, origin);
+
+    this.schemeContext = childContext;
+    this.varOrigin = childVarOrigin;
+
+    try {
+      return fn();
+    } finally {
+      this.schemeContext = previousContext;
+      this.varOrigin = previousVarOrigin;
+    }
+  }
+
+  // Builds a leaf error proof and records the message — shared by every
+  // "this construct isn't allowed here" gate (disabled theory, missing
+  // annotation, ...).
+  private reject(term: ASTNode, rule: Rule, msg: string, premises: InferProofTree[] = []): InferProofTree {
+    this.errorBuffer.push(new Error(msg));
+    return {
+      rule,
+      term: term as never,
+      type: ERROR_TYPE,
+      gamma: this.schemeContext.serializeGamma(),
+      premises,
+      constraints: premises.flatMap((p) => p.constraints),
+      error: msg,
+    };
+  }
+
+  // Solves + applies a proof's own constraints immediately (rather than
+  // deferring to the top-level check()) — needed wherever a fully concrete
+  // type is required right now: a global declaration's value, compared
+  // against its declared type before the next declaration can be checked.
+  private solveLocally(proof: InferProofTree): InferProofTree {
+    try {
+      const substitution = this.engine.solve(proof.constraints);
+      return this.engine.applySubstitutionToProof(proof, substitution);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.errorBuffer.push(new Error(msg));
+      return {...proof, type: ERROR_TYPE, error: msg};
+    }
+  }
+
+  protected visitProgram(node: Program): InferProofTree {
     node.globals.forEach((g) => this.visit(g));
 
     if (!node.term) {
@@ -95,10 +199,11 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       this.errorBuffer.push(new Error(msg));
       return {
         rule: Rule.Var,
-        term: { kind: "Var", id: node.id, name: "(empty)" } as any,
+        term: {kind: "Var", id: node.id, name: "(empty)"} as never,
         type: ERROR_TYPE,
-        gamma: this.context.serializeGamma(),
+        gamma: this.schemeContext.serializeGamma(),
         premises: [],
+        constraints: [],
         error: msg,
       };
     }
@@ -106,130 +211,144 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     return this.visit(node.term);
   }
 
-  protected visitAbs(node: Abs): ProofTree {
-    if (!node.paramType) {
-      const msg = `Lambda parameter "${node.param}" needs a type annotation (λ${node.param}:T. ...) — an unannotated parameter is only allowed inside a let-bound value, where its type can be inferred`;
-      this.errorBuffer.push(new Error(msg));
-
-      return {
-        rule: Rule.Abs,
-        term: node,
-        type: ERROR_TYPE,
-        gamma: this.context.serializeGamma(),
-        premises: [],
-        error: msg,
-      };
-    }
-
-    const bodyProof: ProofTree = this.withBinding(
-      node.param,
-      node.paramType,
-      () => this.visit(node.body),
-    );
-
-    const abstractionType: TyArrow = {
-      kind: "TyArrow",
-      id: crypto.randomUUID(),
-      from: node.paramType,
-      to: bodyProof.type,
-    };
-
-    return {
-      rule: Rule.Abs,
-      term: node,
-      type: abstractionType,
-      gamma: this.context.serializeGamma(),
-      premises: [bodyProof],
-    };
-  }
-
-  protected visitApp(node: App): ProofTree {
-    const funcProof: ProofTree = this.visit(node.func);
-    const argProof: ProofTree = this.visit(node.arg);
-
-    const returnProof: ProofTree = {
-      rule: Rule.App,
-      term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [funcProof, argProof],
-    };
-
-    if (funcProof.type.kind !== "TyArrow") {
-      const msg = `Cannot apply a non-function — the left-hand side has type ${typeToString(funcProof.type)}, which is not a function type`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
-    }
-
-    const funcType = funcProof.type as TyArrow;
-    returnProof.type = funcType.to;
-
-    if (!typeEquals(funcType.from, argProof.type)) {
-      const msg = `Argument type mismatch — function expects ${typeToString(funcType.from)}, but got ${typeToString(argProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
-  }
-
-  protected visitTermDecl(node: GlobalDecl): ProofTree {
-    const valueProof: ProofTree = this.visit(node.value);
+  protected visitTermDecl(node: GlobalDecl): InferProofTree {
+    const valueProof = this.solveLocally(this.visit(node.value));
 
     // Always add the declared type to context so subsequent declarations
     // and the main term can still be type-checked.
-    this.context.add(node.name, node.type);
+    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: node.type});
     this.globalProofs.set(node.name, valueProof);
 
-    if (!typeEquals(valueProof.type, node.type)) {
+    if (!valueProof.error && !typeEquals(valueProof.type, node.type)) {
       const msg = `Declaration "${node.name}": declared type is ${typeToString(node.type)}, but the value has type ${typeToString(valueProof.type)}`;
       this.errorBuffer.push(new Error(msg));
-      // Attach the error to the value proof so it surfaces in a T-Def expansion.
-      valueProof.error = (valueProof.error ? valueProof.error + "; " : "") + msg;
+      valueProof.error = msg;
     }
 
-    return {} as ProofTree;
+    return {} as InferProofTree;
   }
 
-  protected visitTypeDecl(node: GlobalDecl): ProofTree {
-    this.context.add(node.name, node.type);
-    return {} as ProofTree;
+  protected visitTypeDecl(node: GlobalDecl): InferProofTree {
+    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: node.type});
+    return {} as InferProofTree;
   }
 
-  protected visitVar(node: Var): ProofTree {
-    const varType = this.context.get(node.name);
+  protected visitVar(node: Var): InferProofTree {
+    const scheme = this.schemeContext.get(node.name);
+    const rule = this.inferring ? (this.varOrigin.get(node.name) ?? Rule.CtVar) : Rule.Var;
 
-    const returnProof: ProofTree = {
-      rule: Rule.Var,
-      term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [],
-    };
-
-    if (!varType) {
-      const contextKeys = Object.keys(this.context.serializeGamma());
+    if (!scheme) {
+      const contextKeys = Object.keys(this.schemeContext.serializeGamma());
       const contextHint = contextKeys.length > 0
         ? ` (in-scope variables: ${contextKeys.join(", ")})`
         : " (context is empty)";
       const msg = `Variable "${node.name}" is not in scope${contextHint}`;
-      returnProof.error = msg;
-      this.errorBuffer.push(new Error(msg));
-      return returnProof;
+
+      return {
+        rule,
+        term: node,
+        type: ERROR_TYPE,
+        gamma: this.schemeContext.serializeGamma(),
+        premises: [],
+        constraints: [],
+        error: msg,
+      };
     }
 
-    returnProof.type = varType;
+    const type = this.engine.instantiate(scheme);
 
-    const definitionProof = this.globalProofs.get(node.name);
-    if (definitionProof) {
-      returnProof.premises = [definitionProof];
+    const proof: InferProofTree = {
+      rule,
+      term: node,
+      type,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [],
+      constraints: [],
+    };
+
+    // Only a name that isn't locally shadowed can still refer to a global
+    // declaration — used to show a "jump to definition" premise.
+    if (!this.varOrigin.has(node.name)) {
+      const definitionProof = this.globalProofs.get(node.name);
+      if (definitionProof) {
+        proof.premises = [definitionProof];
+      }
     }
 
-    return returnProof;
+    return proof;
   }
 
-  protected visitLit(node: Lit): ProofTree {
+  protected visitAbs(node: Abs): InferProofTree {
+    const outerGamma = this.schemeContext.serializeGamma();
+
+    if (!node.paramType && !this.inferring) {
+      return this.reject(
+        node,
+        Rule.Abs,
+        `Lambda parameter "${node.param}" needs a type annotation (λ${node.param}:T. ...) — an unannotated parameter is only allowed inside a let-bound value or when the Type inference theory is enabled`,
+      );
+    }
+
+    // An omitted annotation (λx.t) gets a fresh metavariable instead of a
+    // rigid, given type — this is the one thing that lets `generalize` at
+    // the enclosing `let` (or plain unification, under Type inference)
+    // find something genuinely free to pin down or quantify over.
+    const paramType = node.paramType ?? this.engine.freshTyMetaVar();
+
+    const bodyProof = this.withBinding(
+      node.param,
+      {kind: "TypeScheme", vars: [], type: paramType},
+      Rule.CtVar,
+      () => this.visit(node.body),
+    );
+
+    const type: TyArrow = {
+      kind: "TyArrow",
+      id: crypto.randomUUID(),
+      from: paramType,
+      to: bodyProof.type,
+    };
+
+    return {
+      rule: this.inferring ? (node.paramType ? Rule.CtAbs : Rule.CtAbsInf) : Rule.Abs,
+      term: node,
+      type,
+      gamma: outerGamma,
+      premises: [bodyProof],
+      constraints: bodyProof.constraints,
+    };
+  }
+
+  protected visitApp(node: App): InferProofTree {
+    const funcProof = this.visit(node.func);
+    const argProof = this.visit(node.arg);
+
+    const resultType = this.engine.freshTyMetaVar();
+
+    const expectedFuncType: TyArrow = {
+      kind: "TyArrow",
+      id: crypto.randomUUID(),
+      from: argProof.type,
+      to: resultType,
+    };
+
+    const constraints: Constraint[] = [
+      ...funcProof.constraints,
+      ...argProof.constraints,
+      {left: funcProof.type, right: expectedFuncType},
+    ];
+
+    return {
+      rule: this.ruleFor(Rule.App, Rule.CtApp),
+      term: node,
+      type: resultType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [funcProof, argProof],
+      constraints,
+    };
+  }
+
+  protected visitLit(node: Lit): InferProofTree {
     const typeName = (node.value === "unit" || node.value === "Unit")
       ? "Unit"
       : (node.value === "true" || node.value === "True" || node.value === "false" || node.value === "False")
@@ -243,189 +362,155 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     };
 
     return {
-      rule: Rule.Lit,
+      rule: this.ruleFor(Rule.Lit, Rule.CtLit),
       term: node,
       type: litType,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises: [],
+      constraints: [],
     };
   }
 
-  protected visitIfCondition(node: IfCondition): ProofTree {
-    const boolType: TyIdentifier = {kind: "TyIdentifier", id: "bool-sentinel", name: "Bool"};
-    const unitType: TyIdentifier = {kind: "TyIdentifier", id: "unit-sentinel", name: "Unit"};
+  protected visitIfCondition(node: IfCondition): InferProofTree {
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Bool"};
+    const unitType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Unit"};
 
     const conditionProof = this.visit(node.condition);
     const thenProof = this.visit(node.then);
-    const premises: ProofTree[] = [conditionProof, thenProof];
-    const errors: string[] = [];
 
-    if (!typeEquals(conditionProof.type, boolType)) {
-      errors.push(`"if" condition must have type Bool, but got ${typeToString(conditionProof.type)}`);
-    }
+    const premises: InferProofTree[] = [conditionProof, thenProof];
+    const constraints: Constraint[] = [
+      ...conditionProof.constraints,
+      ...thenProof.constraints,
+      {left: conditionProof.type, right: boolType},
+    ];
 
-    let resultType = thenProof.type;
+    let resultType: Type = thenProof.type;
 
     for (const branch of node.elif ?? []) {
       const branchConditionProof = this.visit(branch.condition);
       const branchThenProof = this.visit(branch.then);
-      premises.push(branchConditionProof, branchThenProof);
 
-      if (!typeEquals(branchConditionProof.type, boolType)) {
-        errors.push(`"elseif" condition must have type Bool, but got ${typeToString(branchConditionProof.type)}`);
-      }
-      if (!typeEquals(branchThenProof.type, resultType)) {
-        errors.push(`"elseif" branch has type ${typeToString(branchThenProof.type)}, expected ${typeToString(resultType)}`);
-      }
+      premises.push(branchConditionProof, branchThenProof);
+      constraints.push(
+        ...branchConditionProof.constraints,
+        ...branchThenProof.constraints,
+        {left: branchConditionProof.type, right: boolType},
+        {left: branchThenProof.type, right: resultType},
+      );
     }
 
     if (node.else) {
       const elseProof = this.visit(node.else);
+
       premises.push(elseProof);
-      if (!typeEquals(elseProof.type, resultType)) {
-        errors.push(`"else" branch has type ${typeToString(elseProof.type)}, expected ${typeToString(resultType)}`);
-      }
-    } else if (!typeEquals(resultType, unitType)) {
-      errors.push(`"if" without "else" must have branches of type Unit, but got ${typeToString(resultType)}`);
+      constraints.push(
+        ...elseProof.constraints,
+        {left: elseProof.type, right: resultType},
+      );
+    } else {
+      constraints.push({left: resultType, right: unitType});
       resultType = unitType;
     }
 
-    const returnProof: ProofTree = {
-      rule: Rule.If,
+    return {
+      rule: this.ruleFor(Rule.If, Rule.CtIf),
       term: node,
       type: resultType,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises,
+      constraints,
     };
-
-    if (errors.length > 0) {
-      const msg = errors.join("; ");
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
   }
 
-  protected visitInl(node: Inl): ProofTree {
+  protected visitInl(node: Inl): InferProofTree {
     const termProof = this.visit(node.term);
     const ascribedType = node.type;
-
-    const returnProof: ProofTree = {
-      rule: Rule.Inl,
-      term: node,
-      type: ascribedType,
-      gamma: this.context.serializeGamma(),
-      premises: [termProof],
-    };
 
     if (ascribedType.kind !== "SumType") {
       const msg = `"inl" must be ascribed a sum type (e.g. "inl t as T1+T2"), but got ${typeToString(ascribedType)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
+      return this.reject(node, this.ruleFor(Rule.Inl, Rule.CtInl), msg, [termProof]);
     }
 
-    if (!typeEquals(termProof.type, ascribedType.left)) {
-      const msg = `"inl" expects a term of type ${typeToString(ascribedType.left)} (the left side of ${typeToString(ascribedType)}), but got ${typeToString(termProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
+    return {
+      rule: this.ruleFor(Rule.Inl, Rule.CtInl),
+      term: node,
+      type: ascribedType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType.left}],
+    };
   }
 
-  protected visitInr(node: Inr): ProofTree {
+  protected visitInr(node: Inr): InferProofTree {
     const termProof = this.visit(node.term);
     const ascribedType = node.type;
 
-    const returnProof: ProofTree = {
-      rule: Rule.Inr,
-      term: node,
-      type: ascribedType,
-      gamma: this.context.serializeGamma(),
-      premises: [termProof],
-    };
-
     if (ascribedType.kind !== "SumType") {
       const msg = `"inr" must be ascribed a sum type (e.g. "inr t as T1+T2"), but got ${typeToString(ascribedType)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
+      return this.reject(node, this.ruleFor(Rule.Inr, Rule.CtInr), msg, [termProof]);
     }
 
-    if (!typeEquals(termProof.type, ascribedType.right)) {
-      const msg = `"inr" expects a term of type ${typeToString(ascribedType.right)} (the right side of ${typeToString(ascribedType)}), but got ${typeToString(termProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
+    return {
+      rule: this.ruleFor(Rule.Inr, Rule.CtInr),
+      term: node,
+      type: ascribedType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType.right}],
+    };
   }
 
-  protected visitCase(node: Case): ProofTree {
+  protected visitCase(node: Case): InferProofTree {
     const scrutineeProof = this.visit(node.variable);
-    const scrutineeType = scrutineeProof.type;
 
-    const returnProof: ProofTree = {
-      rule: Rule.Case,
-      term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [scrutineeProof],
-    };
-
-    if (scrutineeType.kind !== "SumType") {
-      const msg = `"case" scrutinee must have a sum type, but got ${typeToString(scrutineeType)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
+    if (scrutineeProof.type.kind !== "SumType") {
+      const msg = `"case" scrutinee must have a sum type, but got ${typeToString(scrutineeProof.type)}`;
+      return this.reject(node, this.ruleFor(Rule.Case, Rule.CtCase), msg, [scrutineeProof]);
     }
+
+    const scrutineeType = scrutineeProof.type;
 
     const inlProof = this.withBinding(
       node.inl.variable,
-      scrutineeType.left,
+      {kind: "TypeScheme", vars: [], type: scrutineeType.left},
+      Rule.CtVar,
       () => this.visit(node.inl.term),
     );
 
     const inrProof = this.withBinding(
       node.inr.variable,
-      scrutineeType.right,
+      {kind: "TypeScheme", vars: [], type: scrutineeType.right},
+      Rule.CtVar,
       () => this.visit(node.inr.term),
     );
 
-    returnProof.premises = [scrutineeProof, inlProof, inrProof];
-    returnProof.type = inlProof.type;
-
-    if (!typeEquals(inlProof.type, inrProof.type)) {
-      const msg = `"case" branches must have the same type — the "inl" branch has type ${typeToString(inlProof.type)}, the "inr" branch has type ${typeToString(inrProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
+    return {
+      rule: this.ruleFor(Rule.Case, Rule.CtCase),
+      term: node,
+      type: inlProof.type,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [scrutineeProof, inlProof, inrProof],
+      constraints: [
+        ...scrutineeProof.constraints,
+        ...inlProof.constraints,
+        ...inrProof.constraints,
+        {left: inlProof.type, right: inrProof.type},
+      ],
+    };
   }
 
-  protected visitVariantCase(node: VariantCase): ProofTree {
+  protected visitVariantCase(node: VariantCase): InferProofTree {
     const scrutineeProof = this.visit(node.variable);
-    const scrutineeType = scrutineeProof.type;
 
-    const returnProof: ProofTree = {
-      rule: Rule.VariantCase,
-      term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [scrutineeProof],
-    };
-
-    if (scrutineeType.kind !== "VariantType") {
-      const msg = `"case" scrutinee must have a variant type, but got ${typeToString(scrutineeType)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
+    if (scrutineeProof.type.kind !== "VariantType") {
+      const msg = `"case" scrutinee must have a variant type, but got ${typeToString(scrutineeProof.type)}`;
+      return this.reject(node, this.ruleFor(Rule.VariantCase, Rule.CtVariantCase), msg, [scrutineeProof]);
     }
 
-    const premises: ProofTree[] = [scrutineeProof];
+    const scrutineeType = scrutineeProof.type;
+    const premises: InferProofTree[] = [scrutineeProof];
+    const constraints: Constraint[] = [...scrutineeProof.constraints];
     const errors: string[] = [];
     let resultType: Type | undefined;
 
@@ -434,37 +519,47 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
 
       if (!field) {
         errors.push(`Label "${c.label}" is not a member of variant type ${typeToString(scrutineeType)}`);
-        premises.push(this.visit(c.body));
+        const branchProof = this.visit(c.body);
+        premises.push(branchProof);
+        constraints.push(...branchProof.constraints);
         continue;
       }
 
       const branchProof = this.withBinding(
         c.variable,
-        field.type,
+        {kind: "TypeScheme", vars: [], type: field.type},
+        Rule.CtVar,
         () => this.visit(c.body),
       );
       premises.push(branchProof);
+      constraints.push(...branchProof.constraints);
 
       if (resultType === undefined) {
         resultType = branchProof.type;
-      } else if (!typeEquals(resultType, branchProof.type)) {
-        errors.push(`Case branch "${c.label}" has type ${typeToString(branchProof.type)}, expected ${typeToString(resultType)}`);
+      } else {
+        constraints.push({left: resultType, right: branchProof.type});
       }
     }
 
-    returnProof.premises = premises;
-    returnProof.type = resultType ?? ERROR_TYPE;
+    const proof: InferProofTree = {
+      rule: this.ruleFor(Rule.VariantCase, Rule.CtVariantCase),
+      term: node,
+      type: resultType ?? ERROR_TYPE,
+      gamma: this.schemeContext.serializeGamma(),
+      premises,
+      constraints,
+    };
 
     if (errors.length > 0) {
       const msg = errors.join("; ");
       this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
+      proof.error = msg;
     }
 
-    return returnProof;
+    return proof;
   }
 
-  protected visitVariant(node: Variant): ProofTree {
+  protected visitVariant(node: Variant): InferProofTree {
     const ascribedType = node.type;
     const errors: string[] = [];
 
@@ -472,107 +567,79 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
       errors.push(`Variant literal must be ascribed a variant type (e.g. "[l=t] as [l:T, ...]"), but got ${typeToString(ascribedType)}`);
     }
 
-    const premises: ProofTree[] = node.variants.map((v) => {
+    const constraints: Constraint[] = [];
+    const premises: InferProofTree[] = node.variants.map((v) => {
       const termProof = this.visit(v.term);
+      constraints.push(...termProof.constraints);
 
       if (ascribedType.kind === "VariantType") {
         const field = ascribedType.variants.find((f) => f.label === v.label);
         if (!field) {
           errors.push(`Label "${v.label}" is not a member of variant type ${typeToString(ascribedType)}`);
-        } else if (!typeEquals(termProof.type, field.type)) {
-          errors.push(`Field "${v.label}" has type ${typeToString(termProof.type)}, expected ${typeToString(field.type)}`);
+        } else {
+          constraints.push({left: termProof.type, right: field.type});
         }
       }
 
       return termProof;
     });
 
-    const returnProof: ProofTree = {
-      rule: Rule.Variant,
+    const proof: InferProofTree = {
+      rule: this.ruleFor(Rule.Variant, Rule.CtVariant),
       term: node,
       type: ascribedType,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises,
+      constraints,
     };
 
     if (errors.length > 0) {
       const msg = errors.join("; ");
       this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
+      proof.error = msg;
     }
 
-    return returnProof;
+    return proof;
   }
 
-  protected visitAscribe(node: Ascribe): ProofTree {
+  protected visitAscribe(node: Ascribe): InferProofTree {
     const termProof = this.visit(node.term);
 
-    const returnProof: ProofTree = {
-      rule: Rule.Ascribe,
+    return {
+      rule: this.ruleFor(Rule.Ascribe, Rule.CtAscribe),
       term: node,
       type: node.type,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: node.type}],
     };
-
-    if (!typeEquals(termProof.type, node.type)) {
-      const msg = `Ascription mismatch — term has type ${typeToString(termProof.type)}, but was ascribed ${typeToString(node.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
   }
 
-  protected visitTuple(node: Tuple): ProofTree {
-    const elementProofs = node.elements.map((el) => this.visit(el));
+  protected visitRecordProjection(node: RecordProjection): InferProofTree {
+    const recordProof = this.visit(node.term);
 
-    const tupleType: TupleType = {
-      kind: "TupleType",
-      id: crypto.randomUUID(),
-      elements: elementProofs.map((p) => p.type),
-    };
+    if (recordProof.type.kind !== "RecordType") {
+      const msg = `Projection ".${node.label}" requires a record type, but got ${typeToString(recordProof.type)}`;
+      return this.reject(node, this.ruleFor(Rule.RecordProjection, Rule.CtRecordProjection), msg, [recordProof]);
+    }
+
+    const field = recordProof.type.fields.find((f) => f.label === node.label);
+    if (!field) {
+      const msg = `Record type ${typeToString(recordProof.type)} has no field "${node.label}"`;
+      return this.reject(node, this.ruleFor(Rule.RecordProjection, Rule.CtRecordProjection), msg, [recordProof]);
+    }
 
     return {
-      rule: Rule.Tuple,
+      rule: this.ruleFor(Rule.RecordProjection, Rule.CtRecordProjection),
       term: node,
-      type: tupleType,
-      gamma: this.context.serializeGamma(),
-      premises: elementProofs,
+      type: field.type,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [recordProof],
+      constraints: recordProof.constraints,
     };
   }
 
-  protected visitTupleProjection(node: TupleProjection): ProofTree {
-    const tupleProof = this.visit(node.tuple);
-    const tupleType = tupleProof.type;
-
-    const returnProof: ProofTree = {
-      rule: Rule.TupleProjection,
-      term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [tupleProof],
-    };
-
-    if (tupleType.kind !== "TupleType") {
-      const msg = `Projection ".${node.index}" requires a tuple type, but got ${typeToString(tupleType)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
-    }
-
-    if (node.index < 1 || node.index > tupleType.elements.length) {
-      const msg = `Tuple index ${node.index} is out of bounds for ${typeToString(tupleType)} (valid range: 1..${tupleType.elements.length})`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
-    }
-
-    returnProof.type = tupleType.elements[node.index - 1];
-    return returnProof;
-  }
-
-  protected visitRecord(node: Record): ProofTree {
+  protected visitRecord(node: Record): InferProofTree {
     const fieldProofs = node.fields.map((f) => this.visit(f.term));
 
     const recordType: RecordType = {
@@ -582,72 +649,81 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     };
 
     return {
-      rule: Rule.Record,
+      rule: this.ruleFor(Rule.Record, Rule.CtRecord),
       term: node,
       type: recordType,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises: fieldProofs,
+      constraints: fieldProofs.flatMap((p) => p.constraints),
     };
   }
 
-  protected visitRecordProjection(node: RecordProjection): ProofTree {
-    const recordProof = this.visit(node.term);
-    const recordType = recordProof.type;
+  protected visitTuple(node: Tuple): InferProofTree {
+    const elementProofs = node.elements.map((el) => this.visit(el));
 
-    const returnProof: ProofTree = {
-      rule: Rule.RecordProjection,
+    const tupleType: TupleType = {
+      kind: "TupleType",
+      id: crypto.randomUUID(),
+      elements: elementProofs.map((p) => p.type),
+    };
+
+    return {
+      rule: this.ruleFor(Rule.Tuple, Rule.CtTuple),
       term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [recordProof],
+      type: tupleType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: elementProofs,
+      constraints: elementProofs.flatMap((p) => p.constraints),
     };
-
-    if (recordType.kind !== "RecordType") {
-      const msg = `Projection ".${node.label}" requires a record type, but got ${typeToString(recordType)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
-    }
-
-    const field = recordType.fields.find((f) => f.label === node.label);
-    if (!field) {
-      const msg = `Record type ${typeToString(recordType)} has no field "${node.label}"`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
-    }
-
-    returnProof.type = field.type;
-    return returnProof;
   }
 
-  protected visitSequencing(node: Sequencing): ProofTree {
-    const unitType: TyIdentifier = {kind: "TyIdentifier", id: "unit-sentinel", name: "Unit"};
+  protected visitTupleProjection(node: TupleProjection): InferProofTree {
+    const tupleProof = this.visit(node.tuple);
+
+    if (tupleProof.type.kind !== "TupleType") {
+      const msg = `Projection ".${node.index}" requires a tuple type, but got ${typeToString(tupleProof.type)}`;
+      return this.reject(node, this.ruleFor(Rule.TupleProjection, Rule.CtTupleProjection), msg, [tupleProof]);
+    }
+
+    if (node.index < 1 || node.index > tupleProof.type.elements.length) {
+      const msg = `Tuple index ${node.index} is out of bounds for ${typeToString(tupleProof.type)} (valid range: 1..${tupleProof.type.elements.length})`;
+      return this.reject(node, this.ruleFor(Rule.TupleProjection, Rule.CtTupleProjection), msg, [tupleProof]);
+    }
+
+    return {
+      rule: this.ruleFor(Rule.TupleProjection, Rule.CtTupleProjection),
+      term: node,
+      type: tupleProof.type.elements[node.index - 1],
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [tupleProof],
+      constraints: tupleProof.constraints,
+    };
+  }
+
+  protected visitSequencing(node: Sequencing): InferProofTree {
+    const unitType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Unit"};
 
     const firstProof = this.visit(node.first);
     const secondProof = this.visit(node.second);
 
-    const returnProof: ProofTree = {
-      rule: Rule.Sequencing,
+    return {
+      rule: this.ruleFor(Rule.Sequencing, Rule.CtSequencing),
       term: node,
       type: secondProof.type,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises: [firstProof, secondProof],
+      constraints: [
+        ...firstProof.constraints,
+        ...secondProof.constraints,
+        {left: firstProof.type, right: unitType},
+      ],
     };
-
-    if (!typeEquals(firstProof.type, unitType)) {
-      const msg = `The first part of a sequence "t1; t2" must have type Unit, but got ${typeToString(firstProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
   }
 
-  protected visitDummyAbstraction(node: DummyAbstraction): ProofTree {
+  protected visitDummyAbstraction(node: DummyAbstraction): InferProofTree {
     const bodyProof = this.visit(node.body);
 
-    const abstractionType: TyArrow = {
+    const type: TyArrow = {
       kind: "TyArrow",
       id: crypto.randomUUID(),
       from: node.paramType,
@@ -655,91 +731,209 @@ export class SLTLCTypeChecker extends AstVisitor<ProofTree> {
     };
 
     return {
-      rule: Rule.DummyAbs,
+      rule: this.ruleFor(Rule.DummyAbs, Rule.CtDummyAbs),
       term: node,
-      type: abstractionType,
-      gamma: this.context.serializeGamma(),
+      type,
+      gamma: this.schemeContext.serializeGamma(),
       premises: [bodyProof],
+      constraints: bodyProof.constraints,
     };
   }
 
-  protected visitBinOp(node: BinOp): ProofTree {
-    const natType: TyIdentifier = {kind: "TyIdentifier", id: "nat-sentinel", name: "Nat"};
-    const boolType: TyIdentifier = {kind: "TyIdentifier", id: "bool-sentinel", name: "Bool"};
+  protected visitBinOp(node: BinOp): InferProofTree {
+    const natType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Nat"};
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Bool"};
 
     const leftProof = this.visit(node.left);
     const rightProof = this.visit(node.right);
 
-    const returnProof: ProofTree = {
-      rule: Rule.BinOp,
+    return {
+      rule: this.ruleFor(Rule.BinOp, Rule.CtBinOp),
       term: node,
       type: isArithmeticOperator(node.operator) ? natType : boolType,
-      gamma: this.context.serializeGamma(),
+      gamma: this.schemeContext.serializeGamma(),
       premises: [leftProof, rightProof],
+      constraints: [
+        ...leftProof.constraints,
+        ...rightProof.constraints,
+        {left: leftProof.type, right: natType},
+        {left: rightProof.type, right: natType},
+      ],
     };
-
-    if (!typeEquals(leftProof.type, natType) || !typeEquals(rightProof.type, natType)) {
-      const msg = `Operator "${node.operator}" expects both operands to have type Nat, but got ${typeToString(leftProof.type)} and ${typeToString(rightProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-    }
-
-    return returnProof;
   }
 
-  protected visitFix(node: Fix): ProofTree {
+  protected visitFix(node: Fix): InferProofTree {
     const termProof = this.visit(node.term);
-
-    const returnProof: ProofTree = {
-      rule: Rule.Fix,
-      term: node,
-      type: ERROR_TYPE,
-      gamma: this.context.serializeGamma(),
-      premises: [termProof],
+    const resultType = this.engine.freshTyMetaVar();
+    const expectedType: TyArrow = {
+      kind: "TyArrow",
+      id: crypto.randomUUID(),
+      from: resultType,
+      to: resultType,
     };
 
-    if (termProof.type.kind !== "TyArrow" || !typeEquals(termProof.type.from, termProof.type.to)) {
-      const msg = `"fix" requires a function of type T -> T, but got ${typeToString(termProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
-      returnProof.error = msg;
-      return returnProof;
-    }
-
-    returnProof.type = termProof.type.from;
-    return returnProof;
+    return {
+      rule: this.ruleFor(Rule.Fix, Rule.CtFix),
+      term: node,
+      type: resultType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: expectedType}],
+    };
   }
 
-  protected visitLet(node: Let): ProofTree {
+  protected visitLet(node: Let): InferProofTree {
     if (!this.theories.letPolymorphism) {
-      const msg = `"let" is not part of plain STLC — enable the Let-polymorphism theory to use it`;
+      return this.reject(node, Rule.Let, `"let" is not part of plain STLC — enable the Let-polymorphism theory to use it`);
+    }
+
+    this.polymorphicScope++;
+    try {
+      return this.checkLet(node);
+    } finally {
+      this.polymorphicScope--;
+    }
+  }
+
+  private checkLet(node: Let): InferProofTree {
+    // 1. Infer the bound value's type.
+    const valueProof = this.visit(node.value);
+
+    let valueSubstitution: Substitution;
+
+    // 2. Solve only the constraints from the value — it must be fully
+    // resolved before we generalize, otherwise metavariables that are
+    // actually pinned down later would incorrectly look "free".
+    try {
+      valueSubstitution = this.engine.solve(valueProof.constraints);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
       this.errorBuffer.push(new Error(msg));
+
       return {
-        rule: Rule.Let,
+        rule: Rule.CtLet,
         term: node,
         type: ERROR_TYPE,
-        gamma: this.context.serializeGamma(),
-        premises: [],
+        gamma: this.schemeContext.serializeGamma(),
+        premises: [valueProof],
+        constraints: [],
         error: msg,
       };
     }
 
-    return new LetPolymorphismInferenceVisitor(
-      this.context,
-      this.errorBuffer,
-      this.globalProofs,
-    ).check(node);
-  }
+    // 3. Apply the substitution to the inferred value type.
+    const solvedValueType = this.engine.applySubstitution(
+      valueProof.type,
+      valueSubstitution,
+    );
 
-  protected visitType(node: Type): ProofTree {
+    // 4. Apply the substitution to the ambient context too — metavariables
+    // from enclosing scopes may have been resolved while checking the value.
+    this.schemeContext = this.engine.applySubstitutionToContext(
+      this.schemeContext,
+      valueSubstitution,
+    );
+
+    // 5. Generalize the solved value type over whatever metavariables are
+    // free in it but not in the (substituted) surrounding context.
+    const generalizedScheme = this.engine.generalize(
+      solvedValueType,
+      this.schemeContext,
+    );
+
+    // 6. Infer the body under the extended context, then drop the binding.
+    const bodyProof = this.withBinding(
+      node.name,
+      generalizedScheme,
+      Rule.CtVarLet,
+      () => this.visit(node.body),
+    );
+
+    // 7. Return the body's type and its (still unsolved) constraints — the
+    // enclosing check() (or an outer `let`) solves those.
     return {
-      rule: "Type" as any,
-      term: node as any,
-      type: node as any,
-      gamma: this.context.serializeGamma(),
-      premises: [],
-    } as ProofTree;
+      rule: Rule.CtLet,
+      term: node,
+      type: bodyProof.type,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [
+        this.engine.applySubstitutionToProof(
+          valueProof,
+          valueSubstitution,
+        ),
+        bodyProof,
+      ],
+      constraints: bodyProof.constraints,
+    };
   }
 
+  // =====================================================================
+  // =                        SYSTEM F                                   =
+  // =====================================================================
 
+  protected visitTypeAbstraction(node: TypeAbs): InferProofTree {
+    if (!this.theories.systemF) {
+      return this.reject(node, Rule.TypeAbs, `"Λ" type abstraction is not part of plain STLC — enable the System F theory to use it`);
+    }
+
+    const bodyProof = this.visit(node.body);
+
+    const type: TyForall = {
+      kind: "TyForall",
+      id: crypto.randomUUID(),
+      typeVariable: node.typeParam,
+      type: bodyProof.type,
+    };
+
+    return {
+      rule: Rule.TypeAbs,
+      term: node,
+      type,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [bodyProof],
+      constraints: bodyProof.constraints,
+    };
+  }
+
+  protected visitTypeApplication(node: TypeApp): InferProofTree {
+    if (!this.theories.systemF) {
+      return this.reject(node, Rule.TypeApp, `"[T]" type application is not part of plain STLC — enable the System F theory to use it`);
+    }
+
+    const termProof = this.visit(node.term);
+
+    if (termProof.type.kind !== "TyForall") {
+      const msg = `Type application expects a universal type (∀X. T), but got ${typeToString(termProof.type)}`;
+      return this.reject(node, Rule.TypeApp, msg, [termProof]);
+    }
+
+    const instantiated = substituteTypeVariable(
+      termProof.type.type,
+      termProof.type.typeVariable,
+      node.typeArg,
+    );
+
+    return {
+      rule: Rule.TypeApp,
+      term: node,
+      type: instantiated,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: termProof.constraints,
+    };
+  }
+
+  // =====================================================================
+
+  protected visitType(node: Type): InferProofTree {
+    return {
+      rule: "Type" as never,
+      term: node as never,
+      type: node,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [],
+      constraints: [],
+    };
+  }
 
 }

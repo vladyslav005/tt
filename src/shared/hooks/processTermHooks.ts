@@ -25,7 +25,7 @@ export function useTermHooks() {
 
   function typecheckTerm(ast: Program): ProofTree {
     typeCheckerSLTC.setTheories(enabledTheories);
-    return typeCheckerSLTC.visit(ast);
+    return typeCheckerSLTC.check(ast);
   }
 
   function parseAndTypeCheck(termOverride?: string): void {
@@ -59,7 +59,7 @@ export function useTermHooks() {
       }
 
       typeCheckerSLTC.setTheories(enabledTheories);
-      proof = typeCheckerSLTC.visit(ast);
+      proof = typeCheckerSLTC.check(ast);
 
       typeCheckerSLTC.getErrors().forEach(e => dispatch(pushProcessingError(e)));
 

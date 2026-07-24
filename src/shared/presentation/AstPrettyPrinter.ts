@@ -21,6 +21,8 @@ import type {
   Tuple,
   TupleProjection,
   Type,
+  TypeAbs,
+  TypeApp,
   Var,
   VarDecl,
   Variant,
@@ -114,6 +116,10 @@ export class AstPrettyPrinter {
         return this.printBinOp(term);
       case "Fix":
         return this.printFix(term);
+      case "TypeAbs":
+        return this.printTypeAbs(term);
+      case "TypeApp":
+        return this.printTypeApp(term);
     }
   }
 
@@ -190,6 +196,14 @@ export class AstPrettyPrinter {
 
   private printFix(t: Fix): string {
     return `(fix ${this.printTerm(t.term)})`;
+  }
+
+  private printTypeAbs(t: TypeAbs): string {
+    return `(Λ ${t.typeParam} . ${this.printTerm(t.body)})`;
+  }
+
+  private printTypeApp(t: TypeApp): string {
+    return `${this.printTerm(t.term)} [${this.printType(t.typeArg)}]`;
   }
 
   private printVar(v: Var): string {

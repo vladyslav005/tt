@@ -34,6 +34,9 @@ import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/Dummy
 import {LetFlowNode} from "@/features/ast/components/ast/flow/LetFlowNode";
 import {BinOpFlowNode} from "@/features/ast/components/ast/flow/BinOpFlowNode";
 import {FixFlowNode} from "@/features/ast/components/ast/flow/FixFlowNode";
+import {TypeAbstractionFlowNode} from "@/features/ast/components/ast/flow/TypeAbstractionFlowNode";
+import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeApplicationFlowNode";
+import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
 
 
 export interface AstProps {
@@ -54,6 +57,8 @@ function TypeFlowNodeDispatch(props: any) {
       return <VariantTypeFlowNode {...props} />;
     case "RecordType":
       return <RecordTypeFlowNode {...props} />;
+    case "TyForall":
+      return <TyForallFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -84,6 +89,8 @@ export const nodeTypes: NodeTypes = {
   let: LetFlowNode,
   binOp: BinOpFlowNode,
   fix: FixFlowNode,
+  typeAbs: TypeAbstractionFlowNode,
+  typeApp: TypeApplicationFlowNode,
 } as NodeTypes;
 
 export function Ast({
@@ -162,6 +169,8 @@ export function Ast({
             if (node.type === 'let') return 'hsl(160, 84%, 39%)';
             if (node.type === 'binOp') return 'hsl(38, 92%, 50%)';
             if (node.type === 'fix') return 'hsl(0, 84%, 60%)';
+            if (node.type === 'typeAbs') return 'hsl(239, 84%, 67%)';
+            if (node.type === 'typeApp') return 'hsl(292, 84%, 61%)';
             return 'hsl(var(--muted))';
           }}
         />

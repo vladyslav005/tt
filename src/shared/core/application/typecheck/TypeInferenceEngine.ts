@@ -1,6 +1,6 @@
 
 import {
-  type Constraint, type ProofTree,
+  type Constraint, type InferProofTree, type ProofTree,
   type Substitution,
   type TypeScheme,
 } from "@/shared/core/application/typecheck/ProofTree.ts";
@@ -11,6 +11,14 @@ import {metaVarName, typeToString} from "@/shared/core/application/typecheck/uti
 export class TypeInferenceEngine {
 
   private freshCounter = 0;
+
+  // Metavariable names (freshCounter) are only meaningful within a single
+  // typecheck run — call this at the start of each one, or names keep
+  // climbing ('A, 'B, ... 'Z, 'A_1, ...) across every keystroke instead of
+  // restarting fresh each time.
+  reset(): void {
+    this.freshCounter = 0;
+  }
 
   toSchemeGamma(gamma: Gamma<Type>): Gamma<TypeScheme> {
     const result = new Gamma<TypeScheme>();
@@ -80,6 +88,18 @@ export class TypeInferenceEngine {
             type: this.applySubstitution(field.type, substitution),
           })),
         };
+
+      case "TyForall": {
+        // The bound variable shadows any substitution entry of the same
+        // name — capture-avoiding.
+        if (!substitution.has(type.typeVariable)) {
+          return {...type, type: this.applySubstitution(type.type, substitution)};
+        }
+
+        const inner = new Map(substitution);
+        inner.delete(type.typeVariable);
+        return {...type, type: this.applySubstitution(type.type, inner)};
+      }
 
       default:
         return this.assertNever(type);
@@ -312,13 +332,28 @@ export class TypeInferenceEngine {
     proof: T,
     substitution: Substitution,
   ): T {
-    return {
+    const next: T = {
       ...proof,
       type: this.applySubstitution(proof.type, substitution),
       premises: proof.premises.map((premise) =>
         this.applySubstitutionToProof(premise, substitution),
       ),
     };
+
+    // Constraints are generated (and displayed) alongside a node's raw,
+    // pre-solve type — without this, a solved node would show its final
+    // type next to a constraint still mentioning a metavariable that no
+    // longer appears anywhere else in the tree.
+    if ("constraints" in proof) {
+      (next as unknown as InferProofTree).constraints = (proof as unknown as InferProofTree).constraints.map(
+        (c) => ({
+          left: this.applySubstitution(c.left, substitution),
+          right: this.applySubstitution(c.right, substitution),
+        }),
+      );
+    }
+
+    return next;
   }
 
   freeTypeVariables(type: Type): Set<string> {
@@ -359,6 +394,12 @@ export class TypeInferenceEngine {
             this.freeTypeVariables(field.type),
           ),
         );
+
+      case "TyForall": {
+        const inner = this.freeTypeVariables(type.type);
+        inner.delete(type.typeVariable);
+        return inner;
+      }
 
       default:
         return this.assertNever(type);

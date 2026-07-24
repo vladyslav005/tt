@@ -59,6 +59,9 @@ import {DummyAbstractionFlowNode} from "@/features/ast/components/ast/flow/Dummy
 import {LetFlowNode} from "@/features/ast/components/ast/flow/LetFlowNode";
 import {BinOpFlowNode} from "@/features/ast/components/ast/flow/BinOpFlowNode";
 import {FixFlowNode} from "@/features/ast/components/ast/flow/FixFlowNode";
+import {TypeAbstractionFlowNode} from "@/features/ast/components/ast/flow/TypeAbstractionFlowNode";
+import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeApplicationFlowNode";
+import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
 import {Undo2, Redo2, LayoutGrid, Maximize2, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -83,6 +86,7 @@ const HANDLE_LABELS: Record<string, string> = {
   "second": "2nd",
   "leftOperand": "left",
   "rightOperand": "right",
+  "typeArg": "[T]",
 };
 
 export interface AstProps {
@@ -106,6 +110,8 @@ function TypeFlowNodeDispatch(props: any) {
       return <VariantTypeFlowNode {...props} />;
     case "RecordType":
       return <RecordTypeFlowNode {...props} />;
+    case "TyForall":
+      return <TyForallFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -139,13 +145,15 @@ export const nodeTypes: NodeTypes = {
   let: LetFlowNode,
   binOp: BinOpFlowNode,
   fix: FixFlowNode,
+  typeAbs: TypeAbstractionFlowNode,
+  typeApp: TypeApplicationFlowNode,
 } as NodeTypes;
 
 type AddOnDropKind = "decl" | "term" | "type";
 
 // Node kinds whose own handles always point at further *types* (as opposed to
 // term/program nodes, whose handles are term-context except "type"/"paramType").
-const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
+const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall"]);
 
 // A handful of handle names are reused across both term nodes and type nodes
 // (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
@@ -158,7 +166,7 @@ function expectedChildKind(sourceKind: string | undefined, handleId: string | un
   if (!handleId) return null;
   if (handleId === "global-decl") return "decl";
   if (sourceKind && TYPE_SOURCE_KINDS.has(sourceKind)) return "type";
-  if (handleId === "type" || handleId === "paramType") return "type";
+  if (handleId === "type" || handleId === "paramType" || handleId === "typeArg") return "type";
   return "term";
 }
 
@@ -169,8 +177,9 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "inl", "inr", "ifCondition", "case", "variantCase", "variant",
     "ascribe", "tupleProjection", "recordProjection", "record",
     "sequencing", "tuple", "dummyAbstraction", "let", "binOp", "fix",
+    "typeAbs", "typeApp",
   ],
-  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType"],
+  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType"],
 };
 
 // Skeleton (term, xyflow node "type" string) for each newly-added node kind,
@@ -323,6 +332,23 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           body: { id: `${id}-body`, kind: "Var", name: "x" },
         },
       };
+    case "typeAbs":
+      return {
+        type: "typeAbs",
+        term: {
+          id, kind: "TypeAbs", typeParam: "X",
+          body: { id: `${id}-body`, kind: "Var", name: "x" },
+        },
+      };
+    case "typeApp":
+      return {
+        type: "typeApp",
+        term: {
+          id, kind: "TypeApp",
+          term: { id: `${id}-term`, kind: "Var", name: "f" },
+          typeArg: { id: `${id}-typeArg`, kind: "TyIdentifier", name: "T" },
+        },
+      };
     case "sumType":
       return {
         type: "type",
@@ -354,6 +380,14 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         term: {
           id, kind: "RecordType",
           fields: [{ label: "l1", type: { id: `${id}-field-0`, kind: "TyIdentifier", name: "T" } }],
+        },
+      };
+    case "forallType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "TyForall", typeVariable: "X",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "X" },
         },
       };
     default:
@@ -1266,6 +1300,24 @@ export function AstEditor({
             { type: "tupleType",   label: "⟨*⟩", title: "Tuple Type (A*B)" },
             { type: "variantType", label: "[l:]", title: "Variant Type ([l:T,...])" },
             { type: "recordType",  label: "{l:}", title: "Record Type (synthesized)" },
+            { type: "forallType",  label: "∀", title: "Forall Type (∀X. T)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        {/* System F */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">System F</span>
+          {([
+            { type: "typeAbs", label: "Λ",   title: "Type Abstraction (ΛX. t)" },
+            { type: "typeApp", label: "[T]", title: "Type Application (t [T])" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}

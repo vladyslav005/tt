@@ -183,6 +183,8 @@ export class Evaluator {
       case "Let":
       case "BinOp":
       case "Fix":
+      case "TypeAbs":
+      case "TypeApp":
         return ast;
 
       case "Program": {
@@ -208,6 +210,7 @@ export class Evaluator {
       case "VariantType":
       case "RecordType":
       case "TyMetaVar":
+      case "TyForall":
         throw new Error(
           `Cannot evaluate type node ${ast.kind}`,
         );

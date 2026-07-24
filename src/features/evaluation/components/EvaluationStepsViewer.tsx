@@ -64,6 +64,16 @@ function TypeView({ type }: { type: Type }) {
           <span className="text-muted-foreground">{"}"}</span>
         </>
       );
+    case "TyForall":
+      return (
+        <>
+          <span className="text-purple-600 dark:text-purple-400">∀{type.typeVariable}</span>
+          <span className="text-muted-foreground">. </span>
+          <TypeView type={type.type} />
+        </>
+      );
+    case "TyMetaVar":
+      return <span className="text-muted-foreground italic">{type.name}</span>;
   }
 }
 
@@ -287,6 +297,24 @@ function TermView({
           <>
             <span className="text-red-600 dark:text-red-400">fix </span>
             <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "TypeAbs":
+        return (
+          <>
+            <span className="text-indigo-600 dark:text-indigo-400">Λ</span>
+            <span> {term.typeParam}</span>
+            <span className="text-muted-foreground"> . </span>
+            <TermView term={term.body} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "TypeApp":
+        return (
+          <>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-fuchsia-600 dark:text-fuchsia-400"> [</span>
+            <TypeView type={term.typeArg} />
+            <span className="text-fuchsia-600 dark:text-fuchsia-400">]</span>
           </>
         );
     }

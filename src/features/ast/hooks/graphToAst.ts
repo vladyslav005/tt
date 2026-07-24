@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyIdentifier, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyForall, TyIdentifier, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;
@@ -49,7 +49,7 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
-const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType"]);
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall"]);
 
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
@@ -118,6 +118,18 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
       : ({ id: raw.id ?? node.id, kind: "RecordType", fields } as Type);
   }
 
+  if (raw.kind === "TyForall") {
+    const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+    const ty: TyForall = {
+      id: raw.id ?? node.id,
+      kind: "TyForall",
+      typeVariable: raw.typeVariable ?? "X",
+      type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : defaultType(`${node.id}-type`),
+    };
+    visiting.delete(node.id);
+    return ty;
+  }
+
   visiting.delete(node.id);
   return (raw as Type) ?? defaultType(node.id);
 }
@@ -135,7 +147,8 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
     case "SumType":
     case "TupleType":
     case "VariantType":
-    case "RecordType": {
+    case "RecordType":
+    case "TyForall": {
       visiting.delete(node.id);
       return reconstructType(node, nodeMap, edges, visiting) as any;
     }
@@ -487,6 +500,31 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
         id: raw.id ?? node.id,
         kind: "Fix",
         term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`, "f"),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "TypeAbs": {
+      const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "TypeAbs",
+        typeParam: raw.typeParam ?? "X",
+        body: bodyNode ? reconstruct(bodyNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-body`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "TypeApp": {
+      const termNode = firstTargetNode(byHandle, "term", nodeMap);
+      const typeArgNode = firstTargetNode(byHandle, "typeArg", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "TypeApp",
+        term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`, "f"),
+        typeArg: typeArgNode ? reconstructType(typeArgNode, nodeMap, edges, visiting) : (raw.typeArg as Type) ?? defaultType(`${node.id}-typeArg`),
       };
       visiting.delete(node.id);
       return result as any;

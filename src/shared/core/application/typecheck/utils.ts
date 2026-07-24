@@ -65,6 +65,13 @@ export function typeEquals(a: Type, b: Type): boolean {
     case "TyMetaVar" : {
       return a.name === (b as any).name;
     }
+
+    case "TyForall": {
+      const bForall = b as typeof a;
+      // Structural equality only — no alpha-conversion, matching every
+      // other binder-free comparison in this function.
+      return a.typeVariable === bForall.typeVariable && typeEquals(a.type, bForall.type);
+    }
   }
 }
 
@@ -93,5 +100,68 @@ export function typeToString(a: Type): string {
 
     case "TyMetaVar":
       return a.name;
+
+    case "TyForall":
+      return `(forall ${a.typeVariable}. ${typeToString(a.type)})`;
+  }
+}
+
+// Capture-avoiding substitution of a type *variable* (a TyIdentifier by
+// name) with a concrete type — the System F analogue of
+// TypeInferenceEngine.applySubstitution, which substitutes TyMetaVars
+// instead. Used both by type-application typechecking (t [T]) and by
+// evaluation's beta-reduction of (ΛX.t) [T].
+export function substituteTypeVariable(type: Type, name: string, replacement: Type): Type {
+  switch (type.kind) {
+    case "TyIdentifier":
+      return type.name === name ? replacement : type;
+
+    case "TyMetaVar":
+      return type;
+
+    case "TyArrow":
+      return {
+        ...type,
+        from: substituteTypeVariable(type.from, name, replacement),
+        to: substituteTypeVariable(type.to, name, replacement),
+      };
+
+    case "TupleType":
+      return {
+        ...type,
+        elements: type.elements.map((element) => substituteTypeVariable(element, name, replacement)),
+      };
+
+    case "SumType":
+      return {
+        ...type,
+        left: substituteTypeVariable(type.left, name, replacement),
+        right: substituteTypeVariable(type.right, name, replacement),
+      };
+
+    case "VariantType":
+      return {
+        ...type,
+        variants: type.variants.map((variant) => ({
+          ...variant,
+          type: substituteTypeVariable(variant.type, name, replacement),
+        })),
+      };
+
+    case "RecordType":
+      return {
+        ...type,
+        fields: type.fields.map((field) => ({
+          ...field,
+          type: substituteTypeVariable(field.type, name, replacement),
+        })),
+      };
+
+    case "TyForall":
+      // The bound variable shadows an outer variable of the same name.
+      if (type.typeVariable === name) {
+        return type;
+      }
+      return {...type, type: substituteTypeVariable(type.type, name, replacement)};
   }
 }

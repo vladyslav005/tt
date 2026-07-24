@@ -47,6 +47,10 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitFix(node)
       case "Let":
         return this.visitLet(node)
+      case "TypeAbs":
+        return this.visitTypeAbstraction(node)
+      case "TypeApp":
+        return this.visitTypeApplication(node)
 
 
       default:
@@ -94,5 +98,9 @@ export abstract class ProofTreeVisitor<R> {
   protected abstract visitFix(node: ProofTree): R
 
   protected abstract visitLet(node: ProofTree): R
+
+  protected abstract visitTypeAbstraction(node: ProofTree): R
+
+  protected abstract visitTypeApplication(node: ProofTree): R
 
 }

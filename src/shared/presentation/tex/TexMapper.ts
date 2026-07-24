@@ -257,6 +257,22 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  protected visitTypeAbstraction(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-TAbs",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
+  protected visitTypeApplication(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-TApp",
+      children: node.premises.map(child => this.visit(child))
+    }
+  }
+
   private variableMembershipTex(node: ProofTree): TexTree {
     const variableName = (node.term as any).name
     const variableType = TexMapper.typeToTex(node.type)
@@ -346,6 +362,10 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `(${this.termToTex(term.left)} ${BINOP_TEX_SYMBOLS[term.operator]} ${this.termToTex(term.right)})`
       case "Fix":
         return `\\mathit{fix}\\ ${this.termToTex(term.term)}`
+      case "TypeAbs":
+        return `(\\Lambda ${term.typeParam} . ${this.termToTex(term.body)})`
+      case "TypeApp":
+        return `${this.termToTex(term.term)}\\ [${this.typeToTex(term.typeArg)}]`
     }
   }
 
@@ -392,6 +412,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\langle ${type.variants.map((v) => `${v.label}:${this.typeToTex(v.type)}`).join(", ")} \\rangle`
       case "RecordType":
         return `\\{ ${type.fields.map((f) => `${f.label}:${this.typeToTex(f.type)}`).join(", ")} \\}`
+      case "TyForall":
+        return `\\forall ${type.typeVariable}.\\, ${this.typeToTex(type.type)}`
     }
   }
 }

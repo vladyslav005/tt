@@ -22,12 +22,15 @@ import type {
   Tuple,
   TupleProjection,
   Type,
+  TypeAbs,
+  TypeApp,
   Var,
   Variant,
   VariantCase,
 } from "@/shared/core/domain/ast";
 
 import {EvaluationStrategy, type ReductionStep,} from "@/shared/core/application/evaluation/type.ts";
+import {substituteTypeVariable} from "@/shared/core/application/typecheck/utils.ts";
 
 const isUnitLiteral = (term: Term): boolean =>
   term.kind === "Lit" && (term.value === "unit" || term.value === "Unit");
@@ -582,6 +585,228 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     };
   }
 
+  protected override visitTypeAbstraction(node: TypeAbs): ReductionStep | null {
+    // A value, like Abs — normal order continues under the binder, the
+    // other two strategies stop.
+    if (this.strategy !== EvaluationStrategy.NORMAL) {
+      return null;
+    }
+
+    const bodyStep = this.visit(node.body);
+
+    if (!bodyStep) {
+      return null;
+    }
+
+    return {
+      before: node,
+      after: {...node, body: bodyStep.after},
+      selectedId: bodyStep.selectedId,
+      resultId: bodyStep.resultId,
+    };
+  }
+
+  // Per the course material (lecture 08, "Vyhodnocovacie pravidlá"): unlike
+  // App, this is ONE fixed rule, not parameterized by the language's
+  // evaluation strategy — "V procese vyhodnotenia termu t[T], najskôr
+  // redukujeme t na hodnotu (E-Tapp), a následne pristúpime k typovej
+  // inštanciácii (E-TappTabs)" ("first reduce t to a value, then apply
+  // type instantiation"). this.strategy still governs how node.term's own
+  // subterms reduce (via the recursive this.visit call below) — it's only
+  // the E-Tapp/E-TappTabs step itself that doesn't branch on it.
+  protected override visitTypeApplication(node: TypeApp): ReductionStep | null {
+    // E-TappTabs: term is already a value (a TypeAbs), instantiate.
+    if (node.term.kind === "TypeAbs") {
+      return this.typeBetaReduce(node);
+    }
+
+    // E-Tapp: reduce the term to a value first.
+    const termStep = this.visit(node.term);
+
+    if (!termStep) {
+      return null;
+    }
+
+    return {
+      before: node,
+      after: {
+        ...node,
+        term: termStep.after,
+      },
+      selectedId: termStep.selectedId,
+      resultId: termStep.resultId,
+    };
+  }
+
+  private typeBetaReduce(node: TypeApp): ReductionStep {
+    if (node.term.kind !== "TypeAbs") {
+      throw new Error(
+        `Node ${node.id} is not a type-application redex`,
+      );
+    }
+
+    const after = this.substituteTypeInTerm(node.term.body, node.term.typeParam, node.typeArg);
+
+    return {
+      before: node,
+      after,
+      selectedId: node.id,
+      resultId: after.id,
+    };
+  }
+
+  /**
+   * Capture-avoiding substitution of a type *variable* throughout a term
+   * (into every embedded Type annotation) — the System F analogue of
+   * substitute() below, which substitutes a term variable instead.
+   *
+   * term[typeVar := replacement]
+   */
+  private substituteTypeInTerm(term: Term, typeVar: string, replacement: Type): Term {
+    switch (term.kind) {
+      case "Var":
+      case "Lit":
+        return term;
+
+      case "App":
+        return {
+          ...term,
+          func: this.substituteTypeInTerm(term.func, typeVar, replacement),
+          arg: this.substituteTypeInTerm(term.arg, typeVar, replacement),
+        };
+
+      case "Abs":
+        return {
+          ...term,
+          paramType: term.paramType ? substituteTypeVariable(term.paramType, typeVar, replacement) : undefined,
+          type: term.type ? substituteTypeVariable(term.type, typeVar, replacement) : undefined,
+          body: this.substituteTypeInTerm(term.body, typeVar, replacement),
+        };
+
+      case "Inl":
+        return {
+          ...term,
+          term: this.substituteTypeInTerm(term.term, typeVar, replacement),
+          type: substituteTypeVariable(term.type, typeVar, replacement),
+        };
+
+      case "Inr":
+        return {
+          ...term,
+          term: this.substituteTypeInTerm(term.term, typeVar, replacement),
+          type: substituteTypeVariable(term.type, typeVar, replacement),
+        };
+
+      case "IfCondition": {
+        const next: IfCondition = {
+          ...term,
+          condition: this.substituteTypeInTerm(term.condition, typeVar, replacement),
+          then: this.substituteTypeInTerm(term.then, typeVar, replacement),
+        };
+        if (term.elif) {
+          next.elif = term.elif.map((b) => ({
+            condition: this.substituteTypeInTerm(b.condition, typeVar, replacement),
+            then: this.substituteTypeInTerm(b.then, typeVar, replacement),
+          }));
+        }
+        if (term.else) {
+          next.else = this.substituteTypeInTerm(term.else, typeVar, replacement);
+        }
+        return next;
+      }
+
+      case "Case":
+        return {
+          ...term,
+          variable: this.substituteTypeInTerm(term.variable, typeVar, replacement),
+          inl: {variable: term.inl.variable, term: this.substituteTypeInTerm(term.inl.term, typeVar, replacement)},
+          inr: {variable: term.inr.variable, term: this.substituteTypeInTerm(term.inr.term, typeVar, replacement)},
+        };
+
+      case "VariantCase":
+        return {
+          ...term,
+          variable: this.substituteTypeInTerm(term.variable, typeVar, replacement),
+          cases: term.cases.map((c) => ({...c, body: this.substituteTypeInTerm(c.body, typeVar, replacement)})),
+        };
+
+      case "Variant":
+        return {
+          ...term,
+          type: substituteTypeVariable(term.type, typeVar, replacement),
+          variants: term.variants.map((v) => ({...v, term: this.substituteTypeInTerm(v.term, typeVar, replacement)})),
+        };
+
+      case "Ascribe":
+        return {
+          ...term,
+          term: this.substituteTypeInTerm(term.term, typeVar, replacement),
+          type: substituteTypeVariable(term.type, typeVar, replacement),
+        };
+
+      case "TupleProjection":
+        return {...term, tuple: this.substituteTypeInTerm(term.tuple, typeVar, replacement)};
+
+      case "RecordProjection":
+        return {...term, term: this.substituteTypeInTerm(term.term, typeVar, replacement)};
+
+      case "Record":
+        return {
+          ...term,
+          fields: term.fields.map((f) => ({...f, term: this.substituteTypeInTerm(f.term, typeVar, replacement)})),
+        };
+
+      case "Sequencing":
+        return {
+          ...term,
+          first: this.substituteTypeInTerm(term.first, typeVar, replacement),
+          second: this.substituteTypeInTerm(term.second, typeVar, replacement),
+        };
+
+      case "Tuple":
+        return {...term, elements: term.elements.map((e) => this.substituteTypeInTerm(e, typeVar, replacement))};
+
+      case "DummyAbstraction":
+        return {
+          ...term,
+          paramType: substituteTypeVariable(term.paramType, typeVar, replacement),
+          type: term.type ? substituteTypeVariable(term.type, typeVar, replacement) : undefined,
+          body: this.substituteTypeInTerm(term.body, typeVar, replacement),
+        };
+
+      case "Let":
+        return {
+          ...term,
+          value: this.substituteTypeInTerm(term.value, typeVar, replacement),
+          body: this.substituteTypeInTerm(term.body, typeVar, replacement),
+        };
+
+      case "BinOp":
+        return {
+          ...term,
+          left: this.substituteTypeInTerm(term.left, typeVar, replacement),
+          right: this.substituteTypeInTerm(term.right, typeVar, replacement),
+        };
+
+      case "Fix":
+        return {...term, term: this.substituteTypeInTerm(term.term, typeVar, replacement)};
+
+      case "TypeAbs":
+        // A nested ΛX. ... shadows an outer substitution of the same variable.
+        if (term.typeParam === typeVar) {
+          return term;
+        }
+        return {...term, body: this.substituteTypeInTerm(term.body, typeVar, replacement)};
+
+      case "TypeApp":
+        return {
+          ...term,
+          term: this.substituteTypeInTerm(term.term, typeVar, replacement),
+          typeArg: substituteTypeVariable(term.typeArg, typeVar, replacement),
+        };
+    }
+  }
+
   protected override visitLet(node: Let): ReductionStep | null {
     /*
      * `let x = t1 in t2` is a redex the moment it's formed — unlike App,
@@ -827,6 +1052,15 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "Fix":
         return {...term, term: this.substitute(term.term, variable, replacement)};
+
+      case "TypeAbs":
+        // typeParam is a type-level name — a different namespace from term
+        // variables, so it never shadows `variable`.
+        return {...term, body: this.substitute(term.body, variable, replacement)};
+
+      case "TypeApp":
+        // typeArg is a Type, not touched by term-variable substitution.
+        return {...term, term: this.substitute(term.term, variable, replacement)};
     }
   }
 
@@ -869,6 +1103,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "Lit":
       case "Var":
       case "DummyAbstraction":
+      case "TypeAbs":
         return true;
 
       case "App":
@@ -880,6 +1115,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "RecordProjection":
       case "Sequencing":
       case "Let":
+      case "TypeApp":
         return false;
 
       case "Inl":
@@ -1017,6 +1253,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         ]);
 
       case "Fix":
+        return this.getFreeVariables(term.term, bound);
+
+      case "TypeAbs":
+        return this.getFreeVariables(term.body, bound);
+
+      case "TypeApp":
         return this.getFreeVariables(term.term, bound);
     }
   }
@@ -1177,6 +1419,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "Fix":
         return {...term, term: this.renameBoundVariable(term.term, oldName, newName)};
+
+      case "TypeAbs":
+        return {...term, body: this.renameBoundVariable(term.body, oldName, newName)};
+
+      case "TypeApp":
+        return {...term, term: this.renameBoundVariable(term.term, oldName, newName)};
     }
   }
 
@@ -1264,6 +1512,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         ]);
 
       case "Fix":
+        return this.getAllNames(term.term);
+
+      case "TypeAbs":
+        return this.getAllNames(term.body);
+
+      case "TypeApp":
         return this.getAllNames(term.term);
     }
   }
@@ -1443,6 +1697,17 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "Fix":
         return {...term, id: crypto.randomUUID(), term: this.cloneTermWithFreshIds(term.term)};
+
+      case "TypeAbs":
+        return {...term, id: crypto.randomUUID(), body: this.cloneTermWithFreshIds(term.body)};
+
+      case "TypeApp":
+        return {
+          ...term,
+          id: crypto.randomUUID(),
+          term: this.cloneTermWithFreshIds(term.term),
+          typeArg: this.cloneTypeWithFreshIds(term.typeArg),
+        };
     }
   }
 
@@ -1490,6 +1755,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...type,
           id: crypto.randomUUID(),
           fields: type.fields.map((f) => ({label: f.label, type: this.cloneTypeWithFreshIds(f.type)})),
+        };
+
+      case "TyForall":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          type: this.cloneTypeWithFreshIds(type.type),
         };
     }
   }

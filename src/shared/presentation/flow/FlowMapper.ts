@@ -21,6 +21,8 @@ import type {
   Tuple,
   TupleProjection,
   Type,
+  TypeAbs,
+  TypeApp,
   Var,
   Variant,
   VariantCase,
@@ -211,6 +213,10 @@ export class AstFlowMapper extends AstVisitor<void> {
 
       case "TyIdentifier":
         return;
+
+      case "TyForall":
+        this.visitChild(node, "type", "type", node.type);
+        return;
     }
   }
 
@@ -222,8 +228,9 @@ export class AstFlowMapper extends AstVisitor<void> {
 
   protected visitInr(node: Inr): void {
     this.pushNode(node);
-    this.visitChild(node, "term", "term", node.term);
     this.visitChild(node, "type", "as", node.type);
+    this.visitChild(node, "term", "term", node.term);
+
   }
 
   protected visitIfCondition(node: IfCondition): void {
@@ -320,6 +327,17 @@ export class AstFlowMapper extends AstVisitor<void> {
   protected visitFix(node: Fix): void {
     this.pushNode(node);
     this.visitChild(node, "term", "t", node.term);
+  }
+
+  protected visitTypeAbstraction(node: TypeAbs): void {
+    this.pushNode(node);
+    this.visitChild(node, "body", "body", node.body);
+  }
+
+  protected visitTypeApplication(node: TypeApp): void {
+    this.pushNode(node);
+    this.visitChild(node, "typeArg", "[T]", node.typeArg);
+    this.visitChild(node, "term", "term", node.term);
   }
 
   private visitChild(parent: ASTNode, handle: string, label: string, child: ASTNode): void {
@@ -458,6 +476,15 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "Fix":
         this.nodes.push({id: node.id, type: "fix", position: {x: 0, y: 0}, data: {term: node}});
         return;
+      case "TypeAbs":
+        this.nodes.push({id: node.id, type: "typeAbs", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "TypeApp":
+        this.nodes.push({id: node.id, type: "typeApp", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "TyForall":
+        this.nodes.push({id: node.id, type: "type", position: {x: 0, y: 0}, data: {term: node as any}} as any);
+        return;
     }
   }
 
@@ -474,6 +501,7 @@ export class AstFlowMapper extends AstVisitor<void> {
     "rightOperand": "right",
     "from": "from",
     "to": "to",
+    "typeArg": "[T]",
   };
 
   private pushEdge(edge: Edge): void {
