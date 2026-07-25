@@ -357,8 +357,9 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "term", "term", node.term);
   }
 
-  // System λω̲ — grammar/AST wiring only so far; visualized like any other
-  // structural type node until a dedicated flow node is designed.
+  // paramKind is inline data (like TyForall.typeVariable), not its own
+  // graph node/edge — kinds are simple annotations, not something a user
+  // wires up visually.
   protected visitTypeConstructorAbstraction(node: TyConstructorAbs): void {
     this.pushNode(node);
     this.visitChild(node, "body", "body", node.body);
@@ -366,8 +367,8 @@ export class AstFlowMapper extends AstVisitor<void> {
 
   protected visitTypeConstructorApplication(node: TyConstructorApp): void {
     this.pushNode(node);
-    this.visitChild(node, "func", "func", node.func);
     this.visitChild(node, "arg", "arg", node.arg);
+    this.visitChild(node, "func", "func", node.func);
   }
 
   protected visitKind(node: Kind): void {
@@ -525,6 +526,8 @@ export class AstFlowMapper extends AstVisitor<void> {
         this.nodes.push({id: node.id, type: "typeApp", position: {x: 0, y: 0}, data: {term: node}});
         return;
       case "TyForall":
+      case "TyConstructorAbs":
+      case "TyConstructorApp":
         this.nodes.push({id: node.id, type: "type", position: {x: 0, y: 0}, data: {term: node as any}} as any);
         return;
     }

@@ -122,12 +122,52 @@ export function typeToString(a: Type): string {
   }
 }
 
+// "@" (not "*", which the grammar reserves for MUL/tuple) is the concrete
+// syntax for the kind of types — matches KIND_STAR in Lambda.g4 — so this
+// stays parseable by AstPrettyPrinter's round-trip, unlike TexMapper's
+// kindToTex (LaTeX-only, never re-parsed).
 export function kindToString(k: Kind): string {
   switch (k.kind) {
     case "StarKind":
-      return "*";
+      return "@";
     case "KindArrow":
       return `(${kindToString(k.from)} -> ${kindToString(k.to)})`;
+  }
+}
+
+export function kindEquals(a: Kind, b: Kind): boolean {
+  if (a.kind === "StarKind" && b.kind === "StarKind") {
+    return true;
+  }
+  if (a.kind === "KindArrow" && b.kind === "KindArrow") {
+    return kindEquals(a.from, b.from) && kindEquals(a.to, b.to);
+  }
+  return false;
+}
+
+// Whether `type` mentions a System λω̲ type constructor anywhere inside it —
+// gates kind-checking so an ordinary STLC/System F type (whose kind is
+// always trivially *) never pays for or shows a kind derivation.
+export function containsTypeConstructor(type: Type): boolean {
+  switch (type.kind) {
+    case "TyIdentifier":
+    case "TyMetaVar":
+      return false;
+    case "TyArrow":
+      return containsTypeConstructor(type.from) || containsTypeConstructor(type.to);
+    case "TupleType":
+      return type.elements.some(containsTypeConstructor);
+    case "SumType":
+      return containsTypeConstructor(type.left) || containsTypeConstructor(type.right);
+    case "VariantType":
+      return type.variants.some((v) => containsTypeConstructor(v.type));
+    case "RecordType":
+      return type.fields.some((f) => containsTypeConstructor(f.type));
+    case "TyForall":
+      return containsTypeConstructor(type.type);
+    case "TyConstructorAbs":
+    case "TyConstructorApp":
+      return true;
   }
 }
 

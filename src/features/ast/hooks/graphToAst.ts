@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyForall, TyIdentifier, Type, TypeAliasDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, Type, TypeAliasDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;
@@ -49,7 +49,7 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
-const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall"]);
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp"]);
 
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
@@ -130,6 +130,32 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
     return ty;
   }
 
+  if (raw.kind === "TyConstructorAbs") {
+    const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
+    const ty: TyConstructorAbs = {
+      id: raw.id ?? node.id,
+      kind: "TyConstructorAbs",
+      typeParam: raw.typeParam ?? "X",
+      paramKind: raw.paramKind ?? { id: `${node.id}-kind`, kind: "StarKind" },
+      body: bodyNode ? reconstructType(bodyNode, nodeMap, edges, visiting) : defaultType(`${node.id}-body`),
+    };
+    visiting.delete(node.id);
+    return ty;
+  }
+
+  if (raw.kind === "TyConstructorApp") {
+    const funcNode = firstTargetNode(byHandle, "func", nodeMap);
+    const argNode = firstTargetNode(byHandle, "arg", nodeMap);
+    const ty: TyConstructorApp = {
+      id: raw.id ?? node.id,
+      kind: "TyConstructorApp",
+      func: funcNode ? reconstructType(funcNode, nodeMap, edges, visiting) : defaultType(`${node.id}-func`),
+      arg: argNode ? reconstructType(argNode, nodeMap, edges, visiting) : defaultType(`${node.id}-arg`),
+    };
+    visiting.delete(node.id);
+    return ty;
+  }
+
   visiting.delete(node.id);
   return (raw as Type) ?? defaultType(node.id);
 }
@@ -148,7 +174,9 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
     case "TupleType":
     case "VariantType":
     case "RecordType":
-    case "TyForall": {
+    case "TyForall":
+    case "TyConstructorAbs":
+    case "TyConstructorApp": {
       visiting.delete(node.id);
       return reconstructType(node, nodeMap, edges, visiting) as any;
     }

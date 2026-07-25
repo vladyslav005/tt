@@ -30,11 +30,20 @@ import type {
   VariantCase,
 } from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
-import {isArithmeticOperator, kindToString, substituteTypeVariable, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {
+  containsTypeConstructor,
+  isArithmeticOperator,
+  kindEquals,
+  kindToString,
+  substituteTypeVariable,
+  typeEquals,
+  typeToString,
+} from "@/shared/core/application/typecheck/utils.ts";
 import {
   type Constraint,
   ERROR_TYPE,
   type InferProofTree,
+  type KindProofTree,
   type ProofTree,
   Rule,
   type Substitution,
@@ -278,6 +287,196 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
+  // =====================================================================
+  // =                        SYSTEM λω̲ — kind-checking                  =
+  // =====================================================================
+
+  private static readonly STAR: Kind = {kind: "StarKind", id: "star-sentinel"};
+
+  private kindLeaf(rule: Rule, subject: Type, resultKind: Kind, delta: ReadonlyMap<string, Kind>): KindProofTree {
+    return {rule, subject, resultKind, delta: Object.fromEntries(delta), premises: []};
+  }
+
+  private kindNode(rule: Rule, subject: Type, resultKind: Kind, delta: ReadonlyMap<string, Kind>, premises: KindProofTree[]): KindProofTree {
+    return {rule, subject, resultKind, delta: Object.fromEntries(delta), premises};
+  }
+
+  private expectStar(kind: Kind, subject: Type): void {
+    if (kind.kind !== "StarKind") {
+      throw new Error(`Type "${typeToString(subject)}" has kind ${kindToString(kind)}, but is used where a fully-applied type (kind @) is required — it looks like a type constructor is missing an argument`);
+    }
+  }
+
+  // Δ ⊢ type :: K — computes the kind of an already-expandAliases'd type,
+  // building the derivation as it goes. Every branch that isn't a System
+  // λω̲ construct just requires * from its immediate parts, mirroring PTS's
+  // Form rule (Γ⊢A:s, Γ⊢B:s ⟹ Γ⊢A→B:s) generalized to n-ary structural
+  // formers (tuples, variants, records) rather than only binary arrows.
+  private kindOf(type: Type, delta: ReadonlyMap<string, Kind>): { kind: Kind; proof: KindProofTree } {
+    switch (type.kind) {
+      case "TyIdentifier": {
+        const bound = delta.get(type.name);
+        if (bound) {
+          return {kind: bound, proof: this.kindLeaf(Rule.KindVar, type, bound, delta)};
+        }
+        // A base type (Nat/Bool/Unit) or a name this checker never
+        // validated as in-scope — both are treated as kind * axiomatically,
+        // consistent with how the rest of the checker never rejects a bare
+        // opaque type name either.
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindLeaf(Rule.KindBase, type, SLTLCTypeChecker.STAR, delta)};
+      }
+
+      case "TyMetaVar":
+        // Internal to unification, never written by the user — always *.
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindLeaf(Rule.KindBase, type, SLTLCTypeChecker.STAR, delta)};
+
+      case "TyArrow": {
+        const from = this.kindOf(type.from, delta);
+        const to = this.kindOf(type.to, delta);
+        this.expectStar(from.kind, type.from);
+        this.expectStar(to.kind, type.to);
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, [from.proof, to.proof])};
+      }
+
+      case "TupleType": {
+        const parts = type.elements.map((element) => this.kindOf(element, delta));
+        parts.forEach((part, i) => this.expectStar(part.kind, type.elements[i]));
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, parts.map((p) => p.proof))};
+      }
+
+      case "SumType": {
+        const left = this.kindOf(type.left, delta);
+        const right = this.kindOf(type.right, delta);
+        this.expectStar(left.kind, type.left);
+        this.expectStar(right.kind, type.right);
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, [left.proof, right.proof])};
+      }
+
+      case "VariantType": {
+        const parts = type.variants.map((v) => this.kindOf(v.type, delta));
+        parts.forEach((part, i) => this.expectStar(part.kind, type.variants[i].type));
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, parts.map((p) => p.proof))};
+      }
+
+      case "RecordType": {
+        const parts = type.fields.map((f) => this.kindOf(f.type, delta));
+        parts.forEach((part, i) => this.expectStar(part.kind, type.fields[i].type));
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, parts.map((p) => p.proof))};
+      }
+
+      case "TyForall": {
+        const innerDelta = new Map(delta);
+        innerDelta.set(type.typeVariable, SLTLCTypeChecker.STAR);
+        const body = this.kindOf(type.type, innerDelta);
+        this.expectStar(body.kind, type.type);
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForall, type, SLTLCTypeChecker.STAR, delta, [body.proof])};
+      }
+
+      case "TyConstructorAbs": {
+        const innerDelta = new Map(delta);
+        innerDelta.set(type.typeParam, type.paramKind);
+        const body = this.kindOf(type.body, innerDelta);
+        const resultKind: Kind = {kind: "KindArrow", id: crypto.randomUUID(), from: type.paramKind, to: body.kind};
+        return {kind: resultKind, proof: this.kindNode(Rule.KindAbs, type, resultKind, delta, [body.proof])};
+      }
+
+      case "TyConstructorApp": {
+        const func = this.kindOf(type.func, delta);
+        const arg = this.kindOf(type.arg, delta);
+
+        if (func.kind.kind !== "KindArrow") {
+          throw new Error(`Cannot apply "${typeToString(type.func)}" (kind ${kindToString(func.kind)}) to an argument — it is not a type constructor`);
+        }
+        if (!kindEquals(func.kind.from, arg.kind)) {
+          throw new Error(`Type constructor "${typeToString(type.func)}" expects an argument of kind ${kindToString(func.kind.from)}, but "${typeToString(type.arg)}" has kind ${kindToString(arg.kind)}`);
+        }
+
+        return {kind: func.kind.to, proof: this.kindNode(Rule.KindApp, type, func.kind.to, delta, [func.proof, arg.proof])};
+      }
+    }
+  }
+
+  // Kind-checks a (already expandAliases'd) type used as a term annotation.
+  // A no-op — {rejected: false} with no premise — for any type that doesn't
+  // mention a System λω̲ construct, which is the overwhelming common case:
+  // an ordinary STLC/System F type is trivially kind * and this checker
+  // behaves exactly as it did before this theory existed. Only once a type
+  // constructor is actually used does this (a) gate on the theory being
+  // enabled, (b) verify the annotation itself has kind * (not e.g. @->@,
+  // a constructor applied to too few arguments), and (c) return the
+  // derivation to attach as the node's kindPremise.
+  // Beta-reduces any TyConstructorApp((λX:K.T), T') to T[X:=T'], recursively
+  // — the System λω̲ analogue of expandAliases, run *after* kind-checking
+  // (so the kind derivation matches what the user actually wrote) but
+  // before the type is bound/compared/unified against anything else, since
+  // "Endo Nat" and "Nat -> Nat" must be interchangeable there even though
+  // they're structurally different ASTs. A "stuck" application (func is a
+  // bound type-constructor variable, not literally an abstraction) is left
+  // as-is — already in normal form.
+  private normalizeType(type: Type): Type {
+    switch (type.kind) {
+      case "TyIdentifier":
+      case "TyMetaVar":
+        return type;
+
+      case "TyArrow":
+        return {...type, from: this.normalizeType(type.from), to: this.normalizeType(type.to)};
+
+      case "TupleType":
+        return {...type, elements: type.elements.map((e) => this.normalizeType(e))};
+
+      case "SumType":
+        return {...type, left: this.normalizeType(type.left), right: this.normalizeType(type.right)};
+
+      case "VariantType":
+        return {...type, variants: type.variants.map((v) => ({...v, type: this.normalizeType(v.type)}))};
+
+      case "RecordType":
+        return {...type, fields: type.fields.map((f) => ({...f, type: this.normalizeType(f.type)}))};
+
+      case "TyForall":
+        return {...type, type: this.normalizeType(type.type)};
+
+      case "TyConstructorAbs":
+        return {...type, body: this.normalizeType(type.body)};
+
+      case "TyConstructorApp": {
+        const func = this.normalizeType(type.func);
+        const arg = this.normalizeType(type.arg);
+        if (func.kind === "TyConstructorAbs") {
+          return this.normalizeType(substituteTypeVariable(func.body, func.typeParam, arg));
+        }
+        return {...type, func, arg};
+      }
+    }
+  }
+
+  private checkKindAnnotation(type: Type): { rejected: false; kindPremise?: KindProofTree; normalized: Type } | { rejected: true; message: string } {
+    if (!containsTypeConstructor(type)) {
+      return {rejected: false, normalized: type};
+    }
+
+    if (!this.theories.systemFOmega) {
+      return {
+        rejected: true,
+        message: `Type "${typeToString(type)}" uses a type constructor (λ-abstraction/application on types) — enable the "System Fω" theory to use it`,
+      };
+    }
+
+    try {
+      const {kind, proof} = this.kindOf(type, new Map());
+      if (kind.kind !== "StarKind") {
+        return {
+          rejected: true,
+          message: `Type "${typeToString(type)}" has kind ${kindToString(kind)}, but a term annotation needs kind @ — it looks like a type constructor is missing an argument`,
+        };
+      }
+      return {rejected: false, kindPremise: proof, normalized: this.normalizeType(type)};
+    } catch (error) {
+      return {rejected: true, message: error instanceof Error ? error.message : String(error)};
+    }
+  }
+
   protected visitProgram(node: Program): InferProofTree {
     node.globals.forEach((g) => this.visit(g));
 
@@ -299,7 +498,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitTermDecl(node: FunDecl): InferProofTree {
-    const declaredType = this.expandAliases(node.type);
+    const expanded = this.expandAliases(node.type);
+    const kindCheck = this.checkKindAnnotation(expanded);
+    if (kindCheck.rejected) {
+      this.errorBuffer.push(new Error(`Declaration "${node.name}": ${kindCheck.message}`));
+    }
+    const declaredType = kindCheck.rejected ? expanded : kindCheck.normalized;
+
     const valueProof = this.solveLocally(this.visit(node.value));
 
     // Always add the declared type to context so subsequent declarations
@@ -317,14 +522,43 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitTypeDecl(node: VarDecl): InferProofTree {
-    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: this.expandAliases(node.type)});
+    const expanded = this.expandAliases(node.type);
+    const kindCheck = this.checkKindAnnotation(expanded);
+    if (kindCheck.rejected) {
+      this.errorBuffer.push(new Error(`Declaration "${node.name}": ${kindCheck.message}`));
+    }
+    const declaredType = kindCheck.rejected ? expanded : kindCheck.normalized;
+    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: declaredType});
     return {} as InferProofTree;
   }
 
   protected visitTypeAliasDecl(node: TypeAliasDecl): InferProofTree {
     // Expanding node.type now (rather than lazily at lookup) means a later
     // typedef built from this one only ever needs to resolve one level.
-    this.typeAliases.set(node.name, this.expandAliases(node.type));
+    const expanded = this.expandAliases(node.type);
+    let normalized = expanded;
+
+    // A typedef's own RHS may itself be a type constructor (that's the
+    // whole point of "typedef List = λX:@. ..."), so unlike a term
+    // annotation it's not required to have kind @ here — only that it's
+    // internally well-kinded, and only reachable behind the theory flag.
+    if (containsTypeConstructor(expanded)) {
+      if (!this.theories.systemFOmega) {
+        this.errorBuffer.push(new Error(`typedef "${node.name}": uses a type constructor (λ-abstraction/application on types) — enable the "System Fω" theory to use it`));
+      } else {
+        try {
+          this.kindOf(expanded, new Map());
+          // Reduce away any redex in the RHS itself (e.g. "(λA:@.A) Nat")
+          // so every later use of this alias starts from its normal form.
+          normalized = this.normalizeType(expanded);
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          this.errorBuffer.push(new Error(`typedef "${node.name}": ${msg}`));
+        }
+      }
+    }
+
+    this.typeAliases.set(node.name, normalized);
     return {} as InferProofTree;
   }
 
@@ -388,7 +622,18 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     // rigid, given type — this is the one thing that lets `generalize` at
     // the enclosing `let` (or plain unification, under Type inference)
     // find something genuinely free to pin down or quantify over.
-    const paramType = node.paramType ? this.expandAliases(node.paramType) : this.engine.freshTyMetaVar();
+    let paramType = node.paramType ? this.expandAliases(node.paramType) : this.engine.freshTyMetaVar();
+    const rule = this.inferring ? (node.paramType ? Rule.CtAbs : Rule.CtAbsInf) : Rule.Abs;
+
+    let kindPremise: KindProofTree | undefined;
+    if (node.paramType) {
+      const kindCheck = this.checkKindAnnotation(paramType);
+      if (kindCheck.rejected) {
+        return this.reject(node, rule, kindCheck.message);
+      }
+      kindPremise = kindCheck.kindPremise;
+      paramType = kindCheck.normalized;
+    }
 
     const bodyProof = this.withBinding(
       node.param,
@@ -405,12 +650,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     };
 
     return {
-      rule: this.inferring ? (node.paramType ? Rule.CtAbs : Rule.CtAbsInf) : Rule.Abs,
+      rule,
       term: node,
       type,
       gamma: outerGamma,
       premises: [bodyProof],
       constraints: bodyProof.constraints,
+      kindPremise,
     };
   }
 
@@ -520,39 +766,53 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   protected visitInl(node: Inl): InferProofTree {
     const termProof = this.visit(node.term);
-    const ascribedType = this.expandAliases(node.type);
+    const rule = this.ruleFor(Rule.Inl, Rule.CtInl);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const ascribedType = kindCheck.normalized;
 
     if (ascribedType.kind !== "SumType") {
       const msg = `"inl" must be ascribed a sum type (e.g. "inl t as T1+T2"), but got ${typeToString(ascribedType)}`;
-      return this.reject(node, this.ruleFor(Rule.Inl, Rule.CtInl), msg, [termProof]);
+      return this.reject(node, rule, msg, [termProof]);
     }
 
     return {
-      rule: this.ruleFor(Rule.Inl, Rule.CtInl),
+      rule,
       term: node,
       type: ascribedType,
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType.left}],
+      kindPremise: kindCheck.kindPremise,
     };
   }
 
   protected visitInr(node: Inr): InferProofTree {
     const termProof = this.visit(node.term);
-    const ascribedType = this.expandAliases(node.type);
+    const rule = this.ruleFor(Rule.Inr, Rule.CtInr);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const ascribedType = kindCheck.normalized;
 
     if (ascribedType.kind !== "SumType") {
       const msg = `"inr" must be ascribed a sum type (e.g. "inr t as T1+T2"), but got ${typeToString(ascribedType)}`;
-      return this.reject(node, this.ruleFor(Rule.Inr, Rule.CtInr), msg, [termProof]);
+      return this.reject(node, rule, msg, [termProof]);
     }
 
     return {
-      rule: this.ruleFor(Rule.Inr, Rule.CtInr),
+      rule,
       term: node,
       type: ascribedType,
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType.right}],
+      kindPremise: kindCheck.kindPremise,
     };
   }
 
@@ -655,8 +915,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitVariant(node: Variant): InferProofTree {
-    const ascribedType = this.expandAliases(node.type);
     const errors: string[] = [];
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      errors.push(kindCheck.message);
+    }
+    const ascribedType = kindCheck.rejected ? this.expandAliases(node.type) : kindCheck.normalized;
 
     if (ascribedType.kind !== "VariantType") {
       errors.push(`Variant literal must be ascribed a variant type (e.g. "[l=t] as [l:T, ...]"), but got ${typeToString(ascribedType)}`);
@@ -686,6 +951,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       gamma: this.schemeContext.serializeGamma(),
       premises,
       constraints,
+      kindPremise: kindCheck.rejected ? undefined : kindCheck.kindPremise,
     };
 
     if (errors.length > 0) {
@@ -699,15 +965,22 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   protected visitAscribe(node: Ascribe): InferProofTree {
     const termProof = this.visit(node.term);
-    const ascribedType = this.expandAliases(node.type);
+    const rule = this.ruleFor(Rule.Ascribe, Rule.CtAscribe);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const ascribedType = kindCheck.normalized;
 
     return {
-      rule: this.ruleFor(Rule.Ascribe, Rule.CtAscribe),
+      rule,
       term: node,
       type: ascribedType,
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType}],
+      kindPremise: kindCheck.kindPremise,
     };
   }
 
@@ -817,22 +1090,31 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitDummyAbstraction(node: DummyAbstraction): InferProofTree {
+    const rule = this.ruleFor(Rule.DummyAbs, Rule.CtDummyAbs);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.paramType));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message);
+    }
+    const paramType = kindCheck.normalized;
+
     const bodyProof = this.visit(node.body);
 
     const type: TyArrow = {
       kind: "TyArrow",
       id: crypto.randomUUID(),
-      from: this.expandAliases(node.paramType),
+      from: paramType,
       to: bodyProof.type,
     };
 
     return {
-      rule: this.ruleFor(Rule.DummyAbs, Rule.CtDummyAbs),
+      rule,
       term: node,
       type,
       gamma: this.schemeContext.serializeGamma(),
       premises: [bodyProof],
       constraints: bodyProof.constraints,
+      kindPremise: kindCheck.kindPremise,
     };
   }
 
@@ -1003,10 +1285,15 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       return this.reject(node, Rule.TypeApp, msg, [termProof]);
     }
 
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.typeArg));
+    if (kindCheck.rejected) {
+      return this.reject(node, Rule.TypeApp, kindCheck.message, [termProof]);
+    }
+
     const instantiated = substituteTypeVariable(
       termProof.type.type,
       termProof.type.typeVariable,
-      this.expandAliases(node.typeArg),
+      kindCheck.normalized,
     );
 
     return {
@@ -1016,6 +1303,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
       constraints: termProof.constraints,
+      kindPremise: kindCheck.kindPremise,
     };
   }
 
@@ -1023,10 +1311,11 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // =                        SYSTEM λω̲                                  =
   // =====================================================================
 
-  // Grammar/AST wiring only so far (per the user's explicit step-by-step
-  // plan) — kind-checking isn't implemented yet, so both constructs are
-  // rejected unconditionally rather than silently typechecking as something
-  // wrong.
+  // Unreachable in practice: a Type node is never fed through
+  // AstVisitor.visit() (see checkKindAnnotation/kindOf above, which is
+  // where real kind-checking happens, called directly on the raw Type at
+  // each annotation site). Kept only so AstVisitor's dispatch stays
+  // exhaustive; reject rather than silently doing nothing if ever reached.
   protected visitTypeConstructorAbstraction(node: TyConstructorAbs): InferProofTree {
     return this.reject(node, Rule.TyConstructorAbs, `Type constructor abstraction "λ${node.typeParam}:${kindToString(node.paramKind)}. T" is not yet supported`);
   }

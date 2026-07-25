@@ -40,6 +40,8 @@ import {TypeAbstractionFlowNode} from "@/features/ast/components/ast/flow/TypeAb
 import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeApplicationFlowNode";
 import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
 import {TypeAliasDeclFlowNode} from "@/features/ast/components/ast/flow/TypeAliasDeclFlowNode";
+import {TyConstructorAbsFlowNode} from "@/features/ast/components/ast/flow/TyConstructorAbsFlowNode";
+import {TyConstructorAppFlowNode} from "@/features/ast/components/ast/flow/TyConstructorAppFlowNode";
 
 
 export interface AstProps {
@@ -62,6 +64,10 @@ function TypeFlowNodeDispatch(props: any) {
       return <RecordTypeFlowNode {...props} />;
     case "TyForall":
       return <TyForallFlowNode {...props} />;
+    case "TyConstructorAbs":
+      return <TyConstructorAbsFlowNode {...props} />;
+    case "TyConstructorApp":
+      return <TyConstructorAppFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }

@@ -227,7 +227,7 @@ export class LetPolymorphismTexMapper {
     return {
       ...this.judgements(node),
       rule,
-      children: node.premises.map((child) => this.visit(child)),
+      children: this.childrenWithKind(node),
     };
   }
 
@@ -265,7 +265,7 @@ export class LetPolymorphismTexMapper {
     return {
       ...this.judgements(node),
       rule,
-      children: node.premises.map((child) => this.visit(child)),
+      children: this.childrenWithKind(node),
     };
   }
 
@@ -273,8 +273,17 @@ export class LetPolymorphismTexMapper {
     return {
       ...this.judgements(node),
       rule,
-      children: node.premises.map((child) => this.visit(child)),
+      children: this.childrenWithKind(node),
     };
+  }
+
+  // Mirrors TexMapper.childrenWithKind — kindPremise is only ever set on
+  // Abs/DummyAbs/Ascribe/Inl/Inr/Variant nodes (see STLCTypeChecker), a
+  // no-op for every rule routed through visitChildren that isn't one of
+  // those (CtCase, CtTuple, CtSequencing, ...).
+  private childrenWithKind(node: InferProofTree): TexTree[] {
+    const children = node.premises.map((child) => this.visit(child));
+    return node.kindPremise ? [...children, TexMapper.kindProofTex(node.kindPremise)] : children;
   }
 
   private visitBinOp(node: InferProofTree): TexTree {

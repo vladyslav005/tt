@@ -1,6 +1,6 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
-import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {type KindProofTree, type ProofTree, Rule, type TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
@@ -88,11 +88,49 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  // node.premises rendered as TexTree children, plus (when present) the
+  // node's own kind derivation as one extra trailing child — shared by
+  // every rule whose type annotation might mention a System λω̲ type
+  // constructor (Abs, DummyAbstraction, Ascribe, Inl, Inr, Variant,
+  // TypeApplication). A no-op for every other rule, since kindPremise is
+  // only ever set at those sites.
+  private childrenWithKind(node: ProofTree): TexTree[] {
+    const children = node.premises.map((child) => this.visit(child));
+    return node.kindPremise ? [...children, TexMapper.kindProofTex(node.kindPremise)] : children;
+  }
+
+  private static readonly KIND_RULE_LABELS: Partial<Record<Rule, string>> = {
+    [Rule.KindBase]: "K-Base",
+    [Rule.KindVar]: "K-Var",
+    [Rule.KindForm]: "K-Form",
+    [Rule.KindForall]: "K-Forall",
+    [Rule.KindAbs]: "K-Abs",
+    [Rule.KindApp]: "K-App",
+  };
+
+  // Renders a kinding derivation (Δ ⊢ T :: K) into the same TexTree shape
+  // used for term judgements, so the UI's tree component doesn't need to
+  // know kind nodes are a different data type. No Γ_n-style numbering here
+  // (unlike judgements()) — kind contexts in this language are shallow
+  // enough that literal rendering stays readable.
+  static kindProofTex(node: KindProofTree): TexTree {
+    const deltaEntries = Object.entries(node.delta);
+    const deltaTex = deltaEntries.length === 0
+      ? "\\vdash"
+      : `${deltaEntries.map(([name, k]) => `${name}:${kindToTex(k)}`).join(", ")} \\vdash`;
+
+    return {
+      judgement: `${deltaTex}\\, ${this.typeToTex(node.subject)} :: ${kindToTex(node.resultKind)}`,
+      rule: this.KIND_RULE_LABELS[node.rule] ?? node.rule,
+      children: node.premises.map((p) => this.kindProofTex(p)),
+    };
+  }
+
   protected visitAbs(node: ProofTree): TexTree {
     return {
       ...this.judgements(node),
       rule: "T-Abs",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 
@@ -148,7 +186,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       ...this.judgements(node),
       rule: "T-Inl",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 
@@ -156,7 +194,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       ...this.judgements(node),
       rule: "T-Inr",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 
@@ -180,7 +218,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       ...this.judgements(node),
       rule: "T-Variant",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 
@@ -188,7 +226,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       ...this.judgements(node),
       rule: "T-Ascribe",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 
@@ -236,7 +274,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       ...this.judgements(node),
       rule: "T-Abs",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 
@@ -284,7 +322,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       ...this.judgements(node),
       rule: "T-TApp",
-      children: node.premises.map(child => this.visit(child))
+      children: this.childrenWithKind(node)
     }
   }
 

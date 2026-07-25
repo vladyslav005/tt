@@ -237,6 +237,31 @@ isZero = λ x : Nat . (x == 0) : Nat -> Bool;
       },
     ],
   },
+  {
+    title: "System Fω (Type Constructors)",
+    items: [
+      {
+        label: "Identity Constructor",
+        description: "typedef Id = λX:@. X — a type constructor of kind @→@, applied to Nat — enable the System Fω theory",
+        code: `typedef Id = λ X : @ . X;
+
+f = λ x : (Id Nat) . x + 1 : (Id Nat) -> (Id Nat);
+
+f 5;`,
+      },
+      {
+        label: "Endo Constructor",
+        description: "typedef Endo = λX:@. X->X builds a function-type-of-T from any T, classified by kind @→@",
+        code: `typedef Endo = λ X : @ . X -> X;
+
+inc = λ x : Nat . x + 1 : Nat -> Nat;
+
+apply = λ f : (Endo Nat) . λ x : Nat . f x : (Endo Nat) -> Nat -> Nat;
+
+apply inc 5;`,
+      },
+    ],
+  },
 ];
 
 interface ExamplesDropdownProps {

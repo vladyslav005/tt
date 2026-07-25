@@ -37,6 +37,7 @@ export function useSetUpEditor() {
 
           [/λ/, "lambda"],
           [/Λ/, "lambda"],
+          [/@/, "kindStar"],
           [/\*/, "times"],
           [/</, "langle"],
           [/>/, "rangle"],
@@ -76,6 +77,7 @@ export function useSetUpEditor() {
         {token: 'pow', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'times', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'forall', foreground: '#dc2626', fontStyle: 'bold'},
+        {token: 'kindStar', foreground: '#0d9488', fontStyle: 'bold'}, // teal-600
 
         {token: 'lb', foreground: '#64748b', fontStyle: 'bold'}, // slate-500
         {token: 'rb', foreground: '#64748b', fontStyle: 'bold'},
@@ -134,6 +136,7 @@ export function useSetUpEditor() {
         {token: 'pow', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'times', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'forall', foreground: '#f87171', fontStyle: 'bold'},
+        {token: 'kindStar', foreground: '#2dd4bf', fontStyle: 'bold'}, // teal-400
 
         {token: 'lb', foreground: '#94a3b8', fontStyle: 'bold'}, // slate-400
         {token: 'rb', foreground: '#94a3b8', fontStyle: 'bold'},
@@ -325,6 +328,13 @@ export function useSetUpEditor() {
             kind: monaco.languages.CompletionItemKind.Text,
             insertText: 'λ x : T . (x) : T -> T',
             detail: 'Abstraction',
+            range: slashRange,
+          },
+          {
+            label: '\\tyconstructor',
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: 'λ X : @ . X',
+            detail: 'Type constructor abstraction (kind @) — System Fω',
             range: slashRange,
           },
           {

@@ -1,15 +1,17 @@
-export type TypeTheoryId = "letPolymorphism" | "typeInference" | "systemF";
+export type TypeTheoryId = "letPolymorphism" | "typeInference" | "systemF" | "systemFOmega";
 
 export interface TypeTheoryConfig {
   letPolymorphism: boolean;
   typeInference: boolean;
   systemF: boolean;
+  systemFOmega: boolean;
 }
 
 export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
   letPolymorphism: true,
   typeInference: false,
   systemF: false,
+  systemFOmega: false,
 };
 
 export interface TypeTheoryDescriptor {
@@ -36,5 +38,10 @@ export const TYPE_THEORIES: TypeTheoryDescriptor[] = [
     id: "systemF",
     label: "System F",
     description: "Explicit polymorphism via type abstraction (ΛX. t) and type application (t [T])",
+  },
+  {
+    id: "systemFOmega",
+    label: "System Fω (type constructors)",
+    description: "Types abstracted over types (λX:K. T) and applied to a type argument (F T), classified by kinds (K ::= * | K→K) instead of just types",
   },
 ];

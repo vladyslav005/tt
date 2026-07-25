@@ -1,4 +1,4 @@
-import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall} from "@/shared/core/domain/ast";
+import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp} from "@/shared/core/domain/ast";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {
   ForallTypeContext,
@@ -6,8 +6,11 @@ import {
   ParenTypeContext,
   SumTypeContext,
   TupleTypeContext,
+  type TypeConstructorAbstractionContext,
+  type TypeConstructorApplicationContext,
   type TypeIdentifierContext, VariantTypeContext
 } from "@/shared/core/antlr/LambdaParser.ts";
+import {KindBuilderVisitor} from "@/shared/core/adapter/KindBuilderVisitor.ts";
 
 export class TypeBuilderVisitor
   extends LambdaVisitor<Type> {
@@ -70,6 +73,25 @@ export class TypeBuilderVisitor
       typeVariable: ctx.typeVariable().getText(),
       type: this.visit(ctx.type_())
 
+    }
+  }
+
+  visitTypeConstructorAbstraction = (ctx: TypeConstructorAbstractionContext): TyConstructorAbs => {
+    return {
+      kind: "TyConstructorAbs",
+      id: crypto.randomUUID(),
+      typeParam: ctx.typeVariable().getText(),
+      paramKind: new KindBuilderVisitor().visit(ctx.kind()),
+      body: this.visit(ctx.type_()),
+    }
+  }
+
+  visitTypeConstructorApplication = (ctx: TypeConstructorApplicationContext): TyConstructorApp => {
+    return {
+      kind: "TyConstructorApp",
+      id: crypto.randomUUID(),
+      func: this.visit(ctx.type_(0)),
+      arg: this.visit(ctx.type_(1)),
     }
   }
 }

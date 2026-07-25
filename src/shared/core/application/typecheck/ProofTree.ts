@@ -1,4 +1,4 @@
-import type {Term, Type, TyIdentifier} from "@/shared/core/domain/ast";
+import type {Kind, Term, Type, TyIdentifier} from "@/shared/core/domain/ast";
 
 export interface ProofTree {
   rule: Rule
@@ -7,6 +7,28 @@ export interface ProofTree {
   term: Term
   type: Type
   gamma: Record<string, Type | TypeScheme>
+  error?: string
+  // A kind derivation (Δ ⊢ T :: K) justifying that this node's own type is
+  // well-kinded — only ever set when that type mentions a System λω̲ type
+  // constructor; every other node (the overwhelming majority) leaves this
+  // unset, since an ordinary type's kind is trivially * and not worth
+  // showing. Rendered as an extra premise alongside `premises`, not merged
+  // into it, since a KindProofTree judges a Type rather than a Term.
+  kindPremise?: KindProofTree
+}
+
+// A kinding derivation Δ ⊢ subject :: resultKind — the System λω̲ analogue of
+// ProofTree, but for the judgment that classifies a *type* rather than a
+// term. Kept as a separate shape (not squeezed into ProofTree) because its
+// subject is a Type, not a Term, and its context is a kind context (type
+// constructor variable -> Kind), not a Gamma.
+export interface KindProofTree {
+  rule: Rule
+  premises: KindProofTree[]
+  id?: string
+  subject: Type
+  resultKind: Kind
+  delta: Record<string, Kind>
   error?: string
 }
 
@@ -58,10 +80,21 @@ export enum Rule {
   TypeAbs = "TypeAbs",
   TypeApp = "TypeApp",
 
-  // System λω̲ — grammar/AST wiring only so far; kind-checking itself isn't
-  // implemented yet, so these rules only ever appear on a reject() node.
+  // System λω̲ term-level dispatch targets — unreachable in practice (a Type
+  // node, including these two, is never fed through AstVisitor.visit(); see
+  // kindOf/checkKindAnnotation in STLCTypeChecker for where kind-checking
+  // actually happens), kept only so AstVisitor's dispatch stays exhaustive.
   TyConstructorAbs = "TyConstructorAbs",
   TyConstructorApp = "TyConstructorApp",
+
+  // The kinding judgment (Δ ⊢ T :: K) — rendered on KindProofTree nodes,
+  // attached to a term-level node via ProofTree.kindPremise.
+  KindBase = "KindBase",
+  KindVar = "KindVar",
+  KindForm = "KindForm",
+  KindForall = "KindForall",
+  KindAbs = "KindAbs",
+  KindApp = "KindApp",
 
   CtVarLet = "CtVarLet",
   CtVar = "CtVar",

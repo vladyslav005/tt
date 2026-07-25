@@ -63,6 +63,8 @@ import {FixFlowNode} from "@/features/ast/components/ast/flow/FixFlowNode";
 import {TypeAbstractionFlowNode} from "@/features/ast/components/ast/flow/TypeAbstractionFlowNode";
 import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeApplicationFlowNode";
 import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
+import {TyConstructorAbsFlowNode} from "@/features/ast/components/ast/flow/TyConstructorAbsFlowNode";
+import {TyConstructorAppFlowNode} from "@/features/ast/components/ast/flow/TyConstructorAppFlowNode";
 import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -113,6 +115,10 @@ function TypeFlowNodeDispatch(props: any) {
       return <RecordTypeFlowNode {...props} />;
     case "TyForall":
       return <TyForallFlowNode {...props} />;
+    case "TyConstructorAbs":
+      return <TyConstructorAbsFlowNode {...props} />;
+    case "TyConstructorApp":
+      return <TyConstructorAppFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -155,7 +161,7 @@ type AddOnDropKind = "decl" | "term" | "type";
 
 // Node kinds whose own handles always point at further *types* (as opposed to
 // term/program nodes, whose handles are term-context except "type"/"paramType").
-const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall"]);
+const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp"]);
 
 // A handful of handle names are reused across both term nodes and type nodes
 // (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
@@ -181,7 +187,7 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "sequencing", "tuple", "dummyAbstraction", "let", "binOp", "fix",
     "typeAbs", "typeApp",
   ],
-  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType"],
+  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp"],
 };
 
 // Skeleton (term, xyflow node "type" string) for each newly-added node kind,
@@ -390,6 +396,24 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         term: {
           id, kind: "TyForall", typeVariable: "X",
           type: { id: `${id}-type`, kind: "TyIdentifier", name: "X" },
+        },
+      };
+    case "typeConstructorAbs":
+      return {
+        type: "type",
+        term: {
+          id, kind: "TyConstructorAbs", typeParam: "X",
+          paramKind: { id: `${id}-kind`, kind: "StarKind" },
+          body: { id: `${id}-body`, kind: "TyIdentifier", name: "X" },
+        },
+      };
+    case "typeConstructorApp":
+      return {
+        type: "type",
+        term: {
+          id, kind: "TyConstructorApp",
+          func: { id: `${id}-func`, kind: "TyIdentifier", name: "F" },
+          arg: { id: `${id}-arg`, kind: "TyIdentifier", name: "A" },
         },
       };
     default:
@@ -1346,6 +1370,23 @@ export function AstEditor({
           {([
             { type: "typeAbs", label: "Λ",   title: "Type Abstraction (ΛX. t)" },
             { type: "typeApp", label: "[T]", title: "Type Application (t [T])" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        {/* System Fω — type constructors */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">System Fω</span>
+          {([
+            { type: "typeConstructorAbs", label: "λX:@", title: "Type Constructor Abstraction (λX:K. T)" },
+            { type: "typeConstructorApp", label: "F T",  title: "Type Constructor Application (F T)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}

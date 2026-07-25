@@ -74,6 +74,22 @@ function TypeView({ type }: { type: Type }) {
       );
     case "TyMetaVar":
       return <span className="text-muted-foreground italic">{type.name}</span>;
+    case "TyConstructorAbs":
+      return (
+        <>
+          <span className="text-teal-600 dark:text-teal-400">λ{type.typeParam}</span>
+          <span className="text-muted-foreground">. </span>
+          <TypeView type={type.body} />
+        </>
+      );
+    case "TyConstructorApp":
+      return (
+        <>
+          <TypeView type={type.func} />
+          <span className="text-muted-foreground"> </span>
+          <TypeView type={type.arg} />
+        </>
+      );
   }
 }
 
