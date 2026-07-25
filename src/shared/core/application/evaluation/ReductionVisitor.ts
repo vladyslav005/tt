@@ -12,6 +12,7 @@ import type {
   IfCondition,
   Inl,
   Inr,
+  Kind,
   Let,
   Lit,
   Program,
@@ -21,6 +22,8 @@ import type {
   Term,
   Tuple,
   TupleProjection,
+  TyConstructorAbs,
+  TyConstructorApp,
   Type,
   TypeAbs,
   TypeApp,
@@ -1763,6 +1766,21 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           id: crypto.randomUUID(),
           type: this.cloneTypeWithFreshIds(type.type),
         };
+
+      case "TyConstructorAbs":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          body: this.cloneTypeWithFreshIds(type.body),
+        };
+
+      case "TyConstructorApp":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          func: this.cloneTypeWithFreshIds(type.func),
+          arg: this.cloneTypeWithFreshIds(type.arg),
+        };
     }
   }
 
@@ -1798,6 +1816,28 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
   protected override visitType(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _node: Type,
+  ): ReductionStep | null {
+    return null;
+  }
+
+  // System λω̲ — grammar/AST wiring only so far, no reduction semantics yet.
+  protected override visitTypeConstructorAbstraction(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _node: TyConstructorAbs,
+  ): ReductionStep | null {
+    return null;
+  }
+
+  protected override visitTypeConstructorApplication(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _node: TyConstructorApp,
+  ): ReductionStep | null {
+    return null;
+  }
+
+  protected override visitKind(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _node: Kind,
   ): ReductionStep | null {
     return null;
   }

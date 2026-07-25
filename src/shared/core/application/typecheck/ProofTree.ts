@@ -58,6 +58,11 @@ export enum Rule {
   TypeAbs = "TypeAbs",
   TypeApp = "TypeApp",
 
+  // System λω̲ — grammar/AST wiring only so far; kind-checking itself isn't
+  // implemented yet, so these rules only ever appear on a reject() node.
+  TyConstructorAbs = "TyConstructorAbs",
+  TyConstructorApp = "TyConstructorApp",
+
   CtVarLet = "CtVarLet",
   CtVar = "CtVar",
   CtAbs = "CtAbs",

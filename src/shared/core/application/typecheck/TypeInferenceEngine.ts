@@ -418,6 +418,18 @@ export class TypeInferenceEngine {
         return inner;
       }
 
+      case "TyConstructorAbs": {
+        const inner = this.freeTypeVariables(type.body);
+        inner.delete(type.typeParam);
+        return inner;
+      }
+
+      case "TyConstructorApp":
+        return this.union(
+          this.freeTypeVariables(type.func),
+          this.freeTypeVariables(type.arg),
+        );
+
       default:
         return this.assertNever(type);
     }

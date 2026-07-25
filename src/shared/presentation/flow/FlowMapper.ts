@@ -12,6 +12,7 @@ import type {
   IfCondition,
   Inl,
   Inr,
+  Kind,
   Let,
   Lit,
   Program,
@@ -20,6 +21,8 @@ import type {
   Sequencing,
   Tuple,
   TupleProjection,
+  TyConstructorAbs,
+  TyConstructorApp,
   Type,
   TypeAbs,
   TypeAliasDecl,
@@ -222,6 +225,15 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "TyForall":
         this.visitChild(node, "type", "type", node.type);
         return;
+
+      case "TyConstructorAbs":
+        this.visitChild(node, "body", "body", node.body);
+        return;
+
+      case "TyConstructorApp":
+        this.visitChild(node, "func", "func", node.func);
+        this.visitChild(node, "arg", "arg", node.arg);
+        return;
     }
   }
 
@@ -343,6 +355,23 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.pushNode(node);
     this.visitChild(node, "typeArg", "[T]", node.typeArg);
     this.visitChild(node, "term", "term", node.term);
+  }
+
+  // System λω̲ — grammar/AST wiring only so far; visualized like any other
+  // structural type node until a dedicated flow node is designed.
+  protected visitTypeConstructorAbstraction(node: TyConstructorAbs): void {
+    this.pushNode(node);
+    this.visitChild(node, "body", "body", node.body);
+  }
+
+  protected visitTypeConstructorApplication(node: TyConstructorApp): void {
+    this.pushNode(node);
+    this.visitChild(node, "func", "func", node.func);
+    this.visitChild(node, "arg", "arg", node.arg);
+  }
+
+  protected visitKind(node: Kind): void {
+    this.pushNode(node);
   }
 
   private visitChild(parent: ASTNode, handle: string, label: string, child: ASTNode): void {

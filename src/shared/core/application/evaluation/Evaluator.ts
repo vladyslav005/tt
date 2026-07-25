@@ -219,8 +219,16 @@ export class Evaluator {
       case "RecordType":
       case "TyMetaVar":
       case "TyForall":
+      case "TyConstructorAbs":
+      case "TyConstructorApp":
         throw new Error(
           `Cannot evaluate type node ${ast.kind}`,
+        );
+
+      case "StarKind":
+      case "KindArrow":
+        throw new Error(
+          `Cannot evaluate kind node ${ast.kind}`,
         );
     }
   }

@@ -1,7 +1,7 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
 import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {BinaryOperator, Term, Type} from "@/shared/core/domain/ast";
+import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
 import {TypeAliasRegistry} from "@/shared/presentation/tex/TypeAliasRegistry.ts";
@@ -558,6 +558,19 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\{ ${type.fields.map((f) => `${f.label}:${this.typeToTex(f.type)}`).join(", ")} \\}`
       case "TyForall":
         return `\\forall ${type.typeVariable}.\\, ${this.typeToTex(type.type)}`
+      case "TyConstructorAbs":
+        return `\\lambda ${type.typeParam} : ${kindToTex(type.paramKind)} .\\, ${this.typeToTex(type.body)}`
+      case "TyConstructorApp":
+        return `${this.typeToTex(type.func)}\\ ${this.typeToTex(type.arg)}`
     }
+  }
+}
+
+function kindToTex(k: Kind): string {
+  switch (k.kind) {
+    case "StarKind":
+      return "*"
+    case "KindArrow":
+      return `(${kindToTex(k.from)} \\to ${kindToTex(k.to)})`
   }
 }

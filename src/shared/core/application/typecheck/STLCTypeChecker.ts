@@ -11,7 +11,7 @@ import type {
   FunDecl,
   IfCondition,
   Inl,
-  Inr, Let,
+  Inr, Kind, Let,
   Lit,
   Program,
   Record,
@@ -19,7 +19,7 @@ import type {
   Sequencing,
   Tuple,
   TupleProjection, TupleType,
-  TyArrow, TyForall, TyIdentifier,
+  TyArrow, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier,
   Type,
   TypeAbs,
   TypeAliasDecl,
@@ -30,7 +30,7 @@ import type {
   VariantCase,
 } from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
-import {isArithmeticOperator, substituteTypeVariable, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {isArithmeticOperator, kindToString, substituteTypeVariable, typeEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 import {
   type Constraint,
   ERROR_TYPE,
@@ -265,6 +265,16 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
       case "TyForall":
         return {...type, type: this.expandAliases(type.type, seen)};
+
+      case "TyConstructorAbs":
+        return {...type, body: this.expandAliases(type.body, seen)};
+
+      case "TyConstructorApp":
+        return {
+          ...type,
+          func: this.expandAliases(type.func, seen),
+          arg: this.expandAliases(type.arg, seen),
+        };
     }
   }
 
@@ -1010,12 +1020,42 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   // =====================================================================
+  // =                        SYSTEM λω̲                                  =
+  // =====================================================================
+
+  // Grammar/AST wiring only so far (per the user's explicit step-by-step
+  // plan) — kind-checking isn't implemented yet, so both constructs are
+  // rejected unconditionally rather than silently typechecking as something
+  // wrong.
+  protected visitTypeConstructorAbstraction(node: TyConstructorAbs): InferProofTree {
+    return this.reject(node, Rule.TyConstructorAbs, `Type constructor abstraction "λ${node.typeParam}:${kindToString(node.paramKind)}. T" is not yet supported`);
+  }
+
+  protected visitTypeConstructorApplication(node: TyConstructorApp): InferProofTree {
+    return this.reject(node, Rule.TyConstructorApp, `Type constructor application is not yet supported`);
+  }
+
+  // =====================================================================
 
   protected visitType(node: Type): InferProofTree {
     return {
       rule: "Type" as never,
       term: node as never,
       type: node,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [],
+      constraints: [],
+    };
+  }
+
+  // Kinds are never visited directly today — they only ever appear nested
+  // inside a TyConstructorAbs, which rejects before recursing into its
+  // paramKind. Present for AstVisitor's exhaustiveness only.
+  protected visitKind(node: Kind): InferProofTree {
+    return {
+      rule: "Kind" as never,
+      term: node as never,
+      type: ERROR_TYPE,
       gamma: this.schemeContext.serializeGamma(),
       premises: [],
       constraints: [],
