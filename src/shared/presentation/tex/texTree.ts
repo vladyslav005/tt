@@ -27,6 +27,10 @@ export interface TexTree {
   // an ancestor or a sibling.
   registry?: Record<string, TexRegistryEntry>
   rule: string
+  // Hover text for the rule-name label — currently only set on a Conv node
+  // (see TexMapper.conversionTex), explaining what "Conv" means since it's
+  // otherwise a bare rule name with no other context in the tree.
+  ruleTooltip?: string
   children?: TexTree[]
   id?: string
   error?: string

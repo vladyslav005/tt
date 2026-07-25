@@ -277,13 +277,15 @@ export class LetPolymorphismTexMapper {
     };
   }
 
-  // Mirrors TexMapper.childrenWithKind — kindPremise is only ever set on
-  // Abs/DummyAbs/Ascribe/Inl/Inr/Variant nodes (see STLCTypeChecker), a
-  // no-op for every rule routed through visitChildren that isn't one of
-  // those (CtCase, CtTuple, CtSequencing, ...).
+  // Mirrors TexMapper.childrenWithKind — kindPremise/typeConversion are
+  // only ever set on Abs/DummyAbs/Ascribe/Inl/Inr/Variant nodes (see
+  // STLCTypeChecker), a no-op for every rule routed through visitChildren
+  // that isn't one of those (CtCase, CtTuple, CtSequencing, ...).
   private childrenWithKind(node: InferProofTree): TexTree[] {
     const children = node.premises.map((child) => this.visit(child));
-    return node.kindPremise ? [...children, TexMapper.kindProofTex(node.kindPremise)] : children;
+    if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise));
+    if (node.typeConversion) children.push(TexMapper.conversionTex(node.typeConversion));
+    return children;
   }
 
   private visitBinOp(node: InferProofTree): TexTree {

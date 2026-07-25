@@ -49,6 +49,7 @@ import {
   type ProofTree,
   Rule,
   type Substitution,
+  type TypeConversion,
   type TypeScheme,
 } from "@/shared/core/application/typecheck/ProofTree.ts";
 import {TypeInferenceEngine} from "@/shared/core/application/typecheck/TypeInferenceEngine.ts";
@@ -355,7 +356,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // enabled, (b) verify the annotation itself has kind * (not e.g. @->@,
   // a constructor applied to too few arguments), and (c) return the
   // derivation to attach as the node's kindPremise.
-  private checkKindAnnotation(type: Type): { rejected: false; kindPremise?: KindProofTree; normalized: Type } | { rejected: true; message: string } {
+  private checkKindAnnotation(type: Type): { rejected: false; kindPremise?: KindProofTree; conversion?: TypeConversion; normalized: Type } | { rejected: true; message: string } {
     if (!containsTypeConstructor(type)) {
       return {rejected: false, normalized: type};
     }
@@ -375,7 +376,15 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
           message: `Type "${typeToString(type)}" has kind ${kindToString(kind)}, but a term annotation needs kind @ — it looks like a type constructor is missing an argument`,
         };
       }
-      return {rejected: false, kindPremise: proof, normalized: this.normalizeType(type)};
+      const normalized = this.normalizeType(type);
+      // The (Conv) rule's effect, made visible: this annotation and its
+      // normal form are only the same *type* up to β-reduction — as written
+      // they're different ASTs. Surfaced only when reduction actually did
+      // something (i.e. never for a type that was already in normal form).
+      const conversion: TypeConversion | undefined = typeEquals(type, normalized)
+        ? undefined
+        : {before: type, after: normalized};
+      return {rejected: false, kindPremise: proof, conversion, normalized};
     } catch (error) {
       return {rejected: true, message: error instanceof Error ? error.message : String(error)};
     }
@@ -530,12 +539,14 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const rule = this.inferring ? (node.paramType ? Rule.CtAbs : Rule.CtAbsInf) : Rule.Abs;
 
     let kindPremise: KindProofTree | undefined;
+    let typeConversion: TypeConversion | undefined;
     if (node.paramType) {
       const kindCheck = this.checkKindAnnotation(paramType);
       if (kindCheck.rejected) {
         return this.reject(node, rule, kindCheck.message);
       }
       kindPremise = kindCheck.kindPremise;
+      typeConversion = kindCheck.conversion;
       paramType = kindCheck.normalized;
     }
 
@@ -561,6 +572,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises: [bodyProof],
       constraints: bodyProof.constraints,
       kindPremise,
+      typeConversion,
     };
   }
 
@@ -691,6 +703,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType.left}],
       kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
     };
   }
 
@@ -717,6 +730,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType.right}],
       kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
     };
   }
 
@@ -856,6 +870,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises,
       constraints,
       kindPremise: kindCheck.rejected ? undefined : kindCheck.kindPremise,
+      typeConversion: kindCheck.rejected ? undefined : kindCheck.conversion,
     };
 
     if (errors.length > 0) {
@@ -885,6 +900,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType}],
       kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
     };
   }
 
@@ -1019,6 +1035,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises: [bodyProof],
       constraints: bodyProof.constraints,
       kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
     };
   }
 
@@ -1208,6 +1225,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       premises: [termProof],
       constraints: termProof.constraints,
       kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
     };
   }
 

@@ -1,6 +1,6 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
-import {type KindProofTree, type ProofTree, Rule, type TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {type KindProofTree, type ProofTree, Rule, type TypeConversion, type TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
@@ -89,14 +89,16 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   }
 
   // node.premises rendered as TexTree children, plus (when present) the
-  // node's own kind derivation as one extra trailing child — shared by
-  // every rule whose type annotation might mention a System λω̲ type
-  // constructor (Abs, DummyAbstraction, Ascribe, Inl, Inr, Variant,
-  // TypeApplication). A no-op for every other rule, since kindPremise is
-  // only ever set at those sites.
+  // node's own kind derivation and/or type-level conversion as extra
+  // trailing children — shared by every rule whose type annotation might
+  // mention a System λω̲ type constructor (Abs, DummyAbstraction, Ascribe,
+  // Inl, Inr, Variant, TypeApplication). A no-op for every other rule,
+  // since kindPremise/typeConversion are only ever set at those sites.
   private childrenWithKind(node: ProofTree): TexTree[] {
     const children = node.premises.map((child) => this.visit(child));
-    return node.kindPremise ? [...children, TexMapper.kindProofTex(node.kindPremise)] : children;
+    if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise));
+    if (node.typeConversion) children.push(TexMapper.conversionTex(node.typeConversion));
+    return children;
   }
 
   private static readonly KIND_RULE_LABELS: Partial<Record<Rule, string>> = {
@@ -123,6 +125,19 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       judgement: `${deltaTex}\\, ${this.typeToTex(node.subject)} :: ${kindToTex(node.resultKind)}`,
       rule: this.KIND_RULE_LABELS[node.rule] ?? node.rule,
       children: node.premises.map((p) => this.kindProofTex(p)),
+    };
+  }
+
+  // The (Conv) rule made visible, as a leaf fact rather than a real
+  // sub-derivation (there's nothing further to expand — β-reduction here is
+  // decidable and total, so this checker applies it eagerly instead of
+  // keeping both forms around for later reconciliation; see
+  // ProofTree.typeConversion).
+  static conversionTex(conversion: TypeConversion): TexTree {
+    return {
+      judgement: `${this.typeToTex(conversion.before)} \\equiv_\\beta ${this.typeToTex(conversion.after)}`,
+      rule: "Conv",
+      ruleTooltip: "Type-level β-reduction (the Conv rule): the annotation as written and its normal form are the same type, just different ASTs before/after unfolding type constructors. Applied once here rather than kept as a separate step during unification.",
     };
   }
 

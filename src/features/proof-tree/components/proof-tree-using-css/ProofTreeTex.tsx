@@ -58,7 +58,7 @@ export function ProofTreeComponentUsingCss(
         />
 
         <div className="conclusion-right">
-          <p className="rule-name">{displayRule?.replaceAll('-', ' – ')}</p>
+          <p className="rule-name" title={node.ruleTooltip}>{displayRule?.replaceAll('-', ' – ')}</p>
         </div>
       </div>
     </div>

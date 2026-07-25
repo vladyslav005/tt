@@ -15,6 +15,19 @@ export interface ProofTree {
   // showing. Rendered as an extra premise alongside `premises`, not merged
   // into it, since a KindProofTree judges a Type rather than a Term.
   kindPremise?: KindProofTree
+  // The (Conv) rule made visible: set only when this node's annotation
+  // needed an actual β-reduction to reach normal form (e.g. "Endo Nat" ->
+  // "Nat -> Nat") — never set for a type that was already normal. This
+  // checker applies Conv eagerly (see normalizeType) rather than keeping
+  // both forms around and reconciling them lazily during unification, so
+  // there's no separate moment elsewhere where this conversion "happens" —
+  // this field exists purely to show the reader that it did.
+  typeConversion?: TypeConversion
+}
+
+export interface TypeConversion {
+  before: Type;
+  after: Type;
 }
 
 // A kinding derivation Δ ⊢ subject :: resultKind — the System λω̲ analogue of
@@ -95,6 +108,8 @@ export enum Rule {
   KindForall = "KindForall",
   KindAbs = "KindAbs",
   KindApp = "KindApp",
+  // The (Conv) rule made visible — see ProofTree.typeConversion.
+  Conv = "Conv",
 
   CtVarLet = "CtVarLet",
   CtVar = "CtVar",
