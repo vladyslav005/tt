@@ -24,6 +24,7 @@ export function EvaluationVisualisation({
   className,
 }: EvaluationVisualisationProps) {
   const evaluation = useAppSelector((state) => state.term.evaluation);
+  const typeAliases = useAppSelector((state) => state.term.typeAliases);
   const hasEvaluation = evaluation !== null && evaluation !== undefined;
   const containerRef = useRef<HTMLDivElement>(null);
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
@@ -76,7 +77,7 @@ export function EvaluationVisualisation({
           {hasEvaluation ? (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30 p-4">
-                <EvaluationStepsViewer key={evaluation.result.id} evaluation={evaluation} />
+                <EvaluationStepsViewer key={evaluation.result.id} evaluation={evaluation} typeAliases={typeAliases} />
               </div>
               <details className="group">
                 <summary

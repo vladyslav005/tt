@@ -393,10 +393,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   // need inert text (e.g. TexTree.judgement's non-interactive fallback).
   static termToTexSegments(term: Term, aliasRegistry: TypeAliasRegistry): TexSegment[] {
     const t = (value: string): TexSegment => ({kind: "tex", value});
-    const ty = (type: Type): TexSegment => {
-      const ref = aliasRegistry.refFor(type);
-      return ref ? {kind: "ref", key: ref.key} : t(this.typeToTex(type));
-    };
+    const ty = (type: Type): TexSegment[] => this.typeToTexSegments(type, aliasRegistry);
     const rec = (sub: Term): TexSegment[] => this.termToTexSegments(sub, aliasRegistry);
 
     switch (term.kind) {
@@ -406,14 +403,14 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return [t(term.value.toString())];
       case "Abs":
         return term.paramType
-          ? [t(`(\\lambda ${term.param} : `), ty(term.paramType), t(" . "), ...rec(term.body), t(")")]
+          ? [t(`(\\lambda ${term.param} : `), ...ty(term.paramType), t(" . "), ...rec(term.body), t(")")]
           : [t(`(\\lambda ${term.param} . `), ...rec(term.body), t(")")];
       case "App":
         return [t("("), ...rec(term.func), t("\\ "), ...rec(term.arg), t(")")];
       case "Inl":
-        return [t("\\text{inl}\\ "), ...rec(term.term), t("\\ \\text{as}\\ "), ty(term.type)];
+        return [t("\\text{inl}\\ "), ...rec(term.term), t("\\ \\text{as}\\ "), ...ty(term.type)];
       case "Inr":
-        return [t("\\text{inr}\\ "), ...rec(term.term), t("\\ \\text{as}\\ "), ty(term.type)];
+        return [t("\\text{inr}\\ "), ...rec(term.term), t("\\ \\text{as}\\ "), ...ty(term.type)];
       case "IfCondition": {
         const segs: TexSegment[] = [
           t("\\text{if}\\ "), ...rec(term.condition), t("\\ \\text{then}\\ "), ...rec(term.then),
@@ -446,11 +443,11 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
           if (i > 0) segs.push(t(", "));
           segs.push(t(`${v.label}=`), ...rec(v.term));
         });
-        segs.push(t("]\\ \\text{as}\\ "), ty(term.type));
+        segs.push(t("]\\ \\text{as}\\ "), ...ty(term.type));
         return segs;
       }
       case "Ascribe":
-        return [t("("), ...rec(term.term), t("\\ \\text{as}\\ "), ty(term.type), t(")")];
+        return [t("("), ...rec(term.term), t("\\ \\text{as}\\ "), ...ty(term.type), t(")")];
       case "TupleProjection":
         return [...rec(term.tuple), t(`.${term.index}`)];
       case "RecordProjection":
@@ -476,7 +473,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return segs;
       }
       case "DummyAbstraction":
-        return [t("(\\lambda \\_ : "), ty(term.paramType), t(" . "), ...rec(term.body), t(")")];
+        return [t("(\\lambda \\_ : "), ...ty(term.paramType), t(" . "), ...rec(term.body), t(")")];
       case "Let":
         return [t(`\\text{let}\\ ${term.name} = `), ...rec(term.value), t("\\ \\text{in}\\ "), ...rec(term.body)];
       case "BinOp":
@@ -486,7 +483,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       case "TypeAbs":
         return [t(`(\\Lambda ${term.typeParam} . `), ...rec(term.body), t(")")];
       case "TypeApp":
-        return [...rec(term.term), t("\\ ["), ty(term.typeArg), t("]")];
+        return [...rec(term.term), t("\\ ["), ...ty(term.typeArg), t("]")];
     }
   }
 
@@ -600,6 +597,72 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\lambda ${type.typeParam} : ${kindToTex(type.paramKind)} .\\, ${this.typeToTex(type.body)}`
       case "TyConstructorApp":
         return `${this.typeToTex(type.func)}\\ ${this.typeToTex(type.arg)}`
+    }
+  }
+
+  // Segment-producing counterpart to typeToTex, mirroring
+  // termToTexSegments's own relationship to termToTex. Checks the alias
+  // registry at *every* position a Type can appear, not just the top — so a
+  // type-constructor name used inside a larger type (e.g. "Endo" inside
+  // "Endo Nat") is independently clickable to reveal its typedef
+  // definition, the same way a top-level alias reference already is. Only
+  // recurses into a type's own structure when the whole thing doesn't
+  // already match an alias (preserving the existing whole-type fold, e.g.
+  // some "<Nat*Nat>" folding to "MyPair").
+  static typeToTexSegments(type: Type, aliasRegistry: TypeAliasRegistry): TexSegment[] {
+    const ref = aliasRegistry.refFor(type);
+    if (ref) {
+      return [{kind: "ref", key: ref.key}];
+    }
+
+    const t = (value: string): TexSegment => ({kind: "tex", value});
+    const rec = (sub: Type): TexSegment[] => this.typeToTexSegments(sub, aliasRegistry);
+
+    switch (type.kind) {
+      case "TyIdentifier":
+        return [t(type.name)];
+      case "TyMetaVar":
+        return [t(`\\text{${type.name}}`)];
+      case "TyArrow": {
+        const from = type.from.kind === "TyArrow" ? [t("("), ...rec(type.from), t(")")] : rec(type.from);
+        const to = type.to.kind === "TyArrow" ? [t("("), ...rec(type.to), t(")")] : rec(type.to);
+        return [...from, t(" \\to "), ...to];
+      }
+      case "TupleType": {
+        const segs: TexSegment[] = [t("\\langle ")];
+        type.elements.forEach((e, i) => {
+          if (i > 0) segs.push(t(" \\times "));
+          segs.push(...rec(e));
+        });
+        segs.push(t(" \\rangle"));
+        return segs;
+      }
+      case "SumType":
+        return [t("("), ...rec(type.left), t(" + "), ...rec(type.right), t(")")];
+      case "VariantType": {
+        const segs: TexSegment[] = [t("\\langle ")];
+        type.variants.forEach((v, i) => {
+          if (i > 0) segs.push(t(", "));
+          segs.push(t(`${v.label}:`), ...rec(v.type));
+        });
+        segs.push(t(" \\rangle"));
+        return segs;
+      }
+      case "RecordType": {
+        const segs: TexSegment[] = [t("\\{ ")];
+        type.fields.forEach((f, i) => {
+          if (i > 0) segs.push(t(", "));
+          segs.push(t(`${f.label}:`), ...rec(f.type));
+        });
+        segs.push(t(" \\}"));
+        return segs;
+      }
+      case "TyForall":
+        return [t(`\\forall ${type.typeVariable}.\\, `), ...rec(type.type)];
+      case "TyConstructorAbs":
+        return [t(`\\lambda ${type.typeParam} : ${kindToTex(type.paramKind)} .\\, `), ...rec(type.body)];
+      case "TyConstructorApp":
+        return [...rec(type.func), t("\\ "), ...rec(type.arg)];
     }
   }
 }

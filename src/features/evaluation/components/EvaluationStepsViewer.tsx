@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import type { Term, Type } from "@/shared/core/domain/ast";
 import type { EvaluationResult, ReductionStep } from "@/shared/core/application/evaluation/type";
 import { Button } from "@/shared/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { expandTypeAliases, normalizeType, typeEquals } from "@/shared/core/application/typecheck/utils.ts";
+
+// The alias table, provided once at the top so TypeView (called deep inside
+// TermView's recursion, with no other route down to it) can compute what a
+// type-constructor application reduces to — e.g. "Endo Nat" ⇒ "Nat → Nat" —
+// without threading a new prop through every TermView case.
+const TypeAliasesContext = createContext<Record<string, Type>>({});
 
 function TypeView({ type }: { type: Type }) {
+  const typeAliases = useContext(TypeAliasesContext);
+
   switch (type.kind) {
     case "TyIdentifier":
       return <span className="text-blue-600 dark:text-blue-400">{type.name}</span>;
@@ -82,14 +91,26 @@ function TypeView({ type }: { type: Type }) {
           <TypeView type={type.body} />
         </>
       );
-    case "TyConstructorApp":
+    case "TyConstructorApp": {
+      const reduced = normalizeType(expandTypeAliases(type, new Map(Object.entries(typeAliases))));
+      const isReducible = !typeEquals(reduced, type);
+
       return (
         <>
           <TypeView type={type.func} />
           <span className="text-muted-foreground"> </span>
           <TypeView type={type.arg} />
+          {isReducible && (
+            <span
+              className="ml-1 rounded px-1 py-0.5 text-xs italic text-teal-600 dark:text-teal-400 bg-teal-500/10"
+              title="Type-level reduction — computed once during type-checking, not a term evaluation step"
+            >
+              ⇒ <TypeView type={reduced} />
+            </span>
+          )}
         </>
       );
+    }
   }
 }
 
@@ -482,9 +503,21 @@ function StepRow({ step, index, isError: isErrorStep, stuckTermId, onClick }: St
 
 interface EvaluationStepsViewerProps {
   evaluation: EvaluationResult;
+  typeAliases?: Record<string, Type>;
 }
 
-export function EvaluationStepsViewer({ evaluation }: EvaluationStepsViewerProps) {
+// Thin wrapper providing the alias table via context — everything else stays
+// in EvaluationStepsViewerInner unchanged, so its several early `return`s
+// don't each need to be wrapped individually.
+export function EvaluationStepsViewer({ evaluation, typeAliases = {} }: EvaluationStepsViewerProps) {
+  return (
+    <TypeAliasesContext.Provider value={typeAliases}>
+      <EvaluationStepsViewerInner evaluation={evaluation} />
+    </TypeAliasesContext.Provider>
+  );
+}
+
+function EvaluationStepsViewerInner({ evaluation }: { evaluation: EvaluationResult }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"single" | "all">("single");
   const { steps, result, reachedStepLimit, errors } = evaluation;

@@ -243,3 +243,118 @@ export function substituteTypeVariable(type: Type, name: string, replacement: Ty
       };
   }
 }
+
+// Expands any TyIdentifier naming a registered `typedef` into its underlying
+// type, recursively. Standalone (pure) so it's reusable outside the checker
+// — e.g. by the Evaluation view, which only has the alias table
+// (SLTLCTypeChecker.getTypeAliases()), not the checker instance itself.
+// `seen` guards against a cyclic typedef chain looping forever; it just
+// stops expanding rather than erroring.
+export function expandTypeAliases(type: Type, aliases: ReadonlyMap<string, Type>, seen: ReadonlySet<string> = new Set()): Type {
+  switch (type.kind) {
+    case "TyIdentifier": {
+      const target = aliases.get(type.name);
+      if (!target || seen.has(type.name)) {
+        return type;
+      }
+      return expandTypeAliases(target, aliases, new Set([...seen, type.name]));
+    }
+
+    case "TyMetaVar":
+      return type;
+
+    case "TyArrow":
+      return {
+        ...type,
+        from: expandTypeAliases(type.from, aliases, seen),
+        to: expandTypeAliases(type.to, aliases, seen),
+      };
+
+    case "TupleType":
+      return {
+        ...type,
+        elements: type.elements.map((element) => expandTypeAliases(element, aliases, seen)),
+      };
+
+    case "SumType":
+      return {
+        ...type,
+        left: expandTypeAliases(type.left, aliases, seen),
+        right: expandTypeAliases(type.right, aliases, seen),
+      };
+
+    case "VariantType":
+      return {
+        ...type,
+        variants: type.variants.map((variant) => ({
+          ...variant,
+          type: expandTypeAliases(variant.type, aliases, seen),
+        })),
+      };
+
+    case "RecordType":
+      return {
+        ...type,
+        fields: type.fields.map((field) => ({
+          ...field,
+          type: expandTypeAliases(field.type, aliases, seen),
+        })),
+      };
+
+    case "TyForall":
+      return {...type, type: expandTypeAliases(type.type, aliases, seen)};
+
+    case "TyConstructorAbs":
+      return {...type, body: expandTypeAliases(type.body, aliases, seen)};
+
+    case "TyConstructorApp":
+      return {
+        ...type,
+        func: expandTypeAliases(type.func, aliases, seen),
+        arg: expandTypeAliases(type.arg, aliases, seen),
+      };
+  }
+}
+
+// Beta-reduces any TyConstructorApp((λX:K.T), T') to T[X:=T'], recursively
+// — standalone (pure) so it's reusable outside the checker (see
+// expandTypeAliases above for why). A "stuck" application (func is a bound
+// type-constructor variable, not literally an abstraction) is left as-is —
+// already in normal form.
+export function normalizeType(type: Type): Type {
+  switch (type.kind) {
+    case "TyIdentifier":
+    case "TyMetaVar":
+      return type;
+
+    case "TyArrow":
+      return {...type, from: normalizeType(type.from), to: normalizeType(type.to)};
+
+    case "TupleType":
+      return {...type, elements: type.elements.map((e) => normalizeType(e))};
+
+    case "SumType":
+      return {...type, left: normalizeType(type.left), right: normalizeType(type.right)};
+
+    case "VariantType":
+      return {...type, variants: type.variants.map((v) => ({...v, type: normalizeType(v.type)}))};
+
+    case "RecordType":
+      return {...type, fields: type.fields.map((f) => ({...f, type: normalizeType(f.type)}))};
+
+    case "TyForall":
+      return {...type, type: normalizeType(type.type)};
+
+    case "TyConstructorAbs":
+      return {...type, body: normalizeType(type.body)};
+
+    case "TyConstructorApp": {
+      const func = normalizeType(type.func);
+      const arg = normalizeType(type.arg);
+      if (func.kind === "TyConstructorAbs") {
+        return normalizeType(substituteTypeVariable(func.body, func.typeParam, arg));
+      }
+      return {...type, func, arg};
+    }
+  }
+}

@@ -32,9 +32,11 @@ import type {
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {
   containsTypeConstructor,
+  expandTypeAliases,
   isArithmeticOperator,
   kindEquals,
   kindToString,
+  normalizeType,
   substituteTypeVariable,
   typeEquals,
   typeToString,
@@ -214,77 +216,15 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
-  // Expands any TyIdentifier naming a registered `typedef` into its
-  // underlying type, recursively. Called once at every point a Type first
-  // enters the checker from surface syntax (a param/ascription/declaration
-  // annotation) — everything downstream (unify, generalize, typeEquals,
-  // ...) only ever sees already-expanded types and never needs to know
-  // aliases exist. `seen` guards against a cyclic typedef chain looping
-  // forever; it just stops expanding rather than erroring.
+  // Called once at every point a Type first enters the checker from surface
+  // syntax (a param/ascription/declaration annotation) — everything
+  // downstream (unify, generalize, typeEquals, ...) only ever sees
+  // already-expanded types and never needs to know aliases exist. Thin
+  // wrapper around the standalone expandTypeAliases (utils.ts) — pulled out
+  // so the Evaluation view can reuse the exact same expansion logic without
+  // needing a checker instance, just the alias table.
   private expandAliases(type: Type, seen: ReadonlySet<string> = new Set()): Type {
-    switch (type.kind) {
-      case "TyIdentifier": {
-        const target = this.typeAliases.get(type.name);
-        if (!target || seen.has(type.name)) {
-          return type;
-        }
-        return this.expandAliases(target, new Set([...seen, type.name]));
-      }
-
-      case "TyMetaVar":
-        return type;
-
-      case "TyArrow":
-        return {
-          ...type,
-          from: this.expandAliases(type.from, seen),
-          to: this.expandAliases(type.to, seen),
-        };
-
-      case "TupleType":
-        return {
-          ...type,
-          elements: type.elements.map((element) => this.expandAliases(element, seen)),
-        };
-
-      case "SumType":
-        return {
-          ...type,
-          left: this.expandAliases(type.left, seen),
-          right: this.expandAliases(type.right, seen),
-        };
-
-      case "VariantType":
-        return {
-          ...type,
-          variants: type.variants.map((variant) => ({
-            ...variant,
-            type: this.expandAliases(variant.type, seen),
-          })),
-        };
-
-      case "RecordType":
-        return {
-          ...type,
-          fields: type.fields.map((field) => ({
-            ...field,
-            type: this.expandAliases(field.type, seen),
-          })),
-        };
-
-      case "TyForall":
-        return {...type, type: this.expandAliases(type.type, seen)};
-
-      case "TyConstructorAbs":
-        return {...type, body: this.expandAliases(type.body, seen)};
-
-      case "TyConstructorApp":
-        return {
-          ...type,
-          func: this.expandAliases(type.func, seen),
-          arg: this.expandAliases(type.arg, seen),
-        };
-    }
+    return expandTypeAliases(type, this.typeAliases, seen);
   }
 
   // =====================================================================
@@ -396,6 +336,16 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
+  // Run *after* kind-checking (so the kind derivation matches what the user
+  // actually wrote) but before the type is bound/compared/unified against
+  // anything else, since "Endo Nat" and "Nat -> Nat" must be interchangeable
+  // there even though they're structurally different ASTs. Thin wrapper
+  // around the standalone normalizeType (utils.ts) — pulled out for the same
+  // reason as expandAliases above.
+  private normalizeType(type: Type): Type {
+    return normalizeType(type);
+  }
+
   // Kind-checks a (already expandAliases'd) type used as a term annotation.
   // A no-op — {rejected: false} with no premise — for any type that doesn't
   // mention a System λω̲ construct, which is the overwhelming common case:
@@ -405,52 +355,6 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // enabled, (b) verify the annotation itself has kind * (not e.g. @->@,
   // a constructor applied to too few arguments), and (c) return the
   // derivation to attach as the node's kindPremise.
-  // Beta-reduces any TyConstructorApp((λX:K.T), T') to T[X:=T'], recursively
-  // — the System λω̲ analogue of expandAliases, run *after* kind-checking
-  // (so the kind derivation matches what the user actually wrote) but
-  // before the type is bound/compared/unified against anything else, since
-  // "Endo Nat" and "Nat -> Nat" must be interchangeable there even though
-  // they're structurally different ASTs. A "stuck" application (func is a
-  // bound type-constructor variable, not literally an abstraction) is left
-  // as-is — already in normal form.
-  private normalizeType(type: Type): Type {
-    switch (type.kind) {
-      case "TyIdentifier":
-      case "TyMetaVar":
-        return type;
-
-      case "TyArrow":
-        return {...type, from: this.normalizeType(type.from), to: this.normalizeType(type.to)};
-
-      case "TupleType":
-        return {...type, elements: type.elements.map((e) => this.normalizeType(e))};
-
-      case "SumType":
-        return {...type, left: this.normalizeType(type.left), right: this.normalizeType(type.right)};
-
-      case "VariantType":
-        return {...type, variants: type.variants.map((v) => ({...v, type: this.normalizeType(v.type)}))};
-
-      case "RecordType":
-        return {...type, fields: type.fields.map((f) => ({...f, type: this.normalizeType(f.type)}))};
-
-      case "TyForall":
-        return {...type, type: this.normalizeType(type.type)};
-
-      case "TyConstructorAbs":
-        return {...type, body: this.normalizeType(type.body)};
-
-      case "TyConstructorApp": {
-        const func = this.normalizeType(type.func);
-        const arg = this.normalizeType(type.arg);
-        if (func.kind === "TyConstructorAbs") {
-          return this.normalizeType(substituteTypeVariable(func.body, func.typeParam, arg));
-        }
-        return {...type, func, arg};
-      }
-    }
-  }
-
   private checkKindAnnotation(type: Type): { rejected: false; kindPremise?: KindProofTree; normalized: Type } | { rejected: true; message: string } {
     if (!containsTypeConstructor(type)) {
       return {rejected: false, normalized: type};
