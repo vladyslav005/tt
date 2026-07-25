@@ -880,7 +880,7 @@ export default class LambdaParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 259;
+			this.state = 266;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case 17:
@@ -896,6 +896,25 @@ export default class LambdaParser extends Parser {
 				this.state = 225;
 				this.match(LambdaParser.DOT);
 				this.state = 226;
+				this.type_(6);
+				}
+				break;
+			case 9:
+				{
+				localctx = new TypeConstructorAbstractionContext(this, localctx);
+				this._ctx = localctx;
+				_prevctx = localctx;
+				this.state = 228;
+				this.match(LambdaParser.LAMBDA);
+				this.state = 229;
+				this.typeVariable();
+				this.state = 230;
+				this.match(LambdaParser.COLON);
+				this.state = 231;
+				this.kind(0);
+				this.state = 232;
+				this.match(LambdaParser.DOT);
+				this.state = 233;
 				this.type_(5);
 				}
 				break;
@@ -904,27 +923,27 @@ export default class LambdaParser extends Parser {
 				localctx = new TupleTypeContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 228;
+				this.state = 235;
 				this.match(LambdaParser.LT);
-				this.state = 229;
+				this.state = 236;
 				this.type_(0);
-				this.state = 234;
+				this.state = 241;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===36) {
 					{
 					{
-					this.state = 230;
+					this.state = 237;
 					this.match(LambdaParser.MUL);
-					this.state = 231;
+					this.state = 238;
 					this.type_(0);
 					}
 					}
-					this.state = 236;
+					this.state = 243;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 237;
+				this.state = 244;
 				this.match(LambdaParser.MT);
 				}
 				break;
@@ -933,35 +952,35 @@ export default class LambdaParser extends Parser {
 				localctx = new VariantTypeContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 239;
+				this.state = 246;
 				this.match(LambdaParser.LBRACK);
-				this.state = 240;
+				this.state = 247;
 				this.match(LambdaParser.ID);
-				this.state = 241;
+				this.state = 248;
 				this.match(LambdaParser.COLON);
-				this.state = 242;
-				this.type_(0);
 				this.state = 249;
+				this.type_(0);
+				this.state = 256;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===44) {
 					{
 					{
-					this.state = 243;
+					this.state = 250;
 					this.match(LambdaParser.COMMA);
-					this.state = 244;
+					this.state = 251;
 					this.match(LambdaParser.ID);
-					this.state = 245;
+					this.state = 252;
 					this.match(LambdaParser.COLON);
-					this.state = 246;
+					this.state = 253;
 					this.type_(0);
 					}
 					}
-					this.state = 251;
+					this.state = 258;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 252;
+				this.state = 259;
 				this.match(LambdaParser.RBRACK);
 				}
 				break;
@@ -970,11 +989,11 @@ export default class LambdaParser extends Parser {
 				localctx = new ParenTypeContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 254;
+				this.state = 261;
 				this.match(LambdaParser.LPAREN);
-				this.state = 255;
+				this.state = 262;
 				this.type_(0);
-				this.state = 256;
+				this.state = 263;
 				this.match(LambdaParser.RPAREN);
 				}
 				break;
@@ -987,7 +1006,7 @@ export default class LambdaParser extends Parser {
 				localctx = new TypeIdentifierContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 258;
+				this.state = 265;
 				_la = this._input.LA(1);
 				if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 14) !== 0) || _la===50 || _la===53)) {
 				this._errHandler.recoverInline(this);
@@ -1002,7 +1021,7 @@ export default class LambdaParser extends Parser {
 				throw new NoViableAltException(this);
 			}
 			this._ctx.stop = this._input.LT(-1);
-			this.state = 269;
+			this.state = 278;
 			this._errHandler.sync(this);
 			_alt = this._interp.adaptivePredict(this._input, 16, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
@@ -1012,41 +1031,53 @@ export default class LambdaParser extends Parser {
 					}
 					_prevctx = localctx;
 					{
-					this.state = 267;
+					this.state = 276;
 					this._errHandler.sync(this);
 					switch ( this._interp.adaptivePredict(this._input, 15, this._ctx) ) {
 					case 1:
 						{
-						localctx = new SumTypeContext(this, new TypeContext(this, _parentctx, _parentState));
+						localctx = new TypeConstructorApplicationContext(this, new TypeContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, LambdaParser.RULE_type);
-						this.state = 261;
-						if (!(this.precpred(this._ctx, 7))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 7)");
+						this.state = 268;
+						if (!(this.precpred(this._ctx, 9))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 9)");
 						}
-						this.state = 262;
-						this.match(LambdaParser.PLUS);
-						this.state = 263;
-						this.type_(8);
+						this.state = 269;
+						this.type_(10);
 						}
 						break;
 					case 2:
 						{
+						localctx = new SumTypeContext(this, new TypeContext(this, _parentctx, _parentState));
+						this.pushNewRecursionContext(localctx, _startState, LambdaParser.RULE_type);
+						this.state = 270;
+						if (!(this.precpred(this._ctx, 8))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 8)");
+						}
+						this.state = 271;
+						this.match(LambdaParser.PLUS);
+						this.state = 272;
+						this.type_(9);
+						}
+						break;
+					case 3:
+						{
 						localctx = new FunctionTypeContext(this, new TypeContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, LambdaParser.RULE_type);
-						this.state = 264;
-						if (!(this.precpred(this._ctx, 6))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 6)");
+						this.state = 273;
+						if (!(this.precpred(this._ctx, 7))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 7)");
 						}
-						this.state = 265;
+						this.state = 274;
 						this.match(LambdaParser.ARROW);
-						this.state = 266;
-						this.type_(6);
+						this.state = 275;
+						this.type_(7);
 						}
 						break;
 					}
 					}
 				}
-				this.state = 271;
+				this.state = 280;
 				this._errHandler.sync(this);
 				_alt = this._interp.adaptivePredict(this._input, 16, this._ctx);
 			}
@@ -1074,7 +1105,7 @@ export default class LambdaParser extends Parser {
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 272;
+			this.state = 281;
 			_la = this._input.LA(1);
 			if(!(_la===50 || _la===53)) {
 			this._errHandler.recoverInline(this);
@@ -1107,7 +1138,7 @@ export default class LambdaParser extends Parser {
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 274;
+			this.state = 283;
 			_la = this._input.LA(1);
 			if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 504) !== 0) || _la===51 || _la===52)) {
 			this._errHandler.recoverInline(this);
@@ -1151,7 +1182,7 @@ export default class LambdaParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 282;
+			this.state = 291;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case 15:
@@ -1160,7 +1191,7 @@ export default class LambdaParser extends Parser {
 				this._ctx = localctx;
 				_prevctx = localctx;
 
-				this.state = 277;
+				this.state = 286;
 				this.match(LambdaParser.KIND_STAR);
 				}
 				break;
@@ -1169,11 +1200,11 @@ export default class LambdaParser extends Parser {
 				localctx = new ParenKindContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 278;
+				this.state = 287;
 				this.match(LambdaParser.LPAREN);
-				this.state = 279;
+				this.state = 288;
 				this.kind(0);
-				this.state = 280;
+				this.state = 289;
 				this.match(LambdaParser.RPAREN);
 				}
 				break;
@@ -1181,7 +1212,7 @@ export default class LambdaParser extends Parser {
 				throw new NoViableAltException(this);
 			}
 			this._ctx.stop = this._input.LT(-1);
-			this.state = 289;
+			this.state = 298;
 			this._errHandler.sync(this);
 			_alt = this._interp.adaptivePredict(this._input, 18, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
@@ -1194,18 +1225,18 @@ export default class LambdaParser extends Parser {
 					{
 					localctx = new KindArrowContext(this, new KindContext(this, _parentctx, _parentState));
 					this.pushNewRecursionContext(localctx, _startState, LambdaParser.RULE_kind);
-					this.state = 284;
+					this.state = 293;
 					if (!(this.precpred(this._ctx, 2))) {
 						throw this.createFailedPredicateException("this.precpred(this._ctx, 2)");
 					}
-					this.state = 285;
+					this.state = 294;
 					this.match(LambdaParser.ARROW);
-					this.state = 286;
+					this.state = 295;
 					this.kind(2);
 					}
 					}
 				}
-				this.state = 291;
+				this.state = 300;
 				this._errHandler.sync(this);
 				_alt = this._interp.adaptivePredict(this._input, 18, this._ctx);
 			}
@@ -1259,21 +1290,23 @@ export default class LambdaParser extends Parser {
 	private type_sempred(localctx: TypeContext, predIndex: number): boolean {
 		switch (predIndex) {
 		case 7:
-			return this.precpred(this._ctx, 7);
+			return this.precpred(this._ctx, 9);
 		case 8:
-			return this.precpred(this._ctx, 6);
+			return this.precpred(this._ctx, 8);
+		case 9:
+			return this.precpred(this._ctx, 7);
 		}
 		return true;
 	}
 	private kind_sempred(localctx: KindContext, predIndex: number): boolean {
 		switch (predIndex) {
-		case 9:
+		case 10:
 			return this.precpred(this._ctx, 2);
 		}
 		return true;
 	}
 
-	public static readonly _serializedATN: number[] = [4,1,55,293,2,0,7,0,2,
+	public static readonly _serializedATN: number[] = [4,1,55,302,2,0,7,0,2,
 	1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,1,0,5,0,16,8,0,10,0,12,0,
 	19,9,0,1,0,1,0,1,0,3,0,24,8,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,46,8,1,1,2,1,2,1,2,1,2,1,2,1,
@@ -1287,86 +1320,89 @@ export default class LambdaParser extends Parser {
 	2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,5,2,179,8,2,10,2,12,2,182,9,2,1,2,
 	1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,3,2,194,8,2,1,2,1,2,1,2,1,2,1,2,1,2,
 	1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,5,2,218,
-	8,2,10,2,12,2,221,9,2,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,5,3,233,8,
-	3,10,3,12,3,236,9,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,5,3,248,8,3,
-	10,3,12,3,251,9,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,3,3,260,8,3,1,3,1,3,1,3,1,
-	3,1,3,1,3,5,3,268,8,3,10,3,12,3,271,9,3,1,4,1,4,1,5,1,5,1,6,1,6,1,6,1,6,
-	1,6,1,6,3,6,283,8,6,1,6,1,6,1,6,5,6,288,8,6,10,6,12,6,291,9,6,1,6,0,3,4,
-	6,12,7,0,2,4,6,8,10,12,0,4,2,0,29,32,34,39,3,0,1,3,50,50,53,53,2,0,50,50,
-	53,53,2,0,3,8,51,52,328,0,17,1,0,0,0,2,45,1,0,0,0,4,193,1,0,0,0,6,259,1,
-	0,0,0,8,272,1,0,0,0,10,274,1,0,0,0,12,282,1,0,0,0,14,16,3,2,1,0,15,14,1,
-	0,0,0,16,19,1,0,0,0,17,15,1,0,0,0,17,18,1,0,0,0,18,23,1,0,0,0,19,17,1,0,
-	0,0,20,21,3,4,2,0,21,22,5,49,0,0,22,24,1,0,0,0,23,20,1,0,0,0,23,24,1,0,
-	0,0,24,25,1,0,0,0,25,26,5,0,0,1,26,1,1,0,0,0,27,28,5,53,0,0,28,29,5,47,
-	0,0,29,30,3,6,3,0,30,31,5,49,0,0,31,46,1,0,0,0,32,33,5,53,0,0,33,34,5,33,
-	0,0,34,35,3,4,2,0,35,36,5,47,0,0,36,37,3,6,3,0,37,38,5,49,0,0,38,46,1,0,
-	0,0,39,40,5,14,0,0,40,41,5,53,0,0,41,42,5,33,0,0,42,43,3,6,3,0,43,44,5,
-	49,0,0,44,46,1,0,0,0,45,27,1,0,0,0,45,32,1,0,0,0,45,39,1,0,0,0,46,3,1,0,
-	0,0,47,48,6,2,-1,0,48,49,5,9,0,0,49,50,5,28,0,0,50,51,5,47,0,0,51,52,3,
-	6,3,0,52,53,5,48,0,0,53,54,3,4,2,17,54,194,1,0,0,0,55,56,5,9,0,0,56,57,
-	5,53,0,0,57,58,5,47,0,0,58,59,3,6,3,0,59,60,5,48,0,0,60,61,3,4,2,16,61,
-	194,1,0,0,0,62,63,5,9,0,0,63,64,5,53,0,0,64,65,5,48,0,0,65,194,3,4,2,15,
-	66,67,5,10,0,0,67,68,3,8,4,0,68,69,5,48,0,0,69,70,3,4,2,14,70,194,1,0,0,
-	0,71,72,5,11,0,0,72,73,5,53,0,0,73,74,5,33,0,0,74,75,3,4,2,0,75,76,5,12,
-	0,0,76,77,3,4,2,13,77,194,1,0,0,0,78,79,5,24,0,0,79,80,3,4,2,0,80,81,5,
-	25,0,0,81,89,3,4,2,0,82,83,5,26,0,0,83,84,3,4,2,0,84,85,5,25,0,0,85,86,
-	3,4,2,0,86,88,1,0,0,0,87,82,1,0,0,0,88,91,1,0,0,0,89,87,1,0,0,0,89,90,1,
-	0,0,0,90,94,1,0,0,0,91,89,1,0,0,0,92,93,5,27,0,0,93,95,3,4,2,0,94,92,1,
-	0,0,0,94,95,1,0,0,0,95,194,1,0,0,0,96,97,5,18,0,0,97,98,3,4,2,0,98,99,5,
-	22,0,0,99,100,5,20,0,0,100,101,5,53,0,0,101,102,5,46,0,0,102,103,3,4,2,
-	0,103,104,5,22,0,0,104,105,5,21,0,0,105,106,5,53,0,0,106,107,5,46,0,0,107,
-	108,3,4,2,11,108,194,1,0,0,0,109,110,5,18,0,0,110,111,3,4,2,0,111,112,5,
-	19,0,0,112,113,5,40,0,0,113,114,5,53,0,0,114,115,5,33,0,0,115,116,5,53,
-	0,0,116,117,5,41,0,0,117,118,5,46,0,0,118,129,3,4,2,0,119,120,5,22,0,0,
-	120,121,5,40,0,0,121,122,5,53,0,0,122,123,5,33,0,0,123,124,5,53,0,0,124,
-	125,5,41,0,0,125,126,5,46,0,0,126,128,3,4,2,0,127,119,1,0,0,0,128,131,1,
-	0,0,0,129,127,1,0,0,0,129,130,1,0,0,0,130,194,1,0,0,0,131,129,1,0,0,0,132,
-	133,5,20,0,0,133,134,3,4,2,0,134,135,5,23,0,0,135,136,3,6,3,0,136,194,1,
-	0,0,0,137,138,5,21,0,0,138,139,3,4,2,0,139,140,5,23,0,0,140,141,3,6,3,0,
-	141,194,1,0,0,0,142,143,5,13,0,0,143,194,3,4,2,7,144,145,5,34,0,0,145,146,
-	5,53,0,0,146,147,5,33,0,0,147,154,3,4,2,0,148,149,5,44,0,0,149,150,5,53,
-	0,0,150,151,5,33,0,0,151,153,3,4,2,0,152,148,1,0,0,0,153,156,1,0,0,0,154,
-	152,1,0,0,0,154,155,1,0,0,0,155,157,1,0,0,0,156,154,1,0,0,0,157,158,5,35,
-	0,0,158,194,1,0,0,0,159,160,5,34,0,0,160,165,3,4,2,0,161,162,5,44,0,0,162,
-	164,3,4,2,0,163,161,1,0,0,0,164,167,1,0,0,0,165,163,1,0,0,0,165,166,1,0,
-	0,0,166,168,1,0,0,0,167,165,1,0,0,0,168,169,5,35,0,0,169,194,1,0,0,0,170,
-	171,5,40,0,0,171,172,5,53,0,0,172,173,5,33,0,0,173,180,3,4,2,0,174,175,
-	5,44,0,0,175,176,5,53,0,0,176,177,5,33,0,0,177,179,3,4,2,0,178,174,1,0,
-	0,0,179,182,1,0,0,0,180,178,1,0,0,0,180,181,1,0,0,0,181,183,1,0,0,0,182,
-	180,1,0,0,0,183,184,5,41,0,0,184,185,5,23,0,0,185,186,3,6,3,0,186,194,1,
-	0,0,0,187,194,5,53,0,0,188,189,5,42,0,0,189,190,3,4,2,0,190,191,5,43,0,
-	0,191,194,1,0,0,0,192,194,3,10,5,0,193,47,1,0,0,0,193,55,1,0,0,0,193,62,
-	1,0,0,0,193,66,1,0,0,0,193,71,1,0,0,0,193,78,1,0,0,0,193,96,1,0,0,0,193,
-	109,1,0,0,0,193,132,1,0,0,0,193,137,1,0,0,0,193,142,1,0,0,0,193,144,1,0,
-	0,0,193,159,1,0,0,0,193,170,1,0,0,0,193,187,1,0,0,0,193,188,1,0,0,0,193,
-	192,1,0,0,0,194,219,1,0,0,0,195,196,10,22,0,0,196,218,3,4,2,23,197,198,
-	10,20,0,0,198,199,7,0,0,0,199,218,3,4,2,21,200,201,10,18,0,0,201,202,5,
-	49,0,0,202,218,3,4,2,18,203,204,10,24,0,0,204,205,5,48,0,0,205,218,5,51,
-	0,0,206,207,10,23,0,0,207,208,5,48,0,0,208,218,5,53,0,0,209,210,10,21,0,
-	0,210,211,5,40,0,0,211,212,3,6,3,0,212,213,5,41,0,0,213,218,1,0,0,0,214,
-	215,10,19,0,0,215,216,5,23,0,0,216,218,3,6,3,0,217,195,1,0,0,0,217,197,
-	1,0,0,0,217,200,1,0,0,0,217,203,1,0,0,0,217,206,1,0,0,0,217,209,1,0,0,0,
-	217,214,1,0,0,0,218,221,1,0,0,0,219,217,1,0,0,0,219,220,1,0,0,0,220,5,1,
-	0,0,0,221,219,1,0,0,0,222,223,6,3,-1,0,223,224,5,17,0,0,224,225,3,8,4,0,
-	225,226,5,48,0,0,226,227,3,6,3,5,227,260,1,0,0,0,228,229,5,34,0,0,229,234,
-	3,6,3,0,230,231,5,36,0,0,231,233,3,6,3,0,232,230,1,0,0,0,233,236,1,0,0,
-	0,234,232,1,0,0,0,234,235,1,0,0,0,235,237,1,0,0,0,236,234,1,0,0,0,237,238,
-	5,35,0,0,238,260,1,0,0,0,239,240,5,40,0,0,240,241,5,53,0,0,241,242,5,47,
-	0,0,242,249,3,6,3,0,243,244,5,44,0,0,244,245,5,53,0,0,245,246,5,47,0,0,
-	246,248,3,6,3,0,247,243,1,0,0,0,248,251,1,0,0,0,249,247,1,0,0,0,249,250,
-	1,0,0,0,250,252,1,0,0,0,251,249,1,0,0,0,252,253,5,41,0,0,253,260,1,0,0,
-	0,254,255,5,42,0,0,255,256,3,6,3,0,256,257,5,43,0,0,257,260,1,0,0,0,258,
-	260,7,1,0,0,259,222,1,0,0,0,259,228,1,0,0,0,259,239,1,0,0,0,259,254,1,0,
-	0,0,259,258,1,0,0,0,260,269,1,0,0,0,261,262,10,7,0,0,262,263,5,37,0,0,263,
-	268,3,6,3,8,264,265,10,6,0,0,265,266,5,45,0,0,266,268,3,6,3,6,267,261,1,
-	0,0,0,267,264,1,0,0,0,268,271,1,0,0,0,269,267,1,0,0,0,269,270,1,0,0,0,270,
-	7,1,0,0,0,271,269,1,0,0,0,272,273,7,2,0,0,273,9,1,0,0,0,274,275,7,3,0,0,
-	275,11,1,0,0,0,276,277,6,6,-1,0,277,283,5,15,0,0,278,279,5,42,0,0,279,280,
-	3,12,6,0,280,281,5,43,0,0,281,283,1,0,0,0,282,276,1,0,0,0,282,278,1,0,0,
-	0,283,289,1,0,0,0,284,285,10,2,0,0,285,286,5,45,0,0,286,288,3,12,6,2,287,
-	284,1,0,0,0,288,291,1,0,0,0,289,287,1,0,0,0,289,290,1,0,0,0,290,13,1,0,
-	0,0,291,289,1,0,0,0,19,17,23,45,89,94,129,154,165,180,193,217,219,234,249,
-	259,267,269,282,289];
+	8,2,10,2,12,2,221,9,2,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,
+	3,1,3,1,3,1,3,1,3,5,3,240,8,3,10,3,12,3,243,9,3,1,3,1,3,1,3,1,3,1,3,1,3,
+	1,3,1,3,1,3,1,3,5,3,255,8,3,10,3,12,3,258,9,3,1,3,1,3,1,3,1,3,1,3,1,3,1,
+	3,3,3,267,8,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,5,3,277,8,3,10,3,12,3,280,
+	9,3,1,4,1,4,1,5,1,5,1,6,1,6,1,6,1,6,1,6,1,6,3,6,292,8,6,1,6,1,6,1,6,5,6,
+	297,8,6,10,6,12,6,300,9,6,1,6,0,3,4,6,12,7,0,2,4,6,8,10,12,0,4,2,0,29,32,
+	34,39,3,0,1,3,50,50,53,53,2,0,50,50,53,53,2,0,3,8,51,52,339,0,17,1,0,0,
+	0,2,45,1,0,0,0,4,193,1,0,0,0,6,266,1,0,0,0,8,281,1,0,0,0,10,283,1,0,0,0,
+	12,291,1,0,0,0,14,16,3,2,1,0,15,14,1,0,0,0,16,19,1,0,0,0,17,15,1,0,0,0,
+	17,18,1,0,0,0,18,23,1,0,0,0,19,17,1,0,0,0,20,21,3,4,2,0,21,22,5,49,0,0,
+	22,24,1,0,0,0,23,20,1,0,0,0,23,24,1,0,0,0,24,25,1,0,0,0,25,26,5,0,0,1,26,
+	1,1,0,0,0,27,28,5,53,0,0,28,29,5,47,0,0,29,30,3,6,3,0,30,31,5,49,0,0,31,
+	46,1,0,0,0,32,33,5,53,0,0,33,34,5,33,0,0,34,35,3,4,2,0,35,36,5,47,0,0,36,
+	37,3,6,3,0,37,38,5,49,0,0,38,46,1,0,0,0,39,40,5,14,0,0,40,41,5,53,0,0,41,
+	42,5,33,0,0,42,43,3,6,3,0,43,44,5,49,0,0,44,46,1,0,0,0,45,27,1,0,0,0,45,
+	32,1,0,0,0,45,39,1,0,0,0,46,3,1,0,0,0,47,48,6,2,-1,0,48,49,5,9,0,0,49,50,
+	5,28,0,0,50,51,5,47,0,0,51,52,3,6,3,0,52,53,5,48,0,0,53,54,3,4,2,17,54,
+	194,1,0,0,0,55,56,5,9,0,0,56,57,5,53,0,0,57,58,5,47,0,0,58,59,3,6,3,0,59,
+	60,5,48,0,0,60,61,3,4,2,16,61,194,1,0,0,0,62,63,5,9,0,0,63,64,5,53,0,0,
+	64,65,5,48,0,0,65,194,3,4,2,15,66,67,5,10,0,0,67,68,3,8,4,0,68,69,5,48,
+	0,0,69,70,3,4,2,14,70,194,1,0,0,0,71,72,5,11,0,0,72,73,5,53,0,0,73,74,5,
+	33,0,0,74,75,3,4,2,0,75,76,5,12,0,0,76,77,3,4,2,13,77,194,1,0,0,0,78,79,
+	5,24,0,0,79,80,3,4,2,0,80,81,5,25,0,0,81,89,3,4,2,0,82,83,5,26,0,0,83,84,
+	3,4,2,0,84,85,5,25,0,0,85,86,3,4,2,0,86,88,1,0,0,0,87,82,1,0,0,0,88,91,
+	1,0,0,0,89,87,1,0,0,0,89,90,1,0,0,0,90,94,1,0,0,0,91,89,1,0,0,0,92,93,5,
+	27,0,0,93,95,3,4,2,0,94,92,1,0,0,0,94,95,1,0,0,0,95,194,1,0,0,0,96,97,5,
+	18,0,0,97,98,3,4,2,0,98,99,5,22,0,0,99,100,5,20,0,0,100,101,5,53,0,0,101,
+	102,5,46,0,0,102,103,3,4,2,0,103,104,5,22,0,0,104,105,5,21,0,0,105,106,
+	5,53,0,0,106,107,5,46,0,0,107,108,3,4,2,11,108,194,1,0,0,0,109,110,5,18,
+	0,0,110,111,3,4,2,0,111,112,5,19,0,0,112,113,5,40,0,0,113,114,5,53,0,0,
+	114,115,5,33,0,0,115,116,5,53,0,0,116,117,5,41,0,0,117,118,5,46,0,0,118,
+	129,3,4,2,0,119,120,5,22,0,0,120,121,5,40,0,0,121,122,5,53,0,0,122,123,
+	5,33,0,0,123,124,5,53,0,0,124,125,5,41,0,0,125,126,5,46,0,0,126,128,3,4,
+	2,0,127,119,1,0,0,0,128,131,1,0,0,0,129,127,1,0,0,0,129,130,1,0,0,0,130,
+	194,1,0,0,0,131,129,1,0,0,0,132,133,5,20,0,0,133,134,3,4,2,0,134,135,5,
+	23,0,0,135,136,3,6,3,0,136,194,1,0,0,0,137,138,5,21,0,0,138,139,3,4,2,0,
+	139,140,5,23,0,0,140,141,3,6,3,0,141,194,1,0,0,0,142,143,5,13,0,0,143,194,
+	3,4,2,7,144,145,5,34,0,0,145,146,5,53,0,0,146,147,5,33,0,0,147,154,3,4,
+	2,0,148,149,5,44,0,0,149,150,5,53,0,0,150,151,5,33,0,0,151,153,3,4,2,0,
+	152,148,1,0,0,0,153,156,1,0,0,0,154,152,1,0,0,0,154,155,1,0,0,0,155,157,
+	1,0,0,0,156,154,1,0,0,0,157,158,5,35,0,0,158,194,1,0,0,0,159,160,5,34,0,
+	0,160,165,3,4,2,0,161,162,5,44,0,0,162,164,3,4,2,0,163,161,1,0,0,0,164,
+	167,1,0,0,0,165,163,1,0,0,0,165,166,1,0,0,0,166,168,1,0,0,0,167,165,1,0,
+	0,0,168,169,5,35,0,0,169,194,1,0,0,0,170,171,5,40,0,0,171,172,5,53,0,0,
+	172,173,5,33,0,0,173,180,3,4,2,0,174,175,5,44,0,0,175,176,5,53,0,0,176,
+	177,5,33,0,0,177,179,3,4,2,0,178,174,1,0,0,0,179,182,1,0,0,0,180,178,1,
+	0,0,0,180,181,1,0,0,0,181,183,1,0,0,0,182,180,1,0,0,0,183,184,5,41,0,0,
+	184,185,5,23,0,0,185,186,3,6,3,0,186,194,1,0,0,0,187,194,5,53,0,0,188,189,
+	5,42,0,0,189,190,3,4,2,0,190,191,5,43,0,0,191,194,1,0,0,0,192,194,3,10,
+	5,0,193,47,1,0,0,0,193,55,1,0,0,0,193,62,1,0,0,0,193,66,1,0,0,0,193,71,
+	1,0,0,0,193,78,1,0,0,0,193,96,1,0,0,0,193,109,1,0,0,0,193,132,1,0,0,0,193,
+	137,1,0,0,0,193,142,1,0,0,0,193,144,1,0,0,0,193,159,1,0,0,0,193,170,1,0,
+	0,0,193,187,1,0,0,0,193,188,1,0,0,0,193,192,1,0,0,0,194,219,1,0,0,0,195,
+	196,10,22,0,0,196,218,3,4,2,23,197,198,10,20,0,0,198,199,7,0,0,0,199,218,
+	3,4,2,21,200,201,10,18,0,0,201,202,5,49,0,0,202,218,3,4,2,18,203,204,10,
+	24,0,0,204,205,5,48,0,0,205,218,5,51,0,0,206,207,10,23,0,0,207,208,5,48,
+	0,0,208,218,5,53,0,0,209,210,10,21,0,0,210,211,5,40,0,0,211,212,3,6,3,0,
+	212,213,5,41,0,0,213,218,1,0,0,0,214,215,10,19,0,0,215,216,5,23,0,0,216,
+	218,3,6,3,0,217,195,1,0,0,0,217,197,1,0,0,0,217,200,1,0,0,0,217,203,1,0,
+	0,0,217,206,1,0,0,0,217,209,1,0,0,0,217,214,1,0,0,0,218,221,1,0,0,0,219,
+	217,1,0,0,0,219,220,1,0,0,0,220,5,1,0,0,0,221,219,1,0,0,0,222,223,6,3,-1,
+	0,223,224,5,17,0,0,224,225,3,8,4,0,225,226,5,48,0,0,226,227,3,6,3,6,227,
+	267,1,0,0,0,228,229,5,9,0,0,229,230,3,8,4,0,230,231,5,47,0,0,231,232,3,
+	12,6,0,232,233,5,48,0,0,233,234,3,6,3,5,234,267,1,0,0,0,235,236,5,34,0,
+	0,236,241,3,6,3,0,237,238,5,36,0,0,238,240,3,6,3,0,239,237,1,0,0,0,240,
+	243,1,0,0,0,241,239,1,0,0,0,241,242,1,0,0,0,242,244,1,0,0,0,243,241,1,0,
+	0,0,244,245,5,35,0,0,245,267,1,0,0,0,246,247,5,40,0,0,247,248,5,53,0,0,
+	248,249,5,47,0,0,249,256,3,6,3,0,250,251,5,44,0,0,251,252,5,53,0,0,252,
+	253,5,47,0,0,253,255,3,6,3,0,254,250,1,0,0,0,255,258,1,0,0,0,256,254,1,
+	0,0,0,256,257,1,0,0,0,257,259,1,0,0,0,258,256,1,0,0,0,259,260,5,41,0,0,
+	260,267,1,0,0,0,261,262,5,42,0,0,262,263,3,6,3,0,263,264,5,43,0,0,264,267,
+	1,0,0,0,265,267,7,1,0,0,266,222,1,0,0,0,266,228,1,0,0,0,266,235,1,0,0,0,
+	266,246,1,0,0,0,266,261,1,0,0,0,266,265,1,0,0,0,267,278,1,0,0,0,268,269,
+	10,9,0,0,269,277,3,6,3,10,270,271,10,8,0,0,271,272,5,37,0,0,272,277,3,6,
+	3,9,273,274,10,7,0,0,274,275,5,45,0,0,275,277,3,6,3,7,276,268,1,0,0,0,276,
+	270,1,0,0,0,276,273,1,0,0,0,277,280,1,0,0,0,278,276,1,0,0,0,278,279,1,0,
+	0,0,279,7,1,0,0,0,280,278,1,0,0,0,281,282,7,2,0,0,282,9,1,0,0,0,283,284,
+	7,3,0,0,284,11,1,0,0,0,285,286,6,6,-1,0,286,292,5,15,0,0,287,288,5,42,0,
+	0,288,289,3,12,6,0,289,290,5,43,0,0,290,292,1,0,0,0,291,285,1,0,0,0,291,
+	287,1,0,0,0,292,298,1,0,0,0,293,294,10,2,0,0,294,295,5,45,0,0,295,297,3,
+	12,6,2,296,293,1,0,0,0,297,300,1,0,0,0,298,296,1,0,0,0,298,299,1,0,0,0,
+	299,13,1,0,0,0,300,298,1,0,0,0,19,17,23,45,89,94,129,154,165,180,193,217,
+	219,241,256,266,276,278,291,298];
 
 	private static __ATN: ATN;
 	public static get _ATN(): ATN {
@@ -2629,6 +2665,78 @@ export class TypeIdentifierContext extends TypeContext {
 	public accept<Result>(visitor: LambdaVisitor<Result>): Result {
 		if (visitor.visitTypeIdentifier) {
 			return visitor.visitTypeIdentifier(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+export class TypeConstructorAbstractionContext extends TypeContext {
+	constructor(parser: LambdaParser, ctx: TypeContext) {
+		super(parser, ctx.parentCtx, ctx.invokingState);
+		super.copyFrom(ctx);
+	}
+	public LAMBDA(): TerminalNode {
+		return this.getToken(LambdaParser.LAMBDA, 0);
+	}
+	public typeVariable(): TypeVariableContext {
+		return this.getTypedRuleContext(TypeVariableContext, 0) as TypeVariableContext;
+	}
+	public COLON(): TerminalNode {
+		return this.getToken(LambdaParser.COLON, 0);
+	}
+	public kind(): KindContext {
+		return this.getTypedRuleContext(KindContext, 0) as KindContext;
+	}
+	public DOT(): TerminalNode {
+		return this.getToken(LambdaParser.DOT, 0);
+	}
+	public type_(): TypeContext {
+		return this.getTypedRuleContext(TypeContext, 0) as TypeContext;
+	}
+	public enterRule(listener: LambdaListener): void {
+	    if(listener.enterTypeConstructorAbstraction) {
+	 		listener.enterTypeConstructorAbstraction(this);
+		}
+	}
+	public exitRule(listener: LambdaListener): void {
+	    if(listener.exitTypeConstructorAbstraction) {
+	 		listener.exitTypeConstructorAbstraction(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: LambdaVisitor<Result>): Result {
+		if (visitor.visitTypeConstructorAbstraction) {
+			return visitor.visitTypeConstructorAbstraction(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+export class TypeConstructorApplicationContext extends TypeContext {
+	constructor(parser: LambdaParser, ctx: TypeContext) {
+		super(parser, ctx.parentCtx, ctx.invokingState);
+		super.copyFrom(ctx);
+	}
+	public type__list(): TypeContext[] {
+		return this.getTypedRuleContexts(TypeContext) as TypeContext[];
+	}
+	public type_(i: number): TypeContext {
+		return this.getTypedRuleContext(TypeContext, i) as TypeContext;
+	}
+	public enterRule(listener: LambdaListener): void {
+	    if(listener.enterTypeConstructorApplication) {
+	 		listener.enterTypeConstructorApplication(this);
+		}
+	}
+	public exitRule(listener: LambdaListener): void {
+	    if(listener.exitTypeConstructorApplication) {
+	 		listener.exitTypeConstructorApplication(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: LambdaVisitor<Result>): Result {
+		if (visitor.visitTypeConstructorApplication) {
+			return visitor.visitTypeConstructorApplication(this);
 		} else {
 			return visitor.visitChildren(this);
 		}

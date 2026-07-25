@@ -56,17 +56,27 @@ term
     ;
 
 type
-    // 1. Sum type has higher priority than arrow
-    : type PLUS type                                             # SumType
+    // 1. Type constructor application (System λω̲): highest priority,
+    // left-associative, mirrors term application — "List Nat" applies the
+    // type constructor List to the type Nat.
+    : type type                                                  # TypeConstructorApplication
 
-    // 2. Arrow type is lowest operator precedence, right-associative
+    // 2. Sum type has higher priority than arrow
+    | type PLUS type                                             # SumType
+
+    // 3. Arrow type is lowest operator precedence, right-associative
     | <assoc=right> type ARROW type                              # FunctionType
 
-    // 3. Prefix / binder types: body extends maximally to the right, so
-    // "forall X. X -> X" is "forall X. (X -> X)".
+    // 4. Prefix / binder types: body extends maximally to the right, so
+    // "forall X. X -> X" is "forall X. (X -> X)". Type constructor
+    // abstraction reuses the same λ as term-level abstraction (System λω̲
+    // uses one binder at every level) — its parameter is a kind, not a
+    // type, so it's never ambiguous with LambdaAbstraction (that rule only
+    // ever appears where a term is expected).
     | FORALL typeVariable DOT type                               # ForallType
+    | LAMBDA typeVariable COLON kind DOT type                    # TypeConstructorAbstraction
 
-    // 4. Atomic / grouped types
+    // 5. Atomic / grouped types
     | LT type (MUL type)* MT                                     # TupleType
     | LBRACK ID COLON type (COMMA ID COLON type)* RBRACK         # VariantType
     | LPAREN type RPAREN                                         # ParenType

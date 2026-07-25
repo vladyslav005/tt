@@ -34,6 +34,8 @@ import { BinaryOpContext } from "./LambdaParser.js";
 import { TypeApplicationContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
+import { TypeConstructorAbstractionContext } from "./LambdaParser.js";
+import { TypeConstructorApplicationContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
@@ -411,6 +413,30 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitTypeIdentifier?: (ctx: TypeIdentifierContext) => void;
+	/**
+	 * Enter a parse tree produced by the `TypeConstructorAbstraction`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeConstructorAbstraction?: (ctx: TypeConstructorAbstractionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `TypeConstructorAbstraction`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeConstructorAbstraction?: (ctx: TypeConstructorAbstractionContext) => void;
+	/**
+	 * Enter a parse tree produced by the `TypeConstructorApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `TypeConstructorApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => void;
 	/**
 	 * Enter a parse tree produced by the `VariantType`
 	 * labeled alternative in `LambdaParser.type`.

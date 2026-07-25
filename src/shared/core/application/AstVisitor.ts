@@ -10,7 +10,7 @@ import type {
   FunDecl,
   IfCondition,
   Inl,
-  Inr, Let,
+  Inr, Kind, Let,
   Lit,
   Program,
   Record,
@@ -19,6 +19,7 @@ import type {
   Tuple,
   TupleProjection,
   Type, TypeAbs, TypeAliasDecl, TypeApp,
+  TyConstructorAbs, TyConstructorApp,
   Var,
   VarDecl,
   Variant,
@@ -91,6 +92,12 @@ export abstract class AstVisitor<R> {
       case "TypeApp":
         return this.visitTypeApplication(node)
 
+      /* ===== System λω̲ ===== */
+      case "TyConstructorAbs":
+        return this.visitTypeConstructorAbstraction(node)
+      case "TyConstructorApp":
+        return this.visitTypeConstructorApplication(node)
+
       /* ===== Types ===== */
       case "TyIdentifier":
       case "TyArrow":
@@ -100,6 +107,11 @@ export abstract class AstVisitor<R> {
       case "RecordType":
       case "TyForall":
         return this.visitType(node)
+
+      /* ===== Kinds ===== */
+      case "StarKind":
+      case "KindArrow":
+        return this.visitKind(node)
 
       default:
         throw new Error("Unknown AST node " + (node as any).kind)
@@ -162,7 +174,15 @@ export abstract class AstVisitor<R> {
 
   protected abstract visitTypeApplication(node: TypeApp): R
 
+  /* ===== System λω̲ ===== */
+  protected abstract visitTypeConstructorAbstraction(node: TyConstructorAbs): R
+
+  protected abstract visitTypeConstructorApplication(node: TyConstructorApp): R
+
   /* ===== Types ===== */
   protected abstract visitType(node: Type): R
+
+  /* ===== Kinds ===== */
+  protected abstract visitKind(node: Kind): R
 
 }

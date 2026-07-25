@@ -101,6 +101,23 @@ export class TypeInferenceEngine {
         return {...type, type: this.applySubstitution(type.type, inner)};
       }
 
+      case "TyConstructorAbs": {
+        if (!substitution.has(type.typeParam)) {
+          return {...type, body: this.applySubstitution(type.body, substitution)};
+        }
+
+        const inner = new Map(substitution);
+        inner.delete(type.typeParam);
+        return {...type, body: this.applySubstitution(type.body, inner)};
+      }
+
+      case "TyConstructorApp":
+        return {
+          ...type,
+          func: this.applySubstitution(type.func, substitution),
+          arg: this.applySubstitution(type.arg, substitution),
+        };
+
       default:
         return this.assertNever(type);
     }

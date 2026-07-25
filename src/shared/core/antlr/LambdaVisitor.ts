@@ -34,6 +34,8 @@ import { BinaryOpContext } from "./LambdaParser.js";
 import { TypeApplicationContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
+import { TypeConstructorAbstractionContext } from "./LambdaParser.js";
+import { TypeConstructorApplicationContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
@@ -264,6 +266,20 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeIdentifier?: (ctx: TypeIdentifierContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `TypeConstructorAbstraction`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeConstructorAbstraction?: (ctx: TypeConstructorAbstractionContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `TypeConstructorApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `VariantType`
 	 * labeled alternative in `LambdaParser.type`.

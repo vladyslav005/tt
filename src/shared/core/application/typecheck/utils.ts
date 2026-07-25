@@ -1,4 +1,4 @@
-import type {BinaryOperator, Type} from "@/shared/core/domain/ast";
+import type {BinaryOperator, Kind, Type} from "@/shared/core/domain/ast";
 
 const ARITHMETIC_OPERATORS: ReadonlySet<BinaryOperator> = new Set(["+", "-", "*", "/"]);
 
@@ -72,6 +72,16 @@ export function typeEquals(a: Type, b: Type): boolean {
       // other binder-free comparison in this function.
       return a.typeVariable === bForall.typeVariable && typeEquals(a.type, bForall.type);
     }
+
+    case "TyConstructorAbs": {
+      const bAbs = b as typeof a;
+      return a.typeParam === bAbs.typeParam && typeEquals(a.body, bAbs.body);
+    }
+
+    case "TyConstructorApp": {
+      const bApp = b as typeof a;
+      return typeEquals(a.func, bApp.func) && typeEquals(a.arg, bApp.arg);
+    }
   }
 }
 
@@ -103,6 +113,21 @@ export function typeToString(a: Type): string {
 
     case "TyForall":
       return `(forall ${a.typeVariable}. ${typeToString(a.type)})`;
+
+    case "TyConstructorAbs":
+      return `(\\${a.typeParam} : ${kindToString(a.paramKind)} . ${typeToString(a.body)})`;
+
+    case "TyConstructorApp":
+      return `(${typeToString(a.func)} ${typeToString(a.arg)})`;
+  }
+}
+
+export function kindToString(k: Kind): string {
+  switch (k.kind) {
+    case "StarKind":
+      return "*";
+    case "KindArrow":
+      return `(${kindToString(k.from)} -> ${kindToString(k.to)})`;
   }
 }
 
@@ -163,5 +188,18 @@ export function substituteTypeVariable(type: Type, name: string, replacement: Ty
         return type;
       }
       return {...type, type: substituteTypeVariable(type.type, name, replacement)};
+
+    case "TyConstructorAbs":
+      if (type.typeParam === name) {
+        return type;
+      }
+      return {...type, body: substituteTypeVariable(type.body, name, replacement)};
+
+    case "TyConstructorApp":
+      return {
+        ...type,
+        func: substituteTypeVariable(type.func, name, replacement),
+        arg: substituteTypeVariable(type.arg, name, replacement),
+      };
   }
 }
