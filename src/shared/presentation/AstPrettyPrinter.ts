@@ -22,6 +22,7 @@ import type {
   TupleProjection,
   Type,
   TypeAbs,
+  TypeAliasDecl,
   TypeApp,
   Var,
   VarDecl,
@@ -58,6 +59,8 @@ export class AstPrettyPrinter {
         return this.printVarDecl(decl);
       case "FunDecl":
         return this.printFunDecl(decl);
+      case "TypeAliasDecl":
+        return this.printTypeAliasDecl(decl);
     }
   }
 
@@ -72,6 +75,10 @@ export class AstPrettyPrinter {
   private printFunDecl(decl: FunDecl): string {
     // Same syntax as VarDecl in this language.
     return `${decl.name} : ${this.printType(decl.type)} = ${this.printTerm(decl.value)}`;
+  }
+
+  private printTypeAliasDecl(decl: TypeAliasDecl): string {
+    return `typedef ${decl.name} = ${this.printType(decl.type)}`;
   }
 
   printTerm(term: Term): string {

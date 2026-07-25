@@ -30,6 +30,35 @@ const EXAMPLE_GROUPS: ExampleGroup[] = [
         code: "a : T;\n(λ x : T . x) a;",
       },
       {
+        label: "Type Alias",
+        description: "typedef X = T introduces a transparent synonym, usable anywhere T could be",
+        code: `typedef MyNat = Nat;
+
+f = λ x : MyNat . x + 1 : MyNat -> MyNat;
+
+f 5;`,
+      },
+      {
+        label: "Type Alias: Chained",
+        description: "a typedef built from an earlier typedef resolves through the whole chain to Nat",
+        code: `typedef Id = Nat;
+typedef Score = Id;
+
+s : Score;
+s + 10;`,
+      },
+      {
+        label: "Type Alias: Function Type",
+        description: "aliasing a compound (arrow) type to shorten a repeated signature",
+        code: `typedef IntFn = Nat -> Nat;
+
+apply = λ f : IntFn . λ x : Nat . f x : IntFn -> Nat -> Nat;
+
+inc = λ x : Nat . x + 1 : Nat -> Nat;
+
+apply inc 5;`,
+      },
+      {
         label: "Example 1",
         description: "Application chain",
         code: `identity = λ x : T . x : T -> T;

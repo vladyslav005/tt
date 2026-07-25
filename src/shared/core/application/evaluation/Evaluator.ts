@@ -27,6 +27,9 @@ export class Evaluator {
     const globals = new Map<string, Term>();
 
     for (const declaration of ast.globals) {
+      // A typedef has no runtime value — it's purely a type-level name,
+      // already expanded away by the checker before evaluation runs.
+      if (declaration.kind === "TypeAliasDecl") continue;
       globals.set(declaration.name, declaration.value);
     }
 
@@ -202,6 +205,11 @@ export class Evaluator {
       case "VarDecl":
       case "FunDecl":
         return ast.value;
+
+      case "TypeAliasDecl":
+        throw new Error(
+          "Cannot evaluate a typedef — it has no runtime value",
+        );
 
       case "TyIdentifier":
       case "TyArrow":

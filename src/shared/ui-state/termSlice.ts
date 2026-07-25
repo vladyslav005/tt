@@ -1,6 +1,6 @@
 // src/store/counterSlice.ts
 import {createSlice} from "@reduxjs/toolkit";
-import type {Program} from "@/shared/core/domain/ast";
+import type {Program, Type} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {EvaluationResult} from "@/shared/core/application/evaluation/type.ts";
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig, type TypeTheoryId} from "@/shared/core/domain/typeTheory.ts";
@@ -10,6 +10,7 @@ interface TermState {
   processingErrors?: Error[];
   ast: Program | undefined;
   proof: ProofTree | undefined;
+  typeAliases: Record<string, Type>;
   evaluation: EvaluationResult | undefined;
   enabledTheories: TypeTheoryConfig;
 }
@@ -19,6 +20,7 @@ const initialState: TermState = {
   processingErrors: undefined,
   ast: undefined,
   proof: undefined,
+  typeAliases: {},
   evaluation: undefined,
   enabledTheories: DEFAULT_TYPE_THEORY_CONFIG,
 };
@@ -33,6 +35,10 @@ const counterSlice = createSlice({
 
     setProof: (state, action: { payload: ProofTree | undefined }) => {
       state.proof = action.payload;
+    },
+
+    setTypeAliases: (state, action: { payload: Record<string, Type> }) => {
+      state.typeAliases = action.payload;
     },
 
     setAst: (state, action: { payload: Program | undefined }) => {
@@ -59,6 +65,7 @@ const counterSlice = createSlice({
       state.processingErrors = [];
       state.ast = undefined;
       state.proof = undefined;
+      state.typeAliases = {};
       state.evaluation = undefined;
     }
   },
@@ -68,6 +75,7 @@ export const {
   setEvaluation,
   setTermText,
   setProof,
+  setTypeAliases,
   setAst,
   setTheoryEnabled,
   pushProcessingError,

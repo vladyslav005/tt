@@ -21,6 +21,7 @@ import type {
   TupleProjection,
   Type,
   TypeAbs,
+  TypeAliasDecl,
   TypeApp,
   Var,
   VarDecl,
@@ -94,6 +95,7 @@ export type BinOpNodeData = { term: BinOp; editable?: boolean; onChange?: (patch
 export type FixNodeData = { term: Fix; editable?: boolean; onChange?: (patch: any) => void };
 export type TypeAbsNodeData = { term: TypeAbs; editable?: boolean; onChange?: (patch: any) => void };
 export type TypeAppNodeData = { term: TypeApp; editable?: boolean; onChange?: (patch: any) => void };
+export type TypeAliasDeclNodeData = { term: TypeAliasDecl; editable?: boolean; onChange?: (patch: any) => void };
 
 export type ProgramFlowNode = Node<ProgramNodeData, "program">;
 export type FunDeclFlowNode = Node<FunDeclNodeData, "funDecl">;
@@ -121,6 +123,7 @@ export type BinOpFlowNode = Node<BinOpNodeData, "binOp">;
 export type FixFlowNode = Node<FixNodeData, "fix">;
 export type TypeAbsFlowNode = Node<TypeAbsNodeData, "typeAbs">;
 export type TypeAppFlowNode = Node<TypeAppNodeData, "typeApp">;
+export type TypeAliasDeclFlowNode = Node<TypeAliasDeclNodeData, "typeAliasDecl">;
 
 export type AstFlowNode =
   | ProgramFlowNode
@@ -148,7 +151,8 @@ export type AstFlowNode =
   | BinOpFlowNode
   | FixFlowNode
   | TypeAbsFlowNode
-  | TypeAppFlowNode;
+  | TypeAppFlowNode
+  | TypeAliasDeclFlowNode;
 
 // Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
@@ -177,6 +181,7 @@ export type BinOpFlowNodeType = BinOpNodeData;
 export type FixFlowNodeType = FixNodeData;
 export type TypeAbsFlowNodeType = TypeAbsNodeData;
 export type TypeAppFlowNodeType = TypeAppNodeData;
+export type TypeAliasDeclFlowNodeType = TypeAliasDeclNodeData;
 
 export type AstFlowGraph = {
   nodes: AstFlowNode[];

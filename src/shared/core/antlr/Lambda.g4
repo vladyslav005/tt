@@ -8,6 +8,7 @@ expression
 globalDecl
     : ID COLON type SEMI                      # GlobalVariableDeclaration
     | ID EQ term COLON type SEMI           # GlobalFunctionDeclaration
+    | TYPEDEF ID EQ type SEMI                 # TypeAliasDeclaration
     ;
 
 term
@@ -86,6 +87,11 @@ constant
     | 'unit'
     ;
 
+kind
+    : KIND_STAR                                 # StarKind
+    | <assoc=right> kind ARROW kind             # KindArrow
+    | LPAREN kind RPAREN                        # ParenKind
+    ;
 
 
 LAMBDA         : 'λ' | '\\' ;
@@ -94,8 +100,11 @@ LAMBDA_CAPITALIZED     : 'Λ';
 LET            : 'let';
 IN             : 'in';
 FIX            : 'fix';
+TYPEDEF        : 'typedef';
 
-APOSTROPHE      : '\'';
+KIND_STAR      : '@'; // to avoid ambiguity with, '@' is used instead of '*' for the kind of types
+
+APOSTROPHE     : '\'';
 
 FORALL         : '∀';
 

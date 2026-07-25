@@ -7,6 +7,7 @@ import {ParseTreeListener} from "antlr4";
 import { ExprContext } from "./LambdaParser.js";
 import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
+import { TypeAliasDeclarationContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
 import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
@@ -40,6 +41,9 @@ import { ForallTypeContext } from "./LambdaParser.js";
 import { ParenTypeContext } from "./LambdaParser.js";
 import { TypeVariableContext } from "./LambdaParser.js";
 import { ConstantContext } from "./LambdaParser.js";
+import { StarKindContext } from "./LambdaParser.js";
+import { KindArrowContext } from "./LambdaParser.js";
+import { ParenKindContext } from "./LambdaParser.js";
 
 
 /**
@@ -83,6 +87,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitGlobalFunctionDeclaration?: (ctx: GlobalFunctionDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `TypeAliasDeclaration`
+	 * labeled alternative in `LambdaParser.globalDecl`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeAliasDeclaration?: (ctx: TypeAliasDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `TypeAliasDeclaration`
+	 * labeled alternative in `LambdaParser.globalDecl`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeAliasDeclaration?: (ctx: TypeAliasDeclarationContext) => void;
 	/**
 	 * Enter a parse tree produced by the `Variable`
 	 * labeled alternative in `LambdaParser.term`.
@@ -475,5 +491,41 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitConstant?: (ctx: ConstantContext) => void;
+	/**
+	 * Enter a parse tree produced by the `StarKind`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	enterStarKind?: (ctx: StarKindContext) => void;
+	/**
+	 * Exit a parse tree produced by the `StarKind`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	exitStarKind?: (ctx: StarKindContext) => void;
+	/**
+	 * Enter a parse tree produced by the `KindArrow`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	enterKindArrow?: (ctx: KindArrowContext) => void;
+	/**
+	 * Exit a parse tree produced by the `KindArrow`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	exitKindArrow?: (ctx: KindArrowContext) => void;
+	/**
+	 * Enter a parse tree produced by the `ParenKind`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	enterParenKind?: (ctx: ParenKindContext) => void;
+	/**
+	 * Exit a parse tree produced by the `ParenKind`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	exitParenKind?: (ctx: ParenKindContext) => void;
 }
 

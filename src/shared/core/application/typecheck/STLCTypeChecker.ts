@@ -8,7 +8,7 @@ import type {
   Case,
   DummyAbstraction,
   Fix,
-  GlobalDecl,
+  FunDecl,
   IfCondition,
   Inl,
   Inr, Let,
@@ -22,8 +22,10 @@ import type {
   TyArrow, TyForall, TyIdentifier,
   Type,
   TypeAbs,
+  TypeAliasDecl,
   TypeApp,
   Var,
+  VarDecl,
   Variant,
   VariantCase,
 } from "@/shared/core/domain/ast";
@@ -66,6 +68,10 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   private theories: TypeTheoryConfig = DEFAULT_TYPE_THEORY_CONFIG;
   private readonly engine: TypeInferenceEngine = new TypeInferenceEngine();
 
+  // name -> fully-expanded underlying type, populated in declaration order
+  // by visitTypeAliasDecl.
+  private typeAliases: Map<string, Type> = new Map();
+
   // >0 while checking a `let`'s value+body (nesting-safe via a counter, not
   // a boolean, since a `let` can appear inside another `let`'s value). While
   // true — or while the Type inference theory is on — rules use their CT-*
@@ -82,6 +88,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   public getErrors(): Error[] {
     return this.errorBuffer;
+  }
+
+  // The typedef table built up by the most recent check() run — exposed so
+  // the proof-tree renderer can offer "show as alias" for any node whose
+  // type happens to match one, not just nodes that literally wrote it.
+  public getTypeAliases(): { [name: string]: Type } {
+    return Object.fromEntries(this.typeAliases);
   }
 
   // Which optional type theories (beyond core STLC, which is always on) the
@@ -104,6 +117,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     this.varOrigin = new Gamma<VarOrigin>();
     this.errorBuffer = [];
     this.globalProofs = new Map();
+    this.typeAliases = new Map();
     this.polymorphicScope = 0;
     this.engine.reset();
 
@@ -191,6 +205,69 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
+  // Expands any TyIdentifier naming a registered `typedef` into its
+  // underlying type, recursively. Called once at every point a Type first
+  // enters the checker from surface syntax (a param/ascription/declaration
+  // annotation) — everything downstream (unify, generalize, typeEquals,
+  // ...) only ever sees already-expanded types and never needs to know
+  // aliases exist. `seen` guards against a cyclic typedef chain looping
+  // forever; it just stops expanding rather than erroring.
+  private expandAliases(type: Type, seen: ReadonlySet<string> = new Set()): Type {
+    switch (type.kind) {
+      case "TyIdentifier": {
+        const target = this.typeAliases.get(type.name);
+        if (!target || seen.has(type.name)) {
+          return type;
+        }
+        return this.expandAliases(target, new Set([...seen, type.name]));
+      }
+
+      case "TyMetaVar":
+        return type;
+
+      case "TyArrow":
+        return {
+          ...type,
+          from: this.expandAliases(type.from, seen),
+          to: this.expandAliases(type.to, seen),
+        };
+
+      case "TupleType":
+        return {
+          ...type,
+          elements: type.elements.map((element) => this.expandAliases(element, seen)),
+        };
+
+      case "SumType":
+        return {
+          ...type,
+          left: this.expandAliases(type.left, seen),
+          right: this.expandAliases(type.right, seen),
+        };
+
+      case "VariantType":
+        return {
+          ...type,
+          variants: type.variants.map((variant) => ({
+            ...variant,
+            type: this.expandAliases(variant.type, seen),
+          })),
+        };
+
+      case "RecordType":
+        return {
+          ...type,
+          fields: type.fields.map((field) => ({
+            ...field,
+            type: this.expandAliases(field.type, seen),
+          })),
+        };
+
+      case "TyForall":
+        return {...type, type: this.expandAliases(type.type, seen)};
+    }
+  }
+
   protected visitProgram(node: Program): InferProofTree {
     node.globals.forEach((g) => this.visit(g));
 
@@ -211,16 +288,17 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     return this.visit(node.term);
   }
 
-  protected visitTermDecl(node: GlobalDecl): InferProofTree {
+  protected visitTermDecl(node: FunDecl): InferProofTree {
+    const declaredType = this.expandAliases(node.type);
     const valueProof = this.solveLocally(this.visit(node.value));
 
     // Always add the declared type to context so subsequent declarations
     // and the main term can still be type-checked.
-    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: node.type});
+    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: declaredType});
     this.globalProofs.set(node.name, valueProof);
 
-    if (!valueProof.error && !typeEquals(valueProof.type, node.type)) {
-      const msg = `Declaration "${node.name}": declared type is ${typeToString(node.type)}, but the value has type ${typeToString(valueProof.type)}`;
+    if (!valueProof.error && !typeEquals(valueProof.type, declaredType)) {
+      const msg = `Declaration "${node.name}": declared type is ${typeToString(declaredType)}, but the value has type ${typeToString(valueProof.type)}`;
       this.errorBuffer.push(new Error(msg));
       valueProof.error = msg;
     }
@@ -228,8 +306,15 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     return {} as InferProofTree;
   }
 
-  protected visitTypeDecl(node: GlobalDecl): InferProofTree {
-    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: node.type});
+  protected visitTypeDecl(node: VarDecl): InferProofTree {
+    this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: this.expandAliases(node.type)});
+    return {} as InferProofTree;
+  }
+
+  protected visitTypeAliasDecl(node: TypeAliasDecl): InferProofTree {
+    // Expanding node.type now (rather than lazily at lookup) means a later
+    // typedef built from this one only ever needs to resolve one level.
+    this.typeAliases.set(node.name, this.expandAliases(node.type));
     return {} as InferProofTree;
   }
 
@@ -293,7 +378,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     // rigid, given type — this is the one thing that lets `generalize` at
     // the enclosing `let` (or plain unification, under Type inference)
     // find something genuinely free to pin down or quantify over.
-    const paramType = node.paramType ?? this.engine.freshTyMetaVar();
+    const paramType = node.paramType ? this.expandAliases(node.paramType) : this.engine.freshTyMetaVar();
 
     const bodyProof = this.withBinding(
       node.param,
@@ -425,7 +510,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   protected visitInl(node: Inl): InferProofTree {
     const termProof = this.visit(node.term);
-    const ascribedType = node.type;
+    const ascribedType = this.expandAliases(node.type);
 
     if (ascribedType.kind !== "SumType") {
       const msg = `"inl" must be ascribed a sum type (e.g. "inl t as T1+T2"), but got ${typeToString(ascribedType)}`;
@@ -444,7 +529,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   protected visitInr(node: Inr): InferProofTree {
     const termProof = this.visit(node.term);
-    const ascribedType = node.type;
+    const ascribedType = this.expandAliases(node.type);
 
     if (ascribedType.kind !== "SumType") {
       const msg = `"inr" must be ascribed a sum type (e.g. "inr t as T1+T2"), but got ${typeToString(ascribedType)}`;
@@ -560,7 +645,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitVariant(node: Variant): InferProofTree {
-    const ascribedType = node.type;
+    const ascribedType = this.expandAliases(node.type);
     const errors: string[] = [];
 
     if (ascribedType.kind !== "VariantType") {
@@ -604,14 +689,15 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   protected visitAscribe(node: Ascribe): InferProofTree {
     const termProof = this.visit(node.term);
+    const ascribedType = this.expandAliases(node.type);
 
     return {
       rule: this.ruleFor(Rule.Ascribe, Rule.CtAscribe),
       term: node,
-      type: node.type,
+      type: ascribedType,
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
-      constraints: [...termProof.constraints, {left: termProof.type, right: node.type}],
+      constraints: [...termProof.constraints, {left: termProof.type, right: ascribedType}],
     };
   }
 
@@ -726,7 +812,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const type: TyArrow = {
       kind: "TyArrow",
       id: crypto.randomUUID(),
-      from: node.paramType,
+      from: this.expandAliases(node.paramType),
       to: bodyProof.type,
     };
 
@@ -910,7 +996,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const instantiated = substituteTypeVariable(
       termProof.type.type,
       termProof.type.typeVariable,
-      node.typeArg,
+      this.expandAliases(node.typeArg),
     );
 
     return {

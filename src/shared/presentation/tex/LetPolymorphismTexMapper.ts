@@ -2,6 +2,7 @@ import type {TexRegistryEntry, TexSegment, TexTree} from "@/shared/presentation/
 import {type Constraint, type InferProofTree, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
 import {GammaRegistry, type SetRegistration} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {TypeAliasRegistry} from "@/shared/presentation/tex/TypeAliasRegistry.ts";
 
 // The rules produced by LetPolymorphismInferenceVisitor's constraint-typing
 // (CT) judgment — kept separate from TexMapper's plain "T-*" rule set so
@@ -55,14 +56,16 @@ export class LetPolymorphismTexMapper {
   private nextConstraintIndex = 1;
   private registryBuilt = false;
 
+  constructor(private readonly typeAliasRegistry: TypeAliasRegistry = new TypeAliasRegistry({})) {}
+
   visit(node: ProofTree): TexTree {
     if (!CT_RULES.has(node.rule)) {
-      return new TexMapper().visit(node);
+      return new TexMapper(this.typeAliasRegistry).visit(node);
     }
 
     if (!this.registryBuilt) {
       this.buildRegistry(node as InferProofTree, null);
-      Object.assign(this.registry, this.gammaRegistry.registry);
+      Object.assign(this.registry, this.gammaRegistry.registry, this.typeAliasRegistry.registry);
       this.registryBuilt = true;
     }
 
@@ -325,6 +328,10 @@ export class LetPolymorphismTexMapper {
     const variableName = (node.term as any).name;
     const gammaRef = this.gammaRefFor(node);
     const gammaTex = gammaRef ? gammaRef.shortTex : "\\Gamma";
+    const gammaSeg: TexSegment = gammaRef
+      ? {kind: "ref", key: gammaRef.key}
+      : {kind: "tex", value: "\\Gamma"};
+    const registry = {...this.registry, ...this.typeAliasRegistry.registry};
 
     // CT-VarLet looks up a TypeScheme and instantiates it — show the scheme
     // that was found (∀X.T when generalized) rather than a plain membership
@@ -332,14 +339,43 @@ export class LetPolymorphismTexMapper {
     if (node.rule === Rule.CtVarLet) {
       const scheme = node.gamma[variableName];
       const schemeTex = scheme !== undefined ? TexMapper.typeToTex(scheme) : TexMapper.typeToTex(node.type);
+      // Only a monomorphic (unquantified) scheme can fold to a typedef —
+      // ∀X.T doesn't correspond to a single aliasable Type.
+      const aliasRef = scheme !== undefined && scheme.kind === "TypeScheme" && scheme.vars.length === 0
+        ? this.typeAliasRegistry.refFor(scheme.type)
+        : scheme === undefined
+          ? this.typeAliasRegistry.refFor(node.type)
+          : null;
+      const schemeSeg: TexSegment = aliasRef ? {kind: "ref", key: aliasRef.key} : {kind: "tex", value: schemeTex};
+
       return {
         judgement: `\\mathit{instantiate}(${variableName} : ${schemeTex} \\in ${gammaTex})`,
+        judgementSegments: [
+          {kind: "tex", value: `\\mathit{instantiate}(${variableName} : `},
+          schemeSeg,
+          {kind: "tex", value: " \\in "},
+          gammaSeg,
+          {kind: "tex", value: ")"},
+        ],
+        registry,
         rule: "",
       };
     }
 
+    const aliasRef = this.typeAliasRegistry.refFor(node.type);
+    const typeSeg: TexSegment = aliasRef
+      ? {kind: "ref", key: aliasRef.key}
+      : {kind: "tex", value: TexMapper.typeToTex(node.type)};
+
     return {
       judgement: `${variableName} : ${TexMapper.typeToTex(node.type)} \\in ${gammaTex}`,
+      judgementSegments: [
+        {kind: "tex", value: `${variableName} : `},
+        typeSeg,
+        {kind: "tex", value: " \\in "},
+        gammaSeg,
+      ],
+      registry,
       rule: "",
     };
   }
@@ -351,17 +387,25 @@ export class LetPolymorphismTexMapper {
     const constraintsRef = this.constraintsRefFor(node);
     const term = TexMapper.termToTex(node.term);
     const type = TexMapper.typeToTex(node.type);
+    const aliasRef = this.typeAliasRegistry.refFor(node.type);
 
     const gammaSeg: TexSegment = gammaRef
       ? {kind: "ref", key: gammaRef.key}
       : {kind: "tex", value: "\\emptyset"};
+    const typeSeg: TexSegment = aliasRef
+      ? {kind: "ref", key: aliasRef.key}
+      : {kind: "tex", value: type};
     const constraintsSeg: TexSegment = constraintsRef
       ? {kind: "ref", key: constraintsRef.key}
       : {kind: "tex", value: "\\emptyset"};
 
     const judgementSegments: TexSegment[] = [
       gammaSeg,
-      {kind: "tex", value: ` \\vdash ${term} : ${type} \\mid `},
+      {kind: "tex", value: " \\vdash "},
+      ...TexMapper.termToTexSegments(node.term, this.typeAliasRegistry),
+      {kind: "tex", value: " : "},
+      typeSeg,
+      {kind: "tex", value: " \\mid "},
       constraintsSeg,
     ];
 

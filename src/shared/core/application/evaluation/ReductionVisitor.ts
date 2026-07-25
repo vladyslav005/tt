@@ -1788,6 +1788,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     return null;
   }
 
+  protected override visitTypeAliasDecl(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _node: GlobalDecl,
+  ): ReductionStep | null {
+    return null;
+  }
+
   protected override visitType(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _node: Type,

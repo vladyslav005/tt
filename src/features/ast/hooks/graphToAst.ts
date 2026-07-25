@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyForall, TyIdentifier, Type, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyForall, TyIdentifier, Type, TypeAliasDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;
@@ -207,6 +207,22 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
       if (valueNode) vd.value = reconstruct(valueNode, nodeMap, edges, visiting) as Term;
       visiting.delete(node.id);
       return vd;
+    }
+
+    case "TypeAliasDecl": {
+      const ta: TypeAliasDecl = {
+        id: raw.id ?? node.id,
+        kind: "TypeAliasDecl",
+        name: raw.name ?? "MyType",
+        type: defaultType(`${node.id}-type`),
+      };
+
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      if (typeNode) ta.type = reconstructType(typeNode, nodeMap, edges, visiting);
+      else if (raw.type) ta.type = raw.type as Type;
+
+      visiting.delete(node.id);
+      return ta;
     }
 
     case "FunDecl": {

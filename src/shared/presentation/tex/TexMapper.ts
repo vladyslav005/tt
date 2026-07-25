@@ -4,6 +4,7 @@ import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/Pr
 import type {BinaryOperator, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {TypeAliasRegistry} from "@/shared/presentation/tex/TypeAliasRegistry.ts";
 
 const BINOP_TEX_SYMBOLS: Record<BinaryOperator, string> = {
   "+": "+",
@@ -38,12 +39,26 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
 
   private readonly gammaRegistry = new GammaRegistry();
   private registryBuilt = false;
+  private typeAliasRegistry: TypeAliasRegistry;
+
+  constructor(typeAliasRegistry: TypeAliasRegistry = new TypeAliasRegistry({})) {
+    super();
+    this.typeAliasRegistry = typeAliasRegistry;
+  }
+
+  // Called once before each top-level visit() — mirrors
+  // SLTLCTypeChecker.setTheories()'s "set state, then use" pattern, since
+  // this mapper is a long-lived DI singleton rather than constructed fresh
+  // per render.
+  setTypeAliases(aliases: { [name: string]: Type }): void {
+    this.typeAliasRegistry = new TypeAliasRegistry(aliases);
+  }
 
   visit(node: ProofTree): TexTree {
     // A constraint-typing (CT-*) proof tree — e.g. a `let` embedded in an
     // otherwise plain-rule tree — belongs to LetPolymorphismTexMapper.
     if (CT_RULES.has(node.rule)) {
-      return new LetPolymorphismTexMapper().visit(node);
+      return new LetPolymorphismTexMapper(this.typeAliasRegistry).visit(node);
     }
 
     if (!this.registryBuilt) {
@@ -278,9 +293,24 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     const variableType = TexMapper.typeToTex(node.type)
     const gammaRef = this.gammaRegistry.refFor(node.gamma)
     const gammaTex = gammaRef ? gammaRef.shortTex : "\\Gamma"
+    const aliasRef = this.typeAliasRegistry.refFor(node.type)
+
+    const gammaSeg: TexSegment = gammaRef
+      ? {kind: "ref", key: gammaRef.key}
+      : {kind: "tex", value: "\\Gamma"}
+    const typeSeg: TexSegment = aliasRef
+      ? {kind: "ref", key: aliasRef.key}
+      : {kind: "tex", value: variableType}
 
     return {
       judgement: `${variableName} : ${variableType} \\in ${gammaTex}`,
+      judgementSegments: [
+        {kind: "tex", value: `${variableName} : `},
+        typeSeg,
+        {kind: "tex", value: " \\in "},
+        gammaSeg,
+      ],
+      registry: {...this.gammaRegistry.registry, ...this.typeAliasRegistry.registry},
       rule: ""
     }
   }
@@ -289,14 +319,22 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     const gammaRef = this.gammaRegistry.refFor(node.gamma)
     const term = TexMapper.termToTex(node.term)
     const type = TexMapper.typeToTex(node.type)
+    const aliasRef = this.typeAliasRegistry.refFor(node.type)
 
     const gammaSeg: TexSegment = gammaRef
       ? {kind: "ref", key: gammaRef.key}
       : {kind: "tex", value: "\\emptyset"}
 
+    const typeSeg: TexSegment = aliasRef
+      ? {kind: "ref", key: aliasRef.key}
+      : {kind: "tex", value: type}
+
     const judgementSegments: TexSegment[] = [
       gammaSeg,
-      {kind: "tex", value: ` \\vdash ${term} : ${type}`},
+      {kind: "tex", value: " \\vdash "},
+      ...TexMapper.termToTexSegments(node.term, this.typeAliasRegistry),
+      {kind: "tex", value: " : "},
+      typeSeg,
     ]
 
     const gammaTex = gammaRef ? gammaRef.shortTex : "\\emptyset"
@@ -304,7 +342,113 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return {
       judgement: `${gammaTex} \\vdash ${term} : ${type}`,
       judgementSegments,
-      registry: this.gammaRegistry.registry,
+      registry: {...this.gammaRegistry.registry, ...this.typeAliasRegistry.registry},
+    }
+  }
+
+  // Segment-producing counterpart to termToTex — used wherever the term is
+  // rendered interactively (judgements()), so a type embedded *inside* the
+  // term (a λ parameter's annotation, an ascription, ...) gets its own
+  // independently clickable ref segment whenever it matches a typedef, the
+  // same way the judgement's own top-level type already does. termToTex
+  // itself stays untouched, plain-string, for the few call sites that only
+  // need inert text (e.g. TexTree.judgement's non-interactive fallback).
+  static termToTexSegments(term: Term, aliasRegistry: TypeAliasRegistry): TexSegment[] {
+    const t = (value: string): TexSegment => ({kind: "tex", value});
+    const ty = (type: Type): TexSegment => {
+      const ref = aliasRegistry.refFor(type);
+      return ref ? {kind: "ref", key: ref.key} : t(this.typeToTex(type));
+    };
+    const rec = (sub: Term): TexSegment[] => this.termToTexSegments(sub, aliasRegistry);
+
+    switch (term.kind) {
+      case "Var":
+        return [t(term.name)];
+      case "Lit":
+        return [t(term.value.toString())];
+      case "Abs":
+        return term.paramType
+          ? [t(`(\\lambda ${term.param} : `), ty(term.paramType), t(" . "), ...rec(term.body), t(")")]
+          : [t(`(\\lambda ${term.param} . `), ...rec(term.body), t(")")];
+      case "App":
+        return [t("("), ...rec(term.func), t("\\ "), ...rec(term.arg), t(")")];
+      case "Inl":
+        return [t("\\text{inl}\\ "), ...rec(term.term), t("\\ \\text{as}\\ "), ty(term.type)];
+      case "Inr":
+        return [t("\\text{inr}\\ "), ...rec(term.term), t("\\ \\text{as}\\ "), ty(term.type)];
+      case "IfCondition": {
+        const segs: TexSegment[] = [
+          t("\\text{if}\\ "), ...rec(term.condition), t("\\ \\text{then}\\ "), ...rec(term.then),
+        ];
+        for (const branch of term.elif ?? []) {
+          segs.push(t("\\ \\text{elseif}\\ "), ...rec(branch.condition), t("\\ \\text{then}\\ "), ...rec(branch.then));
+        }
+        if (term.else) {
+          segs.push(t("\\ \\text{else}\\ "), ...rec(term.else));
+        }
+        return segs;
+      }
+      case "Case":
+        return [
+          t("\\text{case}\\ "), ...rec(term.variable),
+          t(`\\ \\text{of}\\ \\text{inl}\\ ${term.inl.variable} \\Rightarrow `), ...rec(term.inl.term),
+          t(`\\ |\\ \\text{inr}\\ ${term.inr.variable} \\Rightarrow `), ...rec(term.inr.term),
+        ];
+      case "VariantCase": {
+        const segs: TexSegment[] = [t("\\text{case}\\ "), ...rec(term.variable), t("\\ \\text{of}\\ ")];
+        term.cases.forEach((c, i) => {
+          if (i > 0) segs.push(t("\\ |\\ "));
+          segs.push(t(`[${c.label}=${c.variable}] \\Rightarrow `), ...rec(c.body));
+        });
+        return segs;
+      }
+      case "Variant": {
+        const segs: TexSegment[] = [t("[")];
+        term.variants.forEach((v, i) => {
+          if (i > 0) segs.push(t(", "));
+          segs.push(t(`${v.label}=`), ...rec(v.term));
+        });
+        segs.push(t("]\\ \\text{as}\\ "), ty(term.type));
+        return segs;
+      }
+      case "Ascribe":
+        return [t("("), ...rec(term.term), t("\\ \\text{as}\\ "), ty(term.type), t(")")];
+      case "TupleProjection":
+        return [...rec(term.tuple), t(`.${term.index}`)];
+      case "RecordProjection":
+        return [...rec(term.term), t(`.${term.label}`)];
+      case "Record": {
+        const segs: TexSegment[] = [t("\\langle ")];
+        term.fields.forEach((f, i) => {
+          if (i > 0) segs.push(t(", "));
+          segs.push(t(`${f.label}=`), ...rec(f.term));
+        });
+        segs.push(t(" \\rangle"));
+        return segs;
+      }
+      case "Sequencing":
+        return [...rec(term.first), t("; "), ...rec(term.second)];
+      case "Tuple": {
+        const segs: TexSegment[] = [t("\\langle ")];
+        term.elements.forEach((e, i) => {
+          if (i > 0) segs.push(t(", "));
+          segs.push(...rec(e));
+        });
+        segs.push(t(" \\rangle"));
+        return segs;
+      }
+      case "DummyAbstraction":
+        return [t("(\\lambda \\_ : "), ty(term.paramType), t(" . "), ...rec(term.body), t(")")];
+      case "Let":
+        return [t(`\\text{let}\\ ${term.name} = `), ...rec(term.value), t("\\ \\text{in}\\ "), ...rec(term.body)];
+      case "BinOp":
+        return [t("("), ...rec(term.left), t(` ${BINOP_TEX_SYMBOLS[term.operator]} `), ...rec(term.right), t(")")];
+      case "Fix":
+        return [t("\\mathit{fix}\\ "), ...rec(term.term)];
+      case "TypeAbs":
+        return [t(`(\\Lambda ${term.typeParam} . `), ...rec(term.body), t(")")];
+      case "TypeApp":
+        return [...rec(term.term), t("\\ ["), ty(term.typeArg), t("]")];
     }
   }
 

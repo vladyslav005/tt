@@ -1,7 +1,9 @@
 import type {Program} from "@/shared/core/domain/ast";
 import {useCallback, useState, useEffect} from "react";
-import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, Controls, MiniMap, type NodeTypes} from "@xyflow/react";
+import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, Controls, MiniMap, Panel, useReactFlow, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
+import {Crosshair} from "lucide-react";
+import {Button} from "@/shared/components/ui/button.tsx";
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
 import {VariableFlowNode} from "@/features/ast/components/ast/flow/VariableFlowNode.tsx";
@@ -37,6 +39,7 @@ import {FixFlowNode} from "@/features/ast/components/ast/flow/FixFlowNode";
 import {TypeAbstractionFlowNode} from "@/features/ast/components/ast/flow/TypeAbstractionFlowNode";
 import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeApplicationFlowNode";
 import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
+import {TypeAliasDeclFlowNode} from "@/features/ast/components/ast/flow/TypeAliasDeclFlowNode";
 
 
 export interface AstProps {
@@ -62,6 +65,18 @@ function TypeFlowNodeDispatch(props: any) {
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
+}
+
+// Rendered as a <Panel> child of <ReactFlow>, which supplies the context
+// useReactFlow() needs — Ast itself isn't wrapped in a ReactFlowProvider.
+function CenterViewButton() {
+  const rf = useReactFlow();
+  return (
+    <Button size="sm" variant="ghost" onClick={() => rf.fitView()} title="Center View"
+      className="h-7 w-7 p-0 bg-background border border-border shadow-sm">
+      <Crosshair className="h-3.5 w-3.5" />
+    </Button>
+  );
 }
 
 export const nodeTypes: NodeTypes = {
@@ -91,6 +106,7 @@ export const nodeTypes: NodeTypes = {
   fix: FixFlowNode,
   typeAbs: TypeAbstractionFlowNode,
   typeApp: TypeApplicationFlowNode,
+  typeAliasDecl: TypeAliasDeclFlowNode,
 } as NodeTypes;
 
 export function Ast({
@@ -141,6 +157,9 @@ export function Ast({
         nodesConnectable={false}
         fitView
       >
+        <Panel position="top-right">
+          <CenterViewButton />
+        </Panel>
         <Background />
         <Controls
           className="bg-background! border-border! [&_button]:bg-card! [&_button]:border-border! [&_button]:text-foreground! [&_button:hover]:bg-accent!"
@@ -171,6 +190,7 @@ export function Ast({
             if (node.type === 'fix') return 'hsl(0, 84%, 60%)';
             if (node.type === 'typeAbs') return 'hsl(239, 84%, 67%)';
             if (node.type === 'typeApp') return 'hsl(292, 84%, 61%)';
+            if (node.type === 'typeAliasDecl') return 'hsl(48, 96%, 53%)';
             return 'hsl(var(--muted))';
           }}
         />

@@ -7,7 +7,7 @@ import type {
   Case,
   DummyAbstraction,
   Fix,
-  GlobalDecl,
+  FunDecl,
   IfCondition,
   Inl,
   Inr, Let,
@@ -18,8 +18,9 @@ import type {
   Sequencing,
   Tuple,
   TupleProjection,
-  Type, TypeAbs, TypeApp,
+  Type, TypeAbs, TypeAliasDecl, TypeApp,
   Var,
+  VarDecl,
   Variant,
   VariantCase,
 } from "@/shared/core/domain/ast";
@@ -77,6 +78,8 @@ export abstract class AstVisitor<R> {
         return this.visitTermDecl(node)
       case "VarDecl":
         return this.visitTypeDecl(node)
+      case "TypeAliasDecl":
+        return this.visitTypeAliasDecl(node)
 
       /* ===== Let ===== */
       case "Let":
@@ -146,9 +149,11 @@ export abstract class AstVisitor<R> {
   protected abstract visitLet(node: Let): R
 
   /* ===== Decls ===== */
-  protected abstract visitTermDecl(node: GlobalDecl): R
+  protected abstract visitTermDecl(node: FunDecl): R
 
-  protected abstract visitTypeDecl(node: GlobalDecl): R
+  protected abstract visitTypeDecl(node: VarDecl): R
+
+  protected abstract visitTypeAliasDecl(node: TypeAliasDecl): R
 
   protected abstract visitProgram(node: Program): R
 

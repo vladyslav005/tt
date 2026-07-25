@@ -8,7 +8,7 @@ import type {
   Case,
   DummyAbstraction,
   Fix,
-  GlobalDecl,
+  FunDecl,
   IfCondition,
   Inl,
   Inr,
@@ -22,8 +22,10 @@ import type {
   TupleProjection,
   Type,
   TypeAbs,
+  TypeAliasDecl,
   TypeApp,
   Var,
+  VarDecl,
   Variant,
   VariantCase,
 } from "@/shared/core/domain/ast";
@@ -134,8 +136,7 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.pushNode(node);
   }
 
-  protected visitTermDecl(node: GlobalDecl): void {
-    // FunDecl
+  protected visitTermDecl(node: FunDecl): void {
     this.pushNode(node);
 
     // type
@@ -156,8 +157,7 @@ export class AstFlowMapper extends AstVisitor<void> {
     });
   }
 
-  protected visitTypeDecl(node: GlobalDecl): void {
-    // VarDecl
+  protected visitTypeDecl(node: VarDecl): void {
     this.pushNode(node);
 
     // type
@@ -179,13 +179,18 @@ export class AstFlowMapper extends AstVisitor<void> {
     });
   }
 
+  protected visitTypeAliasDecl(node: TypeAliasDecl): void {
+    this.pushNode(node);
+    this.visitChild(node, "type", "type", node.type);
+  }
+
   protected visitType(node: Type): void {
     this.pushNode(node);
 
     switch (node.kind) {
       case "TyArrow":
-        this.visitChild(node, "from", "from", node.from);
         this.visitChild(node, "to", "to", node.to);
+        this.visitChild(node, "from", "from", node.from);
         return;
 
       case "SumType":
@@ -379,6 +384,14 @@ export class AstFlowMapper extends AstVisitor<void> {
         this.nodes.push({
           id: node.id,
           type: "varDecl",
+          position: {x: 0, y: 0},
+          data: {term: node},
+        });
+        return;
+      case "TypeAliasDecl":
+        this.nodes.push({
+          id: node.id,
+          type: "typeAliasDecl",
           position: {x: 0, y: 0},
           data: {term: node},
         });

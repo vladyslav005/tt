@@ -24,6 +24,7 @@ import {ApplicationFlowNode} from "@/features/ast/components/ast/flow/Applicatio
 import {ProgramFlowNode} from "@/features/ast/components/ast/flow/ProgramFlowNode.tsx";
 import {FunDeclFlowNode} from "@/features/ast/components/ast/flow/FunDeclFlowNode.tsx";
 import {VarDeclFlowNode} from "@/features/ast/components/ast/flow/VarDeclFlowNode.tsx";
+import {TypeAliasDeclFlowNode} from "@/features/ast/components/ast/flow/TypeAliasDeclFlowNode.tsx";
 import {LiteralFlowNode} from "@/features/ast/components/ast/flow/LiteralFlowNode.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Separator} from "@/shared/components/ui/separator.tsx";
@@ -62,7 +63,7 @@ import {FixFlowNode} from "@/features/ast/components/ast/flow/FixFlowNode";
 import {TypeAbstractionFlowNode} from "@/features/ast/components/ast/flow/TypeAbstractionFlowNode";
 import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeApplicationFlowNode";
 import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
-import {Undo2, Redo2, LayoutGrid, Maximize2, Trash2} from "lucide-react";
+import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
   "global-decl": "decl",
@@ -124,6 +125,7 @@ export const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
   varDecl: VarDeclFlowNode,
+  typeAliasDecl: TypeAliasDeclFlowNode,
   abstraction: AbstractionFlowNode,
   variable: VariableFlowNode,
   application: ApplicationFlowNode,
@@ -171,7 +173,7 @@ function expectedChildKind(sourceKind: string | undefined, handleId: string | un
 }
 
 const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
-  decl: ["funDecl", "varDecl"],
+  decl: ["funDecl", "varDecl", "typeAliasDecl"],
   term: [
     "abstraction", "application", "variable", "literal",
     "inl", "inr", "ifCondition", "case", "variantCase", "variant",
@@ -623,6 +625,19 @@ export function AstEditor({
           },
         };
       }
+      if (newNodeType === "typeAliasDecl") {
+        return {
+          id, type: "typeAliasDecl", position,
+          data: {
+            term: {
+              id, kind: "TypeAliasDecl", name: "MyType",
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
       if (newNodeType === "abstraction") {
         return {
           id, type: "abstraction", position,
@@ -1020,6 +1035,19 @@ export function AstEditor({
           },
         };
       }
+      if (nodeType === "typeAliasDecl") {
+        return {
+          id, type: "typeAliasDecl", position,
+          data: {
+            term: {
+              id, kind: "TypeAliasDecl", name: "MyType",
+              type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+            },
+            editable: true,
+            onChange: (patch: any) => updateNodeTerm(id, patch),
+          },
+        };
+      }
       if (nodeType === "abstraction") {
         return {
           id, type: "abstraction", position,
@@ -1335,6 +1363,7 @@ export function AstEditor({
           {([
             { type: "funDecl", label: "ƒ",   title: "Function Declaration" },
             { type: "varDecl", label: "let", title: "Variable Declaration" },
+            { type: "typeAliasDecl", label: "typedef", title: "Type Alias (typedef X = T)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}
@@ -1360,9 +1389,9 @@ export function AstEditor({
             className="h-7 w-7 p-0">
             <LayoutGrid className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => rf.fitView()} title="Fit View"
+          <Button size="sm" variant="ghost" onClick={() => rf.fitView()} title="Center View"
             className="h-7 w-7 p-0">
-            <Maximize2 className="h-3.5 w-3.5" />
+            <Crosshair className="h-3.5 w-3.5" />
           </Button>
 
           <Separator orientation="vertical" className="h-5 mx-1" />
@@ -1435,6 +1464,9 @@ export function AstEditor({
             if (node.type === 'let') return 'hsl(160, 84%, 39%)';
             if (node.type === 'binOp') return 'hsl(38, 92%, 50%)';
             if (node.type === 'fix') return 'hsl(0, 84%, 60%)';
+            if (node.type === 'typeAbs') return 'hsl(239, 84%, 67%)';
+            if (node.type === 'typeApp') return 'hsl(292, 84%, 61%)';
+            if (node.type === 'typeAliasDecl') return 'hsl(48, 96%, 53%)';
             return 'hsl(var(--muted))';
           }}
         />

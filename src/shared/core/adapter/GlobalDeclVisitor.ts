@@ -3,7 +3,8 @@ import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
 import {TermBuilderVisitor} from "@/shared/core/adapter/TermBuilderVisitor.ts";
 import {
   GlobalFunctionDeclarationContext,
-  type GlobalVariableDeclarationContext
+  type GlobalVariableDeclarationContext,
+  type TypeAliasDeclarationContext
 } from "@/shared/core/antlr/LambdaParser.ts";
 import type {GlobalDecl, Term} from "@/shared/core/domain/ast";
 
@@ -25,6 +26,15 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
       id: crypto.randomUUID(),
       name: ctx.ID().getText(),
       value: new TermBuilderVisitor().visit(ctx.term()),
+      type: new TypeBuilderVisitor().visit(ctx.type_())
+    }
+  }
+
+  visitTypeAliasDeclaration = (ctx: TypeAliasDeclarationContext): GlobalDecl => {
+    return {
+      kind: "TypeAliasDecl",
+      id: crypto.randomUUID(),
+      name: ctx.ID().getText(),
       type: new TypeBuilderVisitor().visit(ctx.type_())
     }
   }
