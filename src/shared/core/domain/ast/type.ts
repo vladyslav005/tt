@@ -1,5 +1,6 @@
 import type {Node} from "@/shared/core/domain/ast/node.ts";
 import type {Kind} from "@/shared/core/domain/ast/kind.ts";
+import type {Term} from "@/shared/core/domain/ast/term.ts";
 
 export type Type =
   TyIdentifier |
@@ -11,7 +12,9 @@ export type Type =
   TyForall |
   TyMetaVar |
   TyConstructorAbs |
-  TyConstructorApp;
+  TyConstructorApp |
+  TyPi |
+  TyIndexApp;
 
 // A nullary type referred to by name — either a base type constant (Nat,
 // Bool, Unit) or a bound/free type variable (e.g. X in a TyForall). Which
@@ -88,4 +91,30 @@ export interface TyConstructorApp extends Node {
   kind: "TyConstructorApp";
   func: Type;
   arg: Type;
+}
+
+// =====================================================================
+// =                        SYSTEM λP                                  =
+// =====================================================================
+
+// Π x:A. B — a type that depends on a *term* variable x:A, e.g.
+// "Π n:Nat. Vec[n] -> Nat". "A -> B" (TyArrow) is this binder's
+// non-dependent special case, when x doesn't occur free in B — kept as its
+// own node rather than folding TyArrow into TyPi, matching how TyForall
+// coexists with ordinary types.
+export interface TyPi extends Node {
+  kind: "TyPi";
+  paramVar: string;
+  paramType: Type;
+  body: Type;
+}
+
+// F[t] — applies a dependently-kinded type constructor to a *term* index,
+// e.g. "Vec[n]" or "Vec[3]". The one place a Term is embedded inside a
+// Type node; distinct from TyConstructorApp, which only ever applies a
+// type constructor to another type.
+export interface TyIndexApp extends Node {
+  kind: "TyIndexApp";
+  func: Type;
+  arg: Term;
 }

@@ -1,10 +1,11 @@
-export type TypeTheoryId = "letPolymorphism" | "typeInference" | "systemF" | "systemFOmega";
+export type TypeTheoryId = "letPolymorphism" | "typeInference" | "systemF" | "systemFOmega" | "systemLambdaP";
 
 export interface TypeTheoryConfig {
   letPolymorphism: boolean;
   typeInference: boolean;
   systemF: boolean;
   systemFOmega: boolean;
+  systemLambdaP: boolean;
 }
 
 export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
@@ -12,6 +13,7 @@ export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
   typeInference: false,
   systemF: false,
   systemFOmega: false,
+  systemLambdaP: false,
 };
 
 export interface TypeTheoryDescriptor {
@@ -43,5 +45,10 @@ export const TYPE_THEORIES: TypeTheoryDescriptor[] = [
     id: "systemFOmega",
     label: "System Fω (type constructors)",
     description: "Types abstracted over types (λX:K. T) and applied to a type argument (F T), classified by kinds (K ::= * | K→K) instead of just types",
+  },
+  {
+    id: "systemLambdaP",
+    label: "System λP (dependent types)",
+    description: "Types that depend on terms via Π-types (Πx:A.M, of which A→B is the non-dependent special case), and kinds indexed by a type (K ::= * | T→K, e.g. Nat→*)",
   },
 ];

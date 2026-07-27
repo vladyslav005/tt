@@ -1,4 +1,4 @@
-import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp} from "@/shared/core/domain/ast";
+import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp, TyPi, TyIndexApp} from "@/shared/core/domain/ast";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {
   ForallTypeContext,
@@ -8,9 +8,12 @@ import {
   TupleTypeContext,
   type TypeConstructorAbstractionContext,
   type TypeConstructorApplicationContext,
-  type TypeIdentifierContext, VariantTypeContext
+  type TypeIdentifierContext, VariantTypeContext,
+  type PiTypeContext,
+  type TypeIndexApplicationContext,
 } from "@/shared/core/antlr/LambdaParser.ts";
 import {KindBuilderVisitor} from "@/shared/core/adapter/KindBuilderVisitor.ts";
+import {TermBuilderVisitor} from "@/shared/core/adapter/TermBuilderVisitor.ts";
 
 export class TypeBuilderVisitor
   extends LambdaVisitor<Type> {
@@ -92,6 +95,25 @@ export class TypeBuilderVisitor
       id: crypto.randomUUID(),
       func: this.visit(ctx.type_(0)),
       arg: this.visit(ctx.type_(1)),
+    }
+  }
+
+  visitPiType = (ctx: PiTypeContext): TyPi => {
+    return {
+      kind: "TyPi",
+      id: crypto.randomUUID(),
+      paramVar: ctx.ID().getText(),
+      paramType: this.visit(ctx.type_(0)),
+      body: this.visit(ctx.type_(1)),
+    }
+  }
+
+  visitTypeIndexApplication = (ctx: TypeIndexApplicationContext): TyIndexApp => {
+    return {
+      kind: "TyIndexApp",
+      id: crypto.randomUUID(),
+      func: this.visit(ctx.type_()),
+      arg: new TermBuilderVisitor().visit(ctx.term()),
     }
   }
 }

@@ -1,4 +1,20 @@
-import type {BinaryOperator, Kind, Type} from "@/shared/core/domain/ast";
+import {isKind} from "@/shared/core/domain/ast";
+import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
+
+// System λP restricts a TyIndexApp's term index to a Var (looked up in Γ)
+// or a Lit (a Nat literal) — see STLCTypeChecker.kindOf's TyIndexApp case —
+// so equality/printing of an index never needs full term evaluation.
+export function termIndexEquals(a: Term, b: Term): boolean {
+  if (a.kind === "Var" && b.kind === "Var") return a.name === b.name;
+  if (a.kind === "Lit" && b.kind === "Lit") return a.value === b.value;
+  return false;
+}
+
+export function termIndexToString(t: Term): string {
+  if (t.kind === "Var") return t.name;
+  if (t.kind === "Lit") return t.value;
+  throw new Error(`Unsupported System λP index expression: ${t.kind}`);
+}
 
 const ARITHMETIC_OPERATORS: ReadonlySet<BinaryOperator> = new Set(["+", "-", "*", "/"]);
 
@@ -19,6 +35,8 @@ export function metaVarName(index: number): string {
 }
 
 export function typeEquals(a: Type, b: Type): boolean {
+  a = normalizeType(a);
+  b = normalizeType(b);
   if (a.kind !== b.kind) return false;
 
   switch (a.kind) {
@@ -82,6 +100,20 @@ export function typeEquals(a: Type, b: Type): boolean {
       const bApp = b as typeof a;
       return typeEquals(a.func, bApp.func) && typeEquals(a.arg, bApp.arg);
     }
+
+    case "TyPi": {
+      const bPi = b as typeof a;
+      return (
+        a.paramVar === bPi.paramVar &&
+        typeEquals(a.paramType, bPi.paramType) &&
+        typeEquals(a.body, bPi.body)
+      );
+    }
+
+    case "TyIndexApp": {
+      const bIdx = b as typeof a;
+      return typeEquals(a.func, bIdx.func) && termIndexEquals(a.arg, bIdx.arg);
+    }
   }
 }
 
@@ -119,6 +151,12 @@ export function typeToString(a: Type): string {
 
     case "TyConstructorApp":
       return `(${typeToString(a.func)} ${typeToString(a.arg)})`;
+
+    case "TyPi":
+      return `(Π ${a.paramVar}:${typeToString(a.paramType)}. ${typeToString(a.body)})`;
+
+    case "TyIndexApp":
+      return `(${typeToString(a.func)}[${termIndexToString(a.arg)}])`;
   }
 }
 
@@ -131,7 +169,7 @@ export function kindToString(k: Kind): string {
     case "StarKind":
       return "@";
     case "KindArrow":
-      return `(${kindToString(k.from)} -> ${kindToString(k.to)})`;
+      return `(${isKind(k.from) ? kindToString(k.from) : typeToString(k.from)} -> ${kindToString(k.to)})`;
   }
 }
 
@@ -140,7 +178,13 @@ export function kindEquals(a: Kind, b: Kind): boolean {
     return true;
   }
   if (a.kind === "KindArrow" && b.kind === "KindArrow") {
-    return kindEquals(a.from, b.from) && kindEquals(a.to, b.to);
+    if (isKind(a.from) && isKind(b.from)) {
+      return kindEquals(a.from, b.from) && kindEquals(a.to, b.to);
+    }
+    if (!isKind(a.from) && !isKind(b.from)) {
+      return typeEquals(a.from, b.from) && kindEquals(a.to, b.to);
+    }
+    return false;
   }
   return false;
 }
@@ -167,6 +211,41 @@ export function containsTypeConstructor(type: Type): boolean {
       return containsTypeConstructor(type.type);
     case "TyConstructorAbs":
     case "TyConstructorApp":
+      return true;
+    case "TyPi":
+      return containsTypeConstructor(type.paramType) || containsTypeConstructor(type.body);
+    case "TyIndexApp":
+      return containsTypeConstructor(type.func);
+  }
+}
+
+// Whether `type` mentions a System λP construct anywhere inside it (a
+// Π-type or a term-indexed type application) — the λP analogue of
+// containsTypeConstructor above, gating kind-checking's λP-specific
+// diagnostics independently of System Fω's.
+export function containsLambdaPConstruct(type: Type): boolean {
+  switch (type.kind) {
+    case "TyIdentifier":
+    case "TyMetaVar":
+      return false;
+    case "TyArrow":
+      return containsLambdaPConstruct(type.from) || containsLambdaPConstruct(type.to);
+    case "TupleType":
+      return type.elements.some(containsLambdaPConstruct);
+    case "SumType":
+      return containsLambdaPConstruct(type.left) || containsLambdaPConstruct(type.right);
+    case "VariantType":
+      return type.variants.some((v) => containsLambdaPConstruct(v.type));
+    case "RecordType":
+      return type.fields.some((f) => containsLambdaPConstruct(f.type));
+    case "TyForall":
+      return containsLambdaPConstruct(type.type);
+    case "TyConstructorAbs":
+      return containsLambdaPConstruct(type.body);
+    case "TyConstructorApp":
+      return containsLambdaPConstruct(type.func) || containsLambdaPConstruct(type.arg);
+    case "TyPi":
+    case "TyIndexApp":
       return true;
   }
 }
@@ -241,6 +320,139 @@ export function substituteTypeVariable(type: Type, name: string, replacement: Ty
         func: substituteTypeVariable(type.func, name, replacement),
         arg: substituteTypeVariable(type.arg, name, replacement),
       };
+
+    case "TyPi":
+      // paramVar is a *term*-variable name — a different namespace from
+      // the type variable being substituted here, so it never shadows.
+      return {
+        ...type,
+        paramType: substituteTypeVariable(type.paramType, name, replacement),
+        body: substituteTypeVariable(type.body, name, replacement),
+      };
+
+    case "TyIndexApp":
+      // arg is a Term, not a Type — untouched by a type-variable substitution.
+      return {...type, func: substituteTypeVariable(type.func, name, replacement)};
+  }
+}
+
+// Whether `type` mentions `name` as a free term-index (inside a
+// TyIndexApp's arg) anywhere within it — used by visitAbs to decide
+// whether a λ's inferred type must be a dependent TyPi rather than a
+// plain TyArrow: an ordinary term-level abstraction always synthesizes a
+// TyArrow, but if the body's type itself refers back to the parameter
+// (e.g. "λn:Nat. λx:Vec[n]. n" — the inner abstraction's type "Vec[n] ->
+// Nat" mentions the outer "n"), the outer type must be Πn:Nat. (Vec[n] ->
+// Nat) instead, or it could never match an explicit Π-type annotation.
+export function containsFreeTermVar(type: Type, name: string): boolean {
+  switch (type.kind) {
+    case "TyIdentifier":
+    case "TyMetaVar":
+      return false;
+    case "TyArrow":
+      return containsFreeTermVar(type.from, name) || containsFreeTermVar(type.to, name);
+    case "TupleType":
+      return type.elements.some((e) => containsFreeTermVar(e, name));
+    case "SumType":
+      return containsFreeTermVar(type.left, name) || containsFreeTermVar(type.right, name);
+    case "VariantType":
+      return type.variants.some((v) => containsFreeTermVar(v.type, name));
+    case "RecordType":
+      return type.fields.some((f) => containsFreeTermVar(f.type, name));
+    case "TyForall":
+      return containsFreeTermVar(type.type, name);
+    case "TyConstructorAbs":
+      return containsFreeTermVar(type.body, name);
+    case "TyConstructorApp":
+      return containsFreeTermVar(type.func, name) || containsFreeTermVar(type.arg, name);
+    case "TyPi":
+      // The bound term variable shadows an outer one of the same name.
+      if (type.paramVar === name) return false;
+      return containsFreeTermVar(type.paramType, name) || containsFreeTermVar(type.body, name);
+    case "TyIndexApp":
+      return containsFreeTermVar(type.func, name) || (type.arg.kind === "Var" && type.arg.name === name);
+  }
+}
+
+// Capture-avoiding substitution of a *term* variable inside a Type — the
+// System λP analogue of substituteTypeVariable above, needed when a
+// Πx:A.B-typed function is applied: the argument term is substituted for x
+// inside the dependent result type B. Restricted to the same Var/Lit term
+// shapes STLCTypeChecker accepts as index arguments (see kindOf's
+// TyIndexApp case) — a free Var occurrence inside a TyIndexApp's index is
+// replaced when it matches `name`; anything else in that position is
+// already rejected earlier by kind-checking.
+export function substituteTermInType(type: Type, name: string, replacement: Term): Type {
+  switch (type.kind) {
+    case "TyIdentifier":
+    case "TyMetaVar":
+      return type;
+
+    case "TyArrow":
+      return {
+        ...type,
+        from: substituteTermInType(type.from, name, replacement),
+        to: substituteTermInType(type.to, name, replacement),
+      };
+
+    case "TupleType":
+      return {...type, elements: type.elements.map((element) => substituteTermInType(element, name, replacement))};
+
+    case "SumType":
+      return {
+        ...type,
+        left: substituteTermInType(type.left, name, replacement),
+        right: substituteTermInType(type.right, name, replacement),
+      };
+
+    case "VariantType":
+      return {
+        ...type,
+        variants: type.variants.map((variant) => ({
+          ...variant,
+          type: substituteTermInType(variant.type, name, replacement),
+        })),
+      };
+
+    case "RecordType":
+      return {
+        ...type,
+        fields: type.fields.map((field) => ({
+          ...field,
+          type: substituteTermInType(field.type, name, replacement),
+        })),
+      };
+
+    case "TyForall":
+      return {...type, type: substituteTermInType(type.type, name, replacement)};
+
+    case "TyConstructorAbs":
+      return {...type, body: substituteTermInType(type.body, name, replacement)};
+
+    case "TyConstructorApp":
+      return {
+        ...type,
+        func: substituteTermInType(type.func, name, replacement),
+        arg: substituteTermInType(type.arg, name, replacement),
+      };
+
+    case "TyPi":
+      // The bound term variable shadows an outer one of the same name.
+      if (type.paramVar === name) {
+        return type;
+      }
+      return {
+        ...type,
+        paramType: substituteTermInType(type.paramType, name, replacement),
+        body: substituteTermInType(type.body, name, replacement),
+      };
+
+    case "TyIndexApp":
+      return {
+        ...type,
+        func: substituteTermInType(type.func, name, replacement),
+        arg: type.arg.kind === "Var" && type.arg.name === name ? replacement : type.arg,
+      };
   }
 }
 
@@ -313,6 +525,16 @@ export function expandTypeAliases(type: Type, aliases: ReadonlyMap<string, Type>
         func: expandTypeAliases(type.func, aliases, seen),
         arg: expandTypeAliases(type.arg, aliases, seen),
       };
+
+    case "TyPi":
+      return {
+        ...type,
+        paramType: expandTypeAliases(type.paramType, aliases, seen),
+        body: expandTypeAliases(type.body, aliases, seen),
+      };
+
+    case "TyIndexApp":
+      return {...type, func: expandTypeAliases(type.func, aliases, seen)};
   }
 }
 
@@ -356,5 +578,11 @@ export function normalizeType(type: Type): Type {
       }
       return {...type, func, arg};
     }
+
+    case "TyPi":
+      return {...type, paramType: normalizeType(type.paramType), body: normalizeType(type.body)};
+
+    case "TyIndexApp":
+      return {...type, func: normalizeType(type.func)};
   }
 }

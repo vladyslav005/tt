@@ -24,12 +24,13 @@ import type {
   TypeAbs,
   TypeAliasDecl,
   TypeApp,
+  TypeConstructorDecl,
   Var,
   VarDecl,
   Variant,
   VariantCase,
 } from "@/shared/core/domain/ast";
-import { typeToString } from "@/shared/core/application/typecheck/utils.ts";
+import { kindToString, typeToString } from "@/shared/core/application/typecheck/utils.ts";
 
 /**
  * Converts an AST back into the surface syntax used by the lambda editor.
@@ -61,6 +62,8 @@ export class AstPrettyPrinter {
         return this.printFunDecl(decl);
       case "TypeAliasDecl":
         return this.printTypeAliasDecl(decl);
+      case "TypeConstructorDecl":
+        return this.printTypeConstructorDecl(decl);
     }
   }
 
@@ -79,6 +82,10 @@ export class AstPrettyPrinter {
 
   private printTypeAliasDecl(decl: TypeAliasDecl): string {
     return `typedef ${decl.name} = ${this.printType(decl.type)}`;
+  }
+
+  private printTypeConstructorDecl(decl: TypeConstructorDecl): string {
+    return `typedef ${decl.name} : ${kindToString(decl.paramKind)}`;
   }
 
   printTerm(term: Term): string {

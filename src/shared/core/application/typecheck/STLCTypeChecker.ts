@@ -1,4 +1,5 @@
 import {AstVisitor} from "@/shared/core/application/AstVisitor.ts";
+import {isKind} from "@/shared/core/domain/ast";
 import type {
   Abs,
   App,
@@ -17,13 +18,15 @@ import type {
   Record,
   RecordProjection, RecordType,
   Sequencing,
+  Term,
   Tuple,
   TupleProjection, TupleType,
-  TyArrow, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier,
+  TyArrow, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, TyPi,
   Type,
   TypeAbs,
   TypeAliasDecl,
   TypeApp,
+  TypeConstructorDecl,
   Var,
   VarDecl,
   Variant,
@@ -31,13 +34,17 @@ import type {
 } from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {
+  containsFreeTermVar,
+  containsLambdaPConstruct,
   containsTypeConstructor,
   expandTypeAliases,
   isArithmeticOperator,
   kindEquals,
   kindToString,
   normalizeType,
+  substituteTermInType,
   substituteTypeVariable,
+  termIndexToString,
   typeEquals,
   typeToString,
 } from "@/shared/core/application/typecheck/utils.ts";
@@ -83,6 +90,12 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // name -> fully-expanded underlying type, populated in declaration order
   // by visitTypeAliasDecl.
   private typeAliases: Map<string, Type> = new Map();
+
+  // name -> declared kind, populated by visitTypeConstructorDecl (System
+  // λP's opaque "typedef X : K;"). Consulted by kindOf's TyIdentifier case
+  // alongside Δ (which only ever holds *locally* bound type-constructor
+  // variables, e.g. Fω's λX:K) — this is the global counterpart.
+  private kindContext: Map<string, Kind> = new Map();
 
   // >0 while checking a `let`'s value+body (nesting-safe via a counter, not
   // a boolean, since a `let` can appear inside another `let`'s value). While
@@ -130,6 +143,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     this.errorBuffer = [];
     this.globalProofs = new Map();
     this.typeAliases = new Map();
+    this.kindContext = new Map();
     this.polymorphicScope = 0;
     this.engine.reset();
 
@@ -228,6 +242,16 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     return expandTypeAliases(type, this.typeAliases, seen);
   }
 
+  private literalType(value: string): TyIdentifier {
+    const name = (value === "unit" || value === "Unit")
+      ? "Unit"
+      : (value === "true" || value === "True" || value === "false" || value === "False")
+        ? "Bool"
+        : "Nat";
+
+    return {kind: "TyIdentifier", id: crypto.randomUUID(), name};
+  }
+
   // =====================================================================
   // =                        SYSTEM λω̲ — kind-checking                  =
   // =====================================================================
@@ -256,7 +280,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   private kindOf(type: Type, delta: ReadonlyMap<string, Kind>): { kind: Kind; proof: KindProofTree } {
     switch (type.kind) {
       case "TyIdentifier": {
-        const bound = delta.get(type.name);
+        const bound = delta.get(type.name) ?? this.kindContext.get(type.name);
         if (bound) {
           return {kind: bound, proof: this.kindLeaf(Rule.KindVar, type, bound, delta)};
         }
@@ -328,13 +352,69 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
         if (func.kind.kind !== "KindArrow") {
           throw new Error(`Cannot apply "${typeToString(type.func)}" (kind ${kindToString(func.kind)}) to an argument — it is not a type constructor`);
         }
+        if (!isKind(func.kind.from)) {
+          throw new Error(`Type constructor "${typeToString(type.func)}" has a dependent kind (${typeToString(func.kind.from)} -> ${kindToString(func.kind.to)}) and expects a term index, e.g. "${typeToString(type.func)}[...]" — not a type argument`);
+        }
         if (!kindEquals(func.kind.from, arg.kind)) {
           throw new Error(`Type constructor "${typeToString(type.func)}" expects an argument of kind ${kindToString(func.kind.from)}, but "${typeToString(type.arg)}" has kind ${kindToString(arg.kind)}`);
         }
 
         return {kind: func.kind.to, proof: this.kindNode(Rule.KindApp, type, func.kind.to, delta, [func.proof, arg.proof])};
       }
+
+      case "TyPi": {
+        const paramKind = this.kindOf(type.paramType, delta);
+        this.expectStar(paramKind.kind, type.paramType);
+        // paramVar is a *term* variable, not a type/kind-context (Δ)
+        // binding — the Π-type introduces it itself (this binder is
+        // independent of any surrounding term-level λ, even though by
+        // convention they share a name), so it's bound into the ambient Γ
+        // right here for the duration of checking the body.
+        const body = this.withBinding(
+          type.paramVar,
+          {kind: "TypeScheme", vars: [], type: type.paramType},
+          Rule.CtVar,
+          () => this.kindOf(type.body, delta),
+        );
+        this.expectStar(body.kind, type.body);
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindPi, type, SLTLCTypeChecker.STAR, delta, [paramKind.proof, body.proof])};
+      }
+
+      case "TyIndexApp": {
+        const func = this.kindOf(type.func, delta);
+        if (func.kind.kind !== "KindArrow") {
+          throw new Error(`Cannot apply "${typeToString(type.func)}" (kind ${kindToString(func.kind)}) to an index — it is not a dependently-kinded type constructor`);
+        }
+        if (isKind(func.kind.from)) {
+          throw new Error(`Type constructor "${typeToString(type.func)}" expects a type argument (kind ${kindToString(func.kind.from)}), not a term index — "${typeToString(type.func)}[...]" is only for a dependent kind like "Nat -> @"`);
+        }
+        const domainType = func.kind.from;
+        const argType = this.indexTermType(type.arg);
+        if (!typeEquals(argType, domainType)) {
+          throw new Error(`Index "${termIndexToString(type.arg)}" has type ${typeToString(argType)}, but "${typeToString(type.func)}" expects an index of type ${typeToString(domainType)}`);
+        }
+        return {kind: func.kind.to, proof: this.kindLeaf(Rule.KindIndexApp, type, func.kind.to, delta)};
+      }
     }
+  }
+
+  // System λP restricts a TyIndexApp's term index to a Var (looked up in
+  // the ambient Γ) or a Lit (a Nat/Bool/Unit literal) — see the comment on
+  // termIndexEquals/termIndexToString (utils.ts) for why this keeps index
+  // equality simple. Anything else is rejected here rather than silently
+  // mis-typed.
+  private indexTermType(term: Term): Type {
+    if (term.kind === "Var") {
+      const scheme = this.schemeContext.get(term.name);
+      if (!scheme) {
+        throw new Error(`Variable "${term.name}" is not in scope`);
+      }
+      return scheme.type;
+    }
+    if (term.kind === "Lit") {
+      return this.literalType(term.value);
+    }
+    throw new Error(`System λP index expressions are limited to variables and literals — got a "${term.kind}"`);
   }
 
   // Run *after* kind-checking (so the kind derivation matches what the user
@@ -357,14 +437,24 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // a constructor applied to too few arguments), and (c) return the
   // derivation to attach as the node's kindPremise.
   private checkKindAnnotation(type: Type): { rejected: false; kindPremise?: KindProofTree; conversion?: TypeConversion; normalized: Type } | { rejected: true; message: string } {
-    if (!containsTypeConstructor(type)) {
+    const usesFOmega = containsTypeConstructor(type);
+    const usesLambdaP = containsLambdaPConstruct(type);
+
+    if (!usesFOmega && !usesLambdaP) {
       return {rejected: false, normalized: type};
     }
 
-    if (!this.theories.systemFOmega) {
+    if (usesFOmega && !this.theories.systemFOmega) {
       return {
         rejected: true,
         message: `Type "${typeToString(type)}" uses a type constructor (λ-abstraction/application on types) — enable the "System Fω" theory to use it`,
+      };
+    }
+
+    if (usesLambdaP && !this.theories.systemLambdaP) {
+      return {
+        rejected: true,
+        message: `Type "${typeToString(type)}" uses a dependent type (Π-type or term-indexed type application) — enable the "System λP" theory to use it`,
       };
     }
 
@@ -455,9 +545,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     // whole point of "typedef List = λX:@. ..."), so unlike a term
     // annotation it's not required to have kind @ here — only that it's
     // internally well-kinded, and only reachable behind the theory flag.
-    if (containsTypeConstructor(expanded)) {
-      if (!this.theories.systemFOmega) {
+    const usesFOmega = containsTypeConstructor(expanded);
+    const usesLambdaP = containsLambdaPConstruct(expanded);
+    if (usesFOmega || usesLambdaP) {
+      if (usesFOmega && !this.theories.systemFOmega) {
         this.errorBuffer.push(new Error(`typedef "${node.name}": uses a type constructor (λ-abstraction/application on types) — enable the "System Fω" theory to use it`));
+      } else if (usesLambdaP && !this.theories.systemLambdaP) {
+        this.errorBuffer.push(new Error(`typedef "${node.name}": uses a dependent type (Π-type or term-indexed type application) — enable the "System λP" theory to use it`));
       } else {
         try {
           this.kindOf(expanded, new Map());
@@ -472,6 +566,19 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
 
     this.typeAliases.set(node.name, normalized);
+    return {} as InferProofTree;
+  }
+
+  // typedef X : K; — System λP's opaque type-constructor declaration (e.g.
+  // "Vec : Nat -> @"). Unlike visitTypeAliasDecl there's no RHS type to
+  // kind-check — X's kind *is* the declaration — so this just registers it
+  // in the global kind context for kindOf's TyIdentifier case to find.
+  protected visitTypeConstructorDecl(node: TypeConstructorDecl): InferProofTree {
+    if (!this.theories.systemLambdaP) {
+      this.errorBuffer.push(new Error(`typedef "${node.name}": declaring an opaque type constructor requires enabling the "System λP" theory`));
+      return {} as InferProofTree;
+    }
+    this.kindContext.set(node.name, node.paramKind);
     return {} as InferProofTree;
   }
 
@@ -557,12 +664,15 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       () => this.visit(node.body),
     );
 
-    const type: TyArrow = {
-      kind: "TyArrow",
-      id: crypto.randomUUID(),
-      from: paramType,
-      to: bodyProof.type,
-    };
+    // System λP: if the body's type itself mentions this parameter as a
+    // term-index (e.g. the inner abstraction's type in "λn:Nat.
+    // λx:Vec[n]. n"), the whole abstraction is dependently typed — a plain
+    // TyArrow could never structurally match a Πn:A.B annotation, since
+    // that binder is otherwise only ever introduced by an explicit
+    // annotation, never synthesized.
+    const type: TyArrow | TyPi = containsFreeTermVar(bodyProof.type, node.param)
+      ? {kind: "TyPi", id: crypto.randomUUID(), paramVar: node.param, paramType, body: bodyProof.type}
+      : {kind: "TyArrow", id: crypto.randomUUID(), from: paramType, to: bodyProof.type};
 
     return {
       rule,
@@ -579,6 +689,38 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   protected visitApp(node: App): InferProofTree {
     const funcProof = this.visit(node.func);
     const argProof = this.visit(node.arg);
+
+    // System λP: applying a Π-typed function substitutes the *argument
+    // term itself* into the dependent result type — something the generic
+    // metavar/unification path below can't express (it only ever produces
+    // a fresh, unrelated result type). Only fires once funcProof.type is
+    // already a concrete TyPi (not, say, an unresolved metavar under
+    // inference) — see substituteTermInType's doc comment for why the
+    // index restriction (Var/Lit only) keeps this tractable.
+    const funcType = this.normalizeType(funcProof.type);
+    if (funcType.kind === "TyPi") {
+      if (!this.theories.systemLambdaP) {
+        return this.reject(node, Rule.TPiApp, `Applying a Π-typed function requires enabling the "System λP" theory`, [funcProof, argProof]);
+      }
+      if (node.arg.kind !== "Var" && node.arg.kind !== "Lit") {
+        return this.reject(node, Rule.TPiApp, `Applying a Π-typed function to an argument other than a variable or literal is not yet supported`, [funcProof, argProof]);
+      }
+
+      const constraints: Constraint[] = [
+        ...funcProof.constraints,
+        ...argProof.constraints,
+        {left: argProof.type, right: funcType.paramType},
+      ];
+
+      return {
+        rule: Rule.TPiApp,
+        term: node,
+        type: substituteTermInType(funcType.body, funcType.paramVar, node.arg),
+        gamma: this.schemeContext.serializeGamma(),
+        premises: [funcProof, argProof],
+        constraints,
+      };
+    }
 
     const resultType = this.engine.freshTyMetaVar();
 
@@ -606,17 +748,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitLit(node: Lit): InferProofTree {
-    const typeName = (node.value === "unit" || node.value === "Unit")
-      ? "Unit"
-      : (node.value === "true" || node.value === "True" || node.value === "false" || node.value === "False")
-        ? "Bool"
-        : "Nat";
-
-    const litType: TyIdentifier = {
-      kind: "TyIdentifier",
-      id: crypto.randomUUID(),
-      name: typeName,
-    };
+    const litType = this.literalType(node.value);
 
     return {
       rule: this.ruleFor(Rule.Lit, Rule.CtLit),

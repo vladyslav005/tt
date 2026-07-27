@@ -1,9 +1,11 @@
 import type {Kind} from "@/shared/core/domain/ast";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {
+  type DependentKindArrowContext,
   type KindArrowContext,
   type ParenKindContext,
 } from "@/shared/core/antlr/LambdaParser.ts";
+import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
 
 export class KindBuilderVisitor
   extends LambdaVisitor<Kind> {
@@ -18,6 +20,17 @@ export class KindBuilderVisitor
       id: crypto.randomUUID(),
       from: this.visit(ctx.kind(0)),
       to: this.visit(ctx.kind(1)),
+    }
+  }
+
+  // System λP: "Nat -> @" — a kind indexed by an ordinary type rather than
+  // another kind.
+  visitDependentKindArrow = (ctx: DependentKindArrowContext): Kind => {
+    return {
+      kind: "KindArrow",
+      id: crypto.randomUUID(),
+      from: new TypeBuilderVisitor().visit(ctx.type_()),
+      to: this.visit(ctx.kind()),
     }
   }
 

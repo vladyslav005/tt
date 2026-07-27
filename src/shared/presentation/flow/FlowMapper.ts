@@ -27,6 +27,7 @@ import type {
   TypeAbs,
   TypeAliasDecl,
   TypeApp,
+  TypeConstructorDecl,
   Var,
   VarDecl,
   Variant,
@@ -187,6 +188,12 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "type", "type", node.type);
   }
 
+  // No children to wire — paramKind is inline data (like TyConstructorAbs's
+  // own paramKind), not something a user connects visually.
+  protected visitTypeConstructorDecl(node: TypeConstructorDecl): void {
+    this.pushNode(node);
+  }
+
   protected visitType(node: Type): void {
     this.pushNode(node);
 
@@ -231,6 +238,16 @@ export class AstFlowMapper extends AstVisitor<void> {
         return;
 
       case "TyConstructorApp":
+        this.visitChild(node, "func", "func", node.func);
+        this.visitChild(node, "arg", "arg", node.arg);
+        return;
+
+      case "TyPi":
+        this.visitChild(node, "paramType", "paramType", node.paramType);
+        this.visitChild(node, "body", "body", node.body);
+        return;
+
+      case "TyIndexApp":
         this.visitChild(node, "func", "func", node.func);
         this.visitChild(node, "arg", "arg", node.arg);
         return;
@@ -426,6 +443,14 @@ export class AstFlowMapper extends AstVisitor<void> {
           data: {term: node},
         });
         return;
+      case "TypeConstructorDecl":
+        this.nodes.push({
+          id: node.id,
+          type: "typeConstructorDecl",
+          position: {x: 0, y: 0},
+          data: {term: node},
+        });
+        return;
       case "Var":
         this.nodes.push({
           id: node.id,
@@ -528,6 +553,8 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "TyForall":
       case "TyConstructorAbs":
       case "TyConstructorApp":
+      case "TyPi":
+      case "TyIndexApp":
         this.nodes.push({id: node.id, type: "type", position: {x: 0, y: 0}, data: {term: node as any}} as any);
         return;
     }

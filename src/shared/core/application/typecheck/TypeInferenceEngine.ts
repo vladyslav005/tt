@@ -6,7 +6,7 @@ import {
 } from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {Type, TyMetaVar} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
-import {metaVarName, typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {kindEquals, metaVarName, normalizeType, termIndexEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
 
 export class TypeInferenceEngine {
 
@@ -118,6 +118,16 @@ export class TypeInferenceEngine {
           arg: this.applySubstitution(type.arg, substitution),
         };
 
+      case "TyPi":
+        return {
+          ...type,
+          paramType: this.applySubstitution(type.paramType, substitution),
+          body: this.applySubstitution(type.body, substitution),
+        };
+
+      case "TyIndexApp":
+        return {...type, func: this.applySubstitution(type.func, substitution)};
+
       default:
         return this.assertNever(type);
     }
@@ -142,8 +152,8 @@ export class TypeInferenceEngine {
     right: Type,
     substitution: Substitution,
   ): Substitution {
-    const a = this.applySubstitution(left, substitution);
-    const b = this.applySubstitution(right, substitution);
+    const a = normalizeType(this.applySubstitution(left, substitution));
+    const b = normalizeType(this.applySubstitution(right, substitution));
 
     if (a.kind === "TyMetaVar") {
       return this.bindTypeVariable(a.name, b, substitution);
@@ -251,6 +261,44 @@ export class TypeInferenceEngine {
       }
 
       return nextSubstitution;
+    }
+
+    if (a.kind === "TyForall" && b.kind === "TyForall") {
+      if (a.typeVariable !== b.typeVariable) {
+        throw new Error(`Cannot unify ${typeToString(a)} with ${typeToString(b)}`);
+      }
+      return this.unify(a.type, b.type, substitution);
+    }
+
+    if (a.kind === "TyConstructorAbs" && b.kind === "TyConstructorAbs") {
+      if (a.typeParam !== b.typeParam || !kindEquals(a.paramKind, b.paramKind)) {
+        throw new Error(`Cannot unify ${typeToString(a)} with ${typeToString(b)}`);
+      }
+      return this.unify(a.body, b.body, substitution);
+    }
+
+    if (a.kind === "TyConstructorApp" && b.kind === "TyConstructorApp") {
+      const nextSubstitution = this.unify(a.func, b.func, substitution);
+      return this.unify(
+        this.applySubstitution(a.arg, nextSubstitution),
+        this.applySubstitution(b.arg, nextSubstitution),
+        nextSubstitution,
+      );
+    }
+
+    if (a.kind === "TyPi" && b.kind === "TyPi") {
+      if (a.paramVar !== b.paramVar) {
+        throw new Error(`Cannot unify ${typeToString(a)} with ${typeToString(b)}`);
+      }
+      const nextSubstitution = this.unify(a.paramType, b.paramType, substitution);
+      return this.unify(a.body, b.body, nextSubstitution);
+    }
+
+    if (a.kind === "TyIndexApp" && b.kind === "TyIndexApp") {
+      if (!termIndexEquals(a.arg, b.arg)) {
+        throw new Error(`Cannot unify ${typeToString(a)} with ${typeToString(b)}`);
+      }
+      return this.unify(a.func, b.func, substitution);
     }
 
     throw new Error(
@@ -429,6 +477,15 @@ export class TypeInferenceEngine {
           this.freeTypeVariables(type.func),
           this.freeTypeVariables(type.arg),
         );
+
+      case "TyPi":
+        return this.union(
+          this.freeTypeVariables(type.paramType),
+          this.freeTypeVariables(type.body),
+        );
+
+      case "TyIndexApp":
+        return this.freeTypeVariables(type.func);
 
       default:
         return this.assertNever(type);

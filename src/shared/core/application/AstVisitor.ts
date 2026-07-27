@@ -20,6 +20,7 @@ import type {
   TupleProjection,
   Type, TypeAbs, TypeAliasDecl, TypeApp,
   TyConstructorAbs, TyConstructorApp,
+  TypeConstructorDecl,
   Var,
   VarDecl,
   Variant,
@@ -81,6 +82,8 @@ export abstract class AstVisitor<R> {
         return this.visitTypeDecl(node)
       case "TypeAliasDecl":
         return this.visitTypeAliasDecl(node)
+      case "TypeConstructorDecl":
+        return this.visitTypeConstructorDecl(node)
 
       /* ===== Let ===== */
       case "Let":
@@ -106,6 +109,8 @@ export abstract class AstVisitor<R> {
       case "VariantType":
       case "RecordType":
       case "TyForall":
+      case "TyPi":
+      case "TyIndexApp":
         return this.visitType(node)
 
       /* ===== Kinds ===== */
@@ -166,6 +171,8 @@ export abstract class AstVisitor<R> {
   protected abstract visitTypeDecl(node: VarDecl): R
 
   protected abstract visitTypeAliasDecl(node: TypeAliasDecl): R
+
+  protected abstract visitTypeConstructorDecl(node: TypeConstructorDecl): R
 
   protected abstract visitProgram(node: Program): R
 

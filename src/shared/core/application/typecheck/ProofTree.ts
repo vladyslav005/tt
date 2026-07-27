@@ -100,6 +100,11 @@ export enum Rule {
   TyConstructorAbs = "TyConstructorAbs",
   TyConstructorApp = "TyConstructorApp",
 
+  // System λP: applying a Π-typed function — distinct from ordinary App
+  // because the result type is the body with the argument substituted in,
+  // not a plain arrow's codomain.
+  TPiApp = "TPiApp",
+
   // The kinding judgment (Δ ⊢ T :: K) — rendered on KindProofTree nodes,
   // attached to a term-level node via ProofTree.kindPremise.
   KindBase = "KindBase",
@@ -108,6 +113,10 @@ export enum Rule {
   KindForall = "KindForall",
   KindAbs = "KindAbs",
   KindApp = "KindApp",
+  // System λP kinding rules: Π-type formation, and applying a dependently-
+  // kinded type constructor to a term index.
+  KindPi = "KindPi",
+  KindIndexApp = "KindIndexApp",
   // The (Conv) rule made visible — see ProofTree.typeConversion.
   Conv = "Conv",
 

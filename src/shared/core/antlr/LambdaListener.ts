@@ -8,6 +8,7 @@ import { ExprContext } from "./LambdaParser.js";
 import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
 import { TypeAliasDeclarationContext } from "./LambdaParser.js";
+import { TypeConstructorDeclarationContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
 import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
@@ -32,6 +33,7 @@ import { ParenthesesContext } from "./LambdaParser.js";
 import { DummyAbstractionContext } from "./LambdaParser.js";
 import { BinaryOpContext } from "./LambdaParser.js";
 import { TypeApplicationContext } from "./LambdaParser.js";
+import { PiTypeContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { TypeConstructorAbstractionContext } from "./LambdaParser.js";
@@ -39,10 +41,12 @@ import { TypeConstructorApplicationContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
+import { TypeIndexApplicationContext } from "./LambdaParser.js";
 import { ForallTypeContext } from "./LambdaParser.js";
 import { ParenTypeContext } from "./LambdaParser.js";
 import { TypeVariableContext } from "./LambdaParser.js";
 import { ConstantContext } from "./LambdaParser.js";
+import { DependentKindArrowContext } from "./LambdaParser.js";
 import { StarKindContext } from "./LambdaParser.js";
 import { KindArrowContext } from "./LambdaParser.js";
 import { ParenKindContext } from "./LambdaParser.js";
@@ -101,6 +105,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitTypeAliasDeclaration?: (ctx: TypeAliasDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `TypeConstructorDeclaration`
+	 * labeled alternative in `LambdaParser.globalDecl`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeConstructorDeclaration?: (ctx: TypeConstructorDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `TypeConstructorDeclaration`
+	 * labeled alternative in `LambdaParser.globalDecl`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeConstructorDeclaration?: (ctx: TypeConstructorDeclarationContext) => void;
 	/**
 	 * Enter a parse tree produced by the `Variable`
 	 * labeled alternative in `LambdaParser.term`.
@@ -390,6 +406,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 */
 	exitTypeApplication?: (ctx: TypeApplicationContext) => void;
 	/**
+	 * Enter a parse tree produced by the `PiType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterPiType?: (ctx: PiTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `PiType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitPiType?: (ctx: PiTypeContext) => void;
+	/**
 	 * Enter a parse tree produced by the `SumType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -474,6 +502,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 */
 	exitTupleType?: (ctx: TupleTypeContext) => void;
 	/**
+	 * Enter a parse tree produced by the `TypeIndexApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeIndexApplication?: (ctx: TypeIndexApplicationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `TypeIndexApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeIndexApplication?: (ctx: TypeIndexApplicationContext) => void;
+	/**
 	 * Enter a parse tree produced by the `ForallType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -517,6 +557,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitConstant?: (ctx: ConstantContext) => void;
+	/**
+	 * Enter a parse tree produced by the `DependentKindArrow`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	enterDependentKindArrow?: (ctx: DependentKindArrowContext) => void;
+	/**
+	 * Exit a parse tree produced by the `DependentKindArrow`
+	 * labeled alternative in `LambdaParser.kind`.
+	 * @param ctx the parse tree
+	 */
+	exitDependentKindArrow?: (ctx: DependentKindArrowContext) => void;
 	/**
 	 * Enter a parse tree produced by the `StarKind`
 	 * labeled alternative in `LambdaParser.kind`.

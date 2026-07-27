@@ -65,6 +65,9 @@ import {TypeApplicationFlowNode} from "@/features/ast/components/ast/flow/TypeAp
 import {TyForallFlowNode} from "@/features/ast/components/ast/flow/TyForallFlowNode";
 import {TyConstructorAbsFlowNode} from "@/features/ast/components/ast/flow/TyConstructorAbsFlowNode";
 import {TyConstructorAppFlowNode} from "@/features/ast/components/ast/flow/TyConstructorAppFlowNode";
+import {TyPiFlowNode} from "@/features/ast/components/ast/flow/TyPiFlowNode";
+import {TyIndexAppFlowNode} from "@/features/ast/components/ast/flow/TyIndexAppFlowNode";
+import {TypeConstructorDeclFlowNode} from "@/features/ast/components/ast/flow/TypeConstructorDeclFlowNode";
 import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -119,6 +122,10 @@ function TypeFlowNodeDispatch(props: any) {
       return <TyConstructorAbsFlowNode {...props} />;
     case "TyConstructorApp":
       return <TyConstructorAppFlowNode {...props} />;
+    case "TyPi":
+      return <TyPiFlowNode {...props} />;
+    case "TyIndexApp":
+      return <TyIndexAppFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -132,6 +139,7 @@ export const nodeTypes: NodeTypes = {
   funDecl: FunDeclFlowNode,
   varDecl: VarDeclFlowNode,
   typeAliasDecl: TypeAliasDeclFlowNode,
+  typeConstructorDecl: TypeConstructorDeclFlowNode,
   abstraction: AbstractionFlowNode,
   variable: VariableFlowNode,
   application: ApplicationFlowNode,
@@ -161,7 +169,13 @@ type AddOnDropKind = "decl" | "term" | "type";
 
 // Node kinds whose own handles always point at further *types* (as opposed to
 // term/program nodes, whose handles are term-context except "type"/"paramType").
-const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp"]);
+// TyIndexApp is deliberately excluded: unlike every other entry here, its
+// two children are mixed-context — "func" is a Type but "arg" is a Term
+// (the term index, e.g. "Vec[n]") — so a blanket "all handles are
+// type-context" rule would be wrong for it. It's display-only in this
+// editor for now (see makeDefaultTermNode/graphToAst.ts's reconstruct()
+// fallback for how not-yet-constructible kinds are handled generally).
+const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi"]);
 
 // A handful of handle names are reused across both term nodes and type nodes
 // (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.

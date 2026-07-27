@@ -1,6 +1,7 @@
 import {ProofTreeVisitor} from "@/shared/core/application/ProofTreeVisitor.ts";
 import type {TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {type KindProofTree, type ProofTree, Rule, type TypeConversion, type TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {isKind} from "@/shared/core/domain/ast";
 import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
@@ -108,6 +109,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     [Rule.KindForall]: "K-Forall",
     [Rule.KindAbs]: "K-Abs",
     [Rule.KindApp]: "K-App",
+    [Rule.KindPi]: "K-Pi",
+    [Rule.KindIndexApp]: "K-IndexApp",
   };
 
   // Renders a kinding derivation (Δ ⊢ T :: K) into the same TexTree shape
@@ -152,7 +155,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   protected visitApp(node: ProofTree): TexTree {
     return {
       ...this.judgements(node),
-      rule: "T-App",
+      rule: node.rule === Rule.TPiApp ? "T-PiApp" : "T-App",
       children: node.premises.map(child => this.visit(child))
     }
   }
@@ -612,6 +615,10 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\lambda ${type.typeParam} : ${kindToTex(type.paramKind)} .\\, ${this.typeToTex(type.body)}`
       case "TyConstructorApp":
         return `${this.typeToTex(type.func)}\\ ${this.typeToTex(type.arg)}`
+      case "TyPi":
+        return `\\Pi ${type.paramVar} : ${this.typeToTex(type.paramType)} .\\, ${this.typeToTex(type.body)}`
+      case "TyIndexApp":
+        return `${this.typeToTex(type.func)}[${this.termToTex(type.arg)}]`
     }
   }
 
@@ -678,6 +685,10 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return [t(`\\lambda ${type.typeParam} : ${kindToTex(type.paramKind)} .\\, `), ...rec(type.body)];
       case "TyConstructorApp":
         return [...rec(type.func), t("\\ "), ...rec(type.arg)];
+      case "TyPi":
+        return [t(`\\Pi ${type.paramVar} : ${this.typeToTex(type.paramType)} .\\, `), ...rec(type.body)];
+      case "TyIndexApp":
+        return [...rec(type.func), t(`[${this.termToTex(type.arg)}]`)];
     }
   }
 }
@@ -687,6 +698,6 @@ function kindToTex(k: Kind): string {
     case "StarKind":
       return "*"
     case "KindArrow":
-      return `(${kindToTex(k.from)} \\to ${kindToTex(k.to)})`
+      return `(${isKind(k.from) ? kindToTex(k.from) : TexMapper.typeToTex(k.from)} \\to ${kindToTex(k.to)})`
   }
 }

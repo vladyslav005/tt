@@ -262,6 +262,33 @@ apply inc 5;`,
       },
     ],
   },
+  {
+    title: "System λP (Dependent Types)",
+    items: [
+      {
+        label: "Dependent Head",
+        description: "typedef Vec : Nat -> @ declares an opaque, term-indexed type family; head's Πn:Nat. Vec[n] -> Nat return type is instantiated per call — enable the System λP theory",
+        code: `typedef Vec : Nat -> @;
+
+v3 : Vec[3];
+
+head = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
+
+head 3 v3;`,
+      },
+      {
+        label: "Dependent Head: Type Mismatch",
+        description: "same as above, but v4 : Vec[4] is passed where Vec[3] is expected — rejected because the index is part of the type",
+        code: `typedef Vec : Nat -> @;
+
+v4 : Vec[4];
+
+head = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
+
+head 3 v4;`,
+      },
+    ],
+  },
 ];
 
 interface ExamplesDropdownProps {

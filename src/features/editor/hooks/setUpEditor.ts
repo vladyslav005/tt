@@ -47,6 +47,7 @@ export function useSetUpEditor() {
           [/:/, "semi"],
 
           [/∀/, "forall"],
+          [/Π/, "pi"],
           {include: "@whitespace"},
         ],
         whitespace: [
@@ -77,6 +78,7 @@ export function useSetUpEditor() {
         {token: 'pow', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'times', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'forall', foreground: '#dc2626', fontStyle: 'bold'},
+        {token: 'pi', foreground: '#dc2626', fontStyle: 'bold'},
         {token: 'kindStar', foreground: '#0d9488', fontStyle: 'bold'}, // teal-600
 
         {token: 'lb', foreground: '#64748b', fontStyle: 'bold'}, // slate-500
@@ -136,6 +138,7 @@ export function useSetUpEditor() {
         {token: 'pow', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'times', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'forall', foreground: '#f87171', fontStyle: 'bold'},
+        {token: 'pi', foreground: '#f87171', fontStyle: 'bold'},
         {token: 'kindStar', foreground: '#2dd4bf', fontStyle: 'bold'}, // teal-400
 
         {token: 'lb', foreground: '#94a3b8', fontStyle: 'bold'}, // slate-400
@@ -655,7 +658,7 @@ export function useSetUpEditor() {
             label: '\\Pi',
             kind: monaco.languages.CompletionItemKind.Text,
             insertText: 'Π',
-            detail: 'Capital Pi',
+            detail: 'Pi (dependent function type binder) — System λP',
             range: slashRange
           },
           {

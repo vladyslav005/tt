@@ -9,6 +9,7 @@ globalDecl
     : ID COLON type SEMI                      # GlobalVariableDeclaration
     | ID EQ term COLON type SEMI           # GlobalFunctionDeclaration
     | TYPEDEF ID EQ type SEMI                 # TypeAliasDeclaration
+    | TYPEDEF ID COLON kind SEMI               # TypeConstructorDeclaration
     ;
 
 term
@@ -56,10 +57,15 @@ term
     ;
 
 type
-    // 1. Type constructor application (System λω̲): highest priority,
-    // left-associative, mirrors term application — "List Nat" applies the
-    // type constructor List to the type Nat.
+    // 1. Type constructor application (System λω̲) and dependent-type index
+    // application (System λP) share this precedence tier: highest
+    // priority, left-associative. "List Nat" applies the type constructor
+    // List to the type Nat; "Vec[n]" applies the (dependently-kinded) type
+    // constructor Vec to the term index n — bracketed so it never clashes
+    // with plain juxtaposition, mirroring the term-level "t [T]" (System F
+    // type application) bracket syntax.
     : type type                                                  # TypeConstructorApplication
+    | type LBRACK term RBRACK                                    # TypeIndexApplication
 
     // 2. Sum type has higher priority than arrow
     | type PLUS type                                             # SumType
@@ -72,9 +78,12 @@ type
     // abstraction reuses the same λ as term-level abstraction (System λω̲
     // uses one binder at every level) — its parameter is a kind, not a
     // type, so it's never ambiguous with LambdaAbstraction (that rule only
-    // ever appears where a term is expected).
+    // ever appears where a term is expected). Π (System λP) binds a *term*
+    // variable over a type — "Π x:A. B" — of which "A -> B" is the
+    // non-dependent special case (x not free in B).
     | FORALL typeVariable DOT type                               # ForallType
     | LAMBDA typeVariable COLON kind DOT type                    # TypeConstructorAbstraction
+    | PI ID COLON type DOT type                                  # PiType
 
     // 5. Atomic / grouped types
     | LT type (MUL type)* MT                                     # TupleType
@@ -100,6 +109,10 @@ constant
 kind
     : KIND_STAR                                 # StarKind
     | <assoc=right> kind ARROW kind             # KindArrow
+    // System λP: a kind can be indexed by an ordinary type rather than
+    // another kind, e.g. "Nat -> @" — the kind of a type constructor that
+    // takes a *term* of type Nat and produces a type.
+    | <assoc=right> type ARROW kind             # DependentKindArrow
     | LPAREN kind RPAREN                        # ParenKind
     ;
 
@@ -117,6 +130,7 @@ KIND_STAR      : '@'; // to avoid ambiguity with, '@' is used instead of '*' for
 APOSTROPHE     : '\'';
 
 FORALL         : '∀';
+PI             : 'Π';
 
 CASE           : 'case';
 OF             : 'of';

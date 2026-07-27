@@ -23,6 +23,7 @@ import type {
   TypeAbs,
   TypeAliasDecl,
   TypeApp,
+  TypeConstructorDecl,
   Var,
   VarDecl,
   Variant,
@@ -96,6 +97,7 @@ export type FixNodeData = { term: Fix; editable?: boolean; onChange?: (patch: an
 export type TypeAbsNodeData = { term: TypeAbs; editable?: boolean; onChange?: (patch: any) => void };
 export type TypeAppNodeData = { term: TypeApp; editable?: boolean; onChange?: (patch: any) => void };
 export type TypeAliasDeclNodeData = { term: TypeAliasDecl; editable?: boolean; onChange?: (patch: any) => void };
+export type TypeConstructorDeclNodeData = { term: TypeConstructorDecl; editable?: boolean; onChange?: (patch: any) => void };
 
 export type ProgramFlowNode = Node<ProgramNodeData, "program">;
 export type FunDeclFlowNode = Node<FunDeclNodeData, "funDecl">;
@@ -124,6 +126,7 @@ export type FixFlowNode = Node<FixNodeData, "fix">;
 export type TypeAbsFlowNode = Node<TypeAbsNodeData, "typeAbs">;
 export type TypeAppFlowNode = Node<TypeAppNodeData, "typeApp">;
 export type TypeAliasDeclFlowNode = Node<TypeAliasDeclNodeData, "typeAliasDecl">;
+export type TypeConstructorDeclFlowNode = Node<TypeConstructorDeclNodeData, "typeConstructorDecl">;
 
 export type AstFlowNode =
   | ProgramFlowNode
@@ -152,7 +155,8 @@ export type AstFlowNode =
   | FixFlowNode
   | TypeAbsFlowNode
   | TypeAppFlowNode
-  | TypeAliasDeclFlowNode;
+  | TypeAliasDeclFlowNode
+  | TypeConstructorDeclFlowNode;
 
 // Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
@@ -182,6 +186,7 @@ export type FixFlowNodeType = FixNodeData;
 export type TypeAbsFlowNodeType = TypeAbsNodeData;
 export type TypeAppFlowNodeType = TypeAppNodeData;
 export type TypeAliasDeclFlowNodeType = TypeAliasDeclNodeData;
+export type TypeConstructorDeclFlowNodeType = TypeConstructorDeclNodeData;
 
 export type AstFlowGraph = {
   nodes: AstFlowNode[];

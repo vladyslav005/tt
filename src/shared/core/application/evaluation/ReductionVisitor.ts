@@ -1781,6 +1781,22 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           func: this.cloneTypeWithFreshIds(type.func),
           arg: this.cloneTypeWithFreshIds(type.arg),
         };
+
+      case "TyPi":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          paramType: this.cloneTypeWithFreshIds(type.paramType),
+          body: this.cloneTypeWithFreshIds(type.body),
+        };
+
+      case "TyIndexApp":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          func: this.cloneTypeWithFreshIds(type.func),
+          arg: this.cloneTermWithFreshIds(type.arg),
+        };
     }
   }
 
@@ -1807,6 +1823,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
   }
 
   protected override visitTypeAliasDecl(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _node: GlobalDecl,
+  ): ReductionStep | null {
+    return null;
+  }
+
+  protected override visitTypeConstructorDecl(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _node: GlobalDecl,
   ): ReductionStep | null {
