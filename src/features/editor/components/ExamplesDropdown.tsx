@@ -268,23 +268,41 @@ apply inc 5;`,
       {
         label: "Dependent Head",
         description: "typedef Vec : Nat -> @ declares an opaque, term-indexed type family; head's Πn:Nat. Vec[n] -> Nat return type is instantiated per call — enable the System λP theory",
-        code: `typedef Vec : Nat -> @;
+        code: `// Vec is a family of types indexed by a Nat: Vec[0], Vec[1], Vec[2] ...
+// are each distinct, unrelated types. It's declared "opaque" — only its
+// kind is given (Nat -> @, i.e. "feed it a number, get back a type"), not
+// what it actually contains, so Vec[3] never unfolds into anything
+// simpler. It just IS a type, the same way Nat itself doesn't unfold.
+typedef Vec : Nat -> @;
 
+// v3 has type Vec[3] specifically, not Vec[4], not Vec[100].
 v3 : Vec[3];
 
+// head's type is a Π-type (dependent function type): give it a number n,
+// and it hands back a function expecting Vec[n] — THE SAME n — and
+// producing Nat. Unlike a plain A -> B, the type of the 2nd argument
+// changes with whichever n you passed first: head 3 expects Vec[3],
+// head 5 expects Vec[5].
 head = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
 
+// head 3 has type Vec[3] -> Nat, and v3 : Vec[3] — matches, type-checks.
 head 3 v3;`,
       },
       {
         label: "Dependent Head: Type Mismatch",
         description: "same as above, but v4 : Vec[4] is passed where Vec[3] is expected — rejected because the index is part of the type",
-        code: `typedef Vec : Nat -> @;
+        code: `// Same opaque Vec family as the "Dependent Head" example.
+typedef Vec : Nat -> @;
 
+// v4 has type Vec[4], NOT Vec[3].
 v4 : Vec[4];
 
 head = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
 
+// head 3 expects an argument of type Vec[3], but v4 : Vec[4] is a
+// DIFFERENT type (Vec[3] ≠ Vec[4], same as Nat ≠ Bool) — so this is
+// rejected: "Cannot unify Vec[3] with Vec[4]". That's the payoff of
+// dependent types: the mismatch is caught before the program ever runs.
 head 3 v4;`,
       },
     ],
