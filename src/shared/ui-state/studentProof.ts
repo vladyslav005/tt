@@ -43,19 +43,19 @@ export function buildStudentNode(
   revealed: boolean,
   parentGamma: Record<string, Type | TypeScheme> = answer.gamma,
 ): StudentProofNode {
-  // T-Var's real premises (when present) are the "jump to definition"
-  // sub-proof for a global reference, not something this exercise asks the
-  // student to re-derive — see ProofTreeBuilderNode's VariableMembershipLeaf
-  // for the (non-interactive) stand-in it shows instead. Excluding them
-  // here, not just at render time, keeps the "N nodes filled" count from
-  // silently including nodes the student can never reach.
-  const premises = answer.rule === Rule.Var ? [] : answer.premises;
   const requiresContextBuild = Object.keys(answer.gamma).some((k) => !(k in parentGamma));
+  // T-Var's real premise (when present) is the "jump to definition"
+  // sub-proof for a global reference — a genuinely separate derivation the
+  // student can build too, not a structural child of THIS node's own term.
+  // Its own parentGamma is its own gamma (zero-diff root), not this node's
+  // — the reference site's scope and the declaration site's scope are
+  // usually unrelated, so diffing one against the other would misfire.
+  const childParentGamma = (p: ProofTree) => answer.rule === Rule.Var ? p.gamma : answer.gamma;
   return {
     id: answer.id ?? crypto.randomUUID(),
     revealed,
     requiresContextBuild: requiresContextBuild || undefined,
-    premises: premises.map((p) => buildStudentNode(p, false, answer.gamma)),
+    premises: answer.premises.map((p) => buildStudentNode(p, false, childParentGamma(p))),
   };
 }
 
@@ -99,7 +99,9 @@ export function diffAgainstAnswer(
   }
   student.premises.forEach((premise, index) => {
     const answerPremise = answer.premises[index];
-    if (answerPremise) diffAgainstAnswer(premise, answerPremise, answer.gamma);
+    if (!answerPremise) return;
+    const childParentGamma = answer.rule === Rule.Var ? answerPremise.gamma : answer.gamma;
+    diffAgainstAnswer(premise, answerPremise, childParentGamma);
   });
 }
 

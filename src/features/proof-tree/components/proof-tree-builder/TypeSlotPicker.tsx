@@ -15,7 +15,20 @@ export type DraftType =
   | {kind: "base"; name: string}
   | {kind: "arrow"; from: DraftType | null; to: DraftType | null};
 
-const BASE_TYPES = ["Nat", "Bool", "Unit"] as const;
+export const BASE_TYPES = ["Nat", "Bool", "Unit"] as const;
+
+// Plain-text (not LaTeX) rendering for a picker chip's label — only needs
+// to cover TyIdentifier/TyArrow since that's all this picker (and Phase 1's
+// rule set) can ever produce; anything else falls back to "?" the same way
+// typeToDraft already does for out-of-scope kinds.
+export function typeLabel(type: Type): string {
+  if (type.kind === "TyArrow") {
+    const from = type.from.kind === "TyArrow" ? `(${typeLabel(type.from)})` : typeLabel(type.from);
+    return `${from} → ${typeLabel(type.to)}`;
+  }
+  if (type.kind === "TyIdentifier") return type.name;
+  return "?";
+}
 
 export function draftToType(draft: DraftType): Type | null {
   if (draft.kind === "base") {
@@ -46,15 +59,39 @@ export function typeToDraft(type: Type): DraftType {
 interface TypeSlotPickerProps {
   value: DraftType | null;
   onChange: (next: DraftType | null) => void;
+  // Types already visible in this judgement's Γ — a quick, one-click way to
+  // reuse a type the student is already looking at instead of rebuilding it
+  // base-by-base (particularly useful for arrows, which otherwise take
+  // several clicks). Picking one just seeds `value`, so it's edited exactly
+  // like any hand-built draft afterward — nothing is locked in by using it.
+  contextTypes?: Type[];
 }
 
-export function TypeSlotPicker({value, onChange}: TypeSlotPickerProps) {
+export function TypeSlotPicker({value, onChange, contextTypes = []}: TypeSlotPickerProps) {
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState("");
 
   if (value === null) {
     return (
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1 max-w-64">
+        {contextTypes.length > 0 && (
+          <>
+            <span className="w-full text-[10px] uppercase tracking-wide text-muted-foreground">From context</span>
+            {contextTypes.map((t, i) => (
+              <Button
+                key={i}
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="h-7 px-2 text-xs font-mono"
+                onClick={() => onChange(typeToDraft(t))}
+              >
+                {typeLabel(t)}
+              </Button>
+            ))}
+            <span className="w-full h-px bg-border my-0.5"/>
+          </>
+        )}
         {BASE_TYPES.map((name) => (
           <Button
             key={name}
@@ -144,9 +181,9 @@ export function TypeSlotPicker({value, onChange}: TypeSlotPickerProps) {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <TypeSlotPicker value={value.from} onChange={(next) => onChange({...value, from: next})}/>
+      <TypeSlotPicker value={value.from} onChange={(next) => onChange({...value, from: next})} contextTypes={contextTypes}/>
       <span className="text-muted-foreground text-xs">→</span>
-      <TypeSlotPicker value={value.to} onChange={(next) => onChange({...value, to: next})}/>
+      <TypeSlotPicker value={value.to} onChange={(next) => onChange({...value, to: next})} contextTypes={contextTypes}/>
       <button
         type="button"
         onClick={() => onChange(null)}

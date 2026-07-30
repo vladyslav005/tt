@@ -1,8 +1,11 @@
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {checkProof, enterBuildMode, exitBuildMode} from "@/shared/ui-state/termSlice.ts";
 import {countProofErrors, summarizeStudentTree} from "@/shared/ui-state/studentProof.ts";
 import {ProofTreeBuilderNode} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilderNode.tsx";
+import {buildGammaRegistry} from "@/features/proof-tree/components/proof-tree-builder/buildGammaRegistry.ts";
+import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
@@ -22,6 +25,12 @@ export function ProofTreeBuilder() {
   // neutral until the student opts in, so the tree doesn't give the answer
   // away just by looking "wrong" the instant something doesn't match.
   const [highlightMistakes, setHighlightMistakes] = useState(false);
+  // Numbers every distinct Γ in the answer key once (Γ_1, Γ_2, ...) — same
+  // registry-backed short/full toggle the Automatic tab already has, so a
+  // judgement's context never has to spell out the whole set inline (see
+  // buildGammaRegistry). Hook must run unconditionally, before the early
+  // return below, hence the empty fallback when there's no answer key yet.
+  const registry = useMemo(() => (answerKey ? buildGammaRegistry(answerKey) : new GammaRegistry()), [answerKey]);
 
   if (!studentTree || !answerKey) {
     const hasErrors = !proof || countProofErrors(proof) > 0;
@@ -127,12 +136,19 @@ export function ProofTreeBuilder() {
                 wrapperStyle={{width: "100%", height: "100%", overflow: "hidden", minHeight: "600px"}}
               >
                 <div className="flex items-center justify-center p-6">
-                  <ProofTreeBuilderNode
-                    studentNode={studentTree}
-                    answerNode={answerKey}
-                    parentGamma={answerKey.gamma}
-                    highlightMistakes={highlightMistakes}
-                  />
+                  {/* Keyed by the answer key's own id so Γ expand state
+                      resets instead of leaking stale labels into a new
+                      exercise — mirrors ProofTreeVisualisation's Automatic
+                      tab usage of the same provider. */}
+                  <TexRefExpansionProvider key={answerKey.id ?? "none"}>
+                    <ProofTreeBuilderNode
+                      studentNode={studentTree}
+                      answerNode={answerKey}
+                      parentGamma={answerKey.gamma}
+                      registry={registry}
+                      highlightMistakes={highlightMistakes}
+                    />
+                  </TexRefExpansionProvider>
                 </div>
               </TransformComponent>
             </>
