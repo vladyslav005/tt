@@ -13,9 +13,11 @@ function countTreeErrors(node: TexTree): number {
 }
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {useRef} from "react";
+import {useRef, useState} from "react";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
 import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
+import {Tabs, TabsList, TabsTrigger} from "@/shared/components/ui/tabs.tsx";
+import {ProofTreeBuilder} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilder.tsx";
 
 
 interface ProofTreeVisualisationProps {
@@ -29,6 +31,13 @@ export function ProofTreeVisualisation({
   const {toTexTree} = useProofHooks()
   const containerRef = useRef<HTMLDivElement>(null);
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
+  // Deliberately NOT Radix's <TabsContent> for the panels below — mounting
+  // the zoom-pan TransformWrapper inside TabsContent's own mount/measure
+  // lifecycle caused the tab to hang (reproduced repeatedly, including in a
+  // fresh tab). <Tabs>/<TabsList>/<TabsTrigger> below only drive this local
+  // state for the switcher buttons' styling; the panels are plain
+  // conditional JSX, decoupled from Radix entirely.
+  const [activeTab, setActiveTab] = useState<"automatic" | "build-check">("automatic");
 
   const texTree = proof ? toTexTree(proof) : null;
   const hasProof = proof !== null && proof !== undefined;
@@ -82,8 +91,19 @@ export function ProofTreeVisualisation({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
-          {hasProof ? (
+        <CardContent className="flex-1 overflow-hidden flex flex-col">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "automatic" | "build-check")}>
+            <TabsList className="self-start shrink-0 mb-2">
+              <TabsTrigger value="automatic">Automatic</TabsTrigger>
+              <TabsTrigger value="build-check">Build &amp; Check</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="flex-1 min-h-0 overflow-hidden">
+          {activeTab !== "automatic" ? (
+            <div className="h-full overflow-auto">
+              <ProofTreeBuilder/>
+            </div>
+          ) : hasProof ? (
             <div className="w-full h-full  flex flex-col space-y-4">
               <div className="flex-1 w-full relative  rounded-xl bg-muted/30 border overflow-hidden">
                 <TransformWrapper
@@ -174,6 +194,7 @@ export function ProofTreeVisualisation({
               </p>
             </div>
           )}
+          </div>
         </CardContent>
       </Card>
 

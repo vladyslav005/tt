@@ -77,4 +77,18 @@ export class GammaRegistry {
     }
     return this.bySignature.get(this.signature(gamma)) ?? null;
   }
+
+  // Clears every registration so this instance can be reused for a fresh
+  // derivation — see TexMapper.setTypeAliases, which resets this before
+  // every top-level render. Without it, a Γ that's genuinely non-empty but
+  // was never registered (because this registry still held a *previous*
+  // term's registrations) falls through refFor's null case and renders as
+  // ∅ — indistinguishable from an actually-empty context.
+  reset(): void {
+    for (const key of Object.keys(this.registry)) {
+      delete this.registry[key];
+    }
+    this.bySignature.clear();
+    this.nextIndex = 1;
+  }
 }

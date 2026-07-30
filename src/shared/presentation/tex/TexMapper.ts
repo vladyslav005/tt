@@ -50,9 +50,15 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   // Called once before each top-level visit() — mirrors
   // SLTLCTypeChecker.setTheories()'s "set state, then use" pattern, since
   // this mapper is a long-lived DI singleton rather than constructed fresh
-  // per render.
+  // per render. Also resets the Γ registry here (see GammaRegistry.reset):
+  // it's built lazily on first visit() and, being singleton state, must be
+  // thrown away before each new top-level render or a later term's
+  // genuinely non-empty contexts silently render as ∅ (never registered,
+  // indistinguishable from empty).
   setTypeAliases(aliases: { [name: string]: Type }): void {
     this.typeAliasRegistry = new TypeAliasRegistry(aliases);
+    this.gammaRegistry.reset();
+    this.registryBuilt = false;
   }
 
   visit(node: ProofTree): TexTree {
