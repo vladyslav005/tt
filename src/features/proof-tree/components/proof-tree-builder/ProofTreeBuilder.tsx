@@ -1,8 +1,11 @@
+import {useState} from "react";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {checkProof, enterBuildMode, exitBuildMode} from "@/shared/ui-state/termSlice.ts";
 import {countProofErrors, summarizeStudentTree} from "@/shared/ui-state/studentProof.ts";
 import {ProofTreeBuilderNode} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilderNode.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {Switch} from "@/shared/components/ui/switch.tsx";
+import {Label} from "@/shared/components/ui/label.tsx";
 import {cn} from "@/shared/lib/utils.ts";
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {ZoomIn, ZoomOut, Crosshair} from "lucide-react";
@@ -15,6 +18,10 @@ export function ProofTreeBuilder() {
   const dispatch = useAppDispatch();
   const {studentTree, answerKey} = useAppSelector((state) => state.term.buildMode);
   const proof = useAppSelector((state) => state.term.proof);
+  // Off by default — a wrong rule pick or failed check stays visually
+  // neutral until the student opts in, so the tree doesn't give the answer
+  // away just by looking "wrong" the instant something doesn't match.
+  const [highlightMistakes, setHighlightMistakes] = useState(false);
 
   if (!studentTree || !answerKey) {
     const hasErrors = !proof || countProofErrors(proof) > 0;
@@ -55,7 +62,13 @@ export function ProofTreeBuilder() {
             </>
           )}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch id="highlight-mistakes" checked={highlightMistakes} onCheckedChange={setHighlightMistakes}/>
+            <Label htmlFor="highlight-mistakes" className="text-sm text-muted-foreground cursor-pointer">
+              Highlight mistakes
+            </Label>
+          </div>
           <Button size="sm" onClick={() => dispatch(checkProof())}>Check Proof</Button>
           <Button size="sm" variant="ghost" onClick={() => dispatch(exitBuildMode())}>Exit</Button>
         </div>
@@ -114,7 +127,12 @@ export function ProofTreeBuilder() {
                 wrapperStyle={{width: "100%", height: "100%", overflow: "hidden", minHeight: "600px"}}
               >
                 <div className="flex items-center justify-center p-6">
-                  <ProofTreeBuilderNode studentNode={studentTree} answerNode={answerKey} parentGamma={answerKey.gamma}/>
+                  <ProofTreeBuilderNode
+                    studentNode={studentTree}
+                    answerNode={answerKey}
+                    parentGamma={answerKey.gamma}
+                    highlightMistakes={highlightMistakes}
+                  />
                 </div>
               </TransformComponent>
             </>

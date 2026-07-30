@@ -20,6 +20,12 @@ interface ProofTreeBuilderNodeProps {
   // The context this node's own Γ was built on top of — its parent's real
   // gamma (or its own, at the root, where there's nothing to extend).
   parentGamma: Record<string, Type | TypeScheme>;
+  // Student-controlled (ProofTreeBuilder's "Highlight mistakes" switch) —
+  // off by default so a wrong rule pick or a failed Check Proof doesn't
+  // visually give away "this one's wrong" just by looking at the tree; the
+  // underlying structural rejection (no premises spawn from an invalid
+  // rule) still applies either way, only the red/tooltip feedback is gated.
+  highlightMistakes: boolean;
   root?: boolean;
 }
 
@@ -63,14 +69,21 @@ function VariableMembershipLeaf({answerNode}: { answerNode: ProofTree }) {
 // typesetting) to re-render too. Immer's structural sharing means a node
 // whose own data didn't change keeps the exact same object reference, so
 // a plain reference-equality check here is exactly the right comparison.
-export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentNode, answerNode, parentGamma, root = true}: ProofTreeBuilderNodeProps) {
+export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentNode, answerNode, parentGamma, highlightMistakes, root = true}: ProofTreeBuilderNodeProps) {
   const dispatch = useAppDispatch();
   const hasChosenValidRule = studentNode.chosenRule !== undefined && studentNode.ruleValid === true;
   const isVar = hasChosenValidRule && studentNode.chosenRule === Rule.Var;
   const isLeaf = hasChosenValidRule && studentNode.premises.length === 0;
   const showDashedPlaceholder = !hasChosenValidRule;
+  // Pairs each shown premise with its own ORIGINAL index (not its position
+  // in this filtered/shown list) — premises can be revealed in any order
+  // (see ConclusionBuilder's premise-click wrapping), so a revealed premise
+  // at original index 1 with index 0 still unrevealed must not shift up and
+  // accidentally pair with answerNode.premises[0].
   const premisesToShow = hasChosenValidRule
-    ? studentNode.premises.filter((p) => p.revealed)
+    ? studentNode.premises
+      .map((premise, originalIndex) => ({premise, originalIndex}))
+      .filter(({premise}) => premise.revealed)
     : [];
 
   const contextFilled = !studentNode.requiresContextBuild || studentNode.writtenBindings !== undefined;
@@ -94,8 +107,8 @@ export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentN
         style={showDashedPlaceholder ? {borderBottomStyle: "dashed", opacity: 0.5} : undefined}
       >
         {isVar && <VariableMembershipLeaf answerNode={answerNode}/>}
-        {!isVar && premisesToShow.map((premise, index) => {
-          const answerPremise = answerNode.premises[index];
+        {!isVar && premisesToShow.map(({premise, originalIndex}, displayIndex) => {
+          const answerPremise = answerNode.premises[originalIndex];
           if (!answerPremise) return null;
           return (
             <Fragment key={premise.id}>
@@ -104,8 +117,9 @@ export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentN
                 studentNode={premise}
                 answerNode={answerPremise}
                 parentGamma={answerNode.gamma}
+                highlightMistakes={highlightMistakes}
               />
-              {index !== premisesToShow.length - 1 && <div className="inter-proof"/>}
+              {displayIndex !== premisesToShow.length - 1 && <div className="inter-proof"/>}
             </Fragment>
           );
         })}
@@ -117,15 +131,17 @@ export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentN
         <div
           className={cn(
             `conclusion-center ${isItLeaf} ${isItRoot} rounded-md my-1.5 px-2 flex items-center gap-2 transition-all duration-200`,
-            studentNode.ruleValid === false && "bg-destructive/10 border border-destructive/30 dark:bg-destructive/15 dark:border-destructive/40",
-            anyInvalid && "bg-destructive/10 border border-destructive/30 dark:bg-destructive/15 dark:border-destructive/40",
+            highlightMistakes && studentNode.ruleValid === false && "bg-destructive/10 border border-destructive/30 dark:bg-destructive/15 dark:border-destructive/40",
+            highlightMistakes && anyInvalid && "bg-destructive/10 border border-destructive/30 dark:bg-destructive/15 dark:border-destructive/40",
             allValid && "bg-emerald-500/10 border border-emerald-500/30 dark:bg-emerald-500/15 dark:border-emerald-500/40",
           )}
-          title={studentNode.ruleValid === false
-            ? `"${studentNode.chosenRule !== undefined ? RULE_LABELS[studentNode.chosenRule] : ""}" doesn't apply to this term`
-            : anyInvalid
-              ? "Doesn't match — press Check Proof again after fixing it"
-              : undefined}
+          title={!highlightMistakes
+            ? undefined
+            : studentNode.ruleValid === false
+              ? `"${studentNode.chosenRule !== undefined ? RULE_LABELS[studentNode.chosenRule] : ""}" doesn't apply to this term`
+              : anyInvalid
+                ? "Doesn't match — press Check Proof again after fixing it"
+                : undefined}
         >
           <ConclusionBuilder
             studentNode={studentNode}
@@ -150,7 +166,7 @@ export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentN
             <p
               className={cn(
                 "rule-name cursor-pointer select-none hover:underline",
-                studentNode.ruleValid === false && "text-destructive",
+                highlightMistakes && studentNode.ruleValid === false && "text-destructive",
               )}
             >
               {ruleLabel ?? "pick rule"}
