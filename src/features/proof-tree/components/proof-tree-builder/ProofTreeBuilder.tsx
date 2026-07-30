@@ -114,7 +114,7 @@ export function ProofTreeBuilder() {
                 wrapperStyle={{width: "100%", height: "100%", overflow: "hidden", minHeight: "600px"}}
               >
                 <div className="flex items-center justify-center p-6">
-                  <ProofTreeBuilderNode studentNode={studentTree} answerNode={answerKey}/>
+                  <ProofTreeBuilderNode studentNode={studentTree} answerNode={answerKey} parentGamma={answerKey.gamma}/>
                 </div>
               </TransformComponent>
             </>

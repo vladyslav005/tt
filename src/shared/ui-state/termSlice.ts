@@ -6,6 +6,7 @@ import type {EvaluationResult} from "@/shared/core/application/evaluation/type.t
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig, type TypeTheoryId} from "@/shared/core/domain/typeTheory.ts";
 import {
   buildStudentNode,
+  type ContextBinding,
   diffAgainstAnswer,
   findAnswerNode,
   findStudentNode,
@@ -91,7 +92,9 @@ const counterSlice = createSlice({
 
     // A rule pick's structural fit (does it match this node's term shape,
     // per ruleAppliesToTerm) is checked and stamped immediately, against
-    // the frozen answer key's term at that same node.
+    // the frozen answer key's term at that same node. Premises are NOT
+    // auto-revealed here — the student has to actively identify each one by
+    // clicking its sub-term in the rendered judgement (see revealPremise).
     chooseRule: (state, action: { payload: { nodeId: string; rule: Rule } }) => {
       const {studentTree, answerKey} = state.buildMode;
       if (!studentTree || !answerKey) return;
@@ -105,10 +108,15 @@ const counterSlice = createSlice({
       node.chosenRule = action.payload.rule;
       node.ruleValid = valid;
       node.typeCheck = undefined;
+    },
 
-      if (valid) {
-        node.premises.forEach((premise) => { premise.revealed = true; });
-      }
+    // Dispatched when the student clicks a premise's sub-term inside its
+    // parent's rendered judgement — the "identify the premise" step.
+    revealPremise: (state, action: { payload: { premiseId: string } }) => {
+      const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.premiseId);
+      if (!node) return;
+
+      node.revealed = true;
     },
 
     setNodeType: (state, action: { payload: { nodeId: string; type: Type } }) => {
@@ -117,6 +125,30 @@ const counterSlice = createSlice({
 
       node.writtenType = action.payload.type;
       node.typeCheck = undefined;
+    },
+
+    setNodeContext: (state, action: { payload: { nodeId: string; bindings: ContextBinding[] } }) => {
+      const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.nodeId);
+      if (!node) return;
+
+      node.writtenBindings = action.payload.bindings;
+      node.contextCheck = undefined;
+    },
+
+    // Clears a single node's own progress (rule/type/context) and re-hides
+    // its direct premises so they must be re-identified — but leaves
+    // grandchildren's own filled-in data untouched (non-destructive).
+    resetNode: (state, action: { payload: { nodeId: string } }) => {
+      const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.nodeId);
+      if (!node) return;
+
+      node.chosenRule = undefined;
+      node.ruleValid = undefined;
+      node.writtenType = undefined;
+      node.typeCheck = undefined;
+      node.writtenBindings = undefined;
+      node.contextCheck = undefined;
+      node.premises.forEach((premise) => { premise.revealed = false; });
     },
 
     // Diffs every currently-filled (rule + type both written) node against
@@ -156,7 +188,10 @@ export const {
   enterBuildMode,
   exitBuildMode,
   chooseRule,
+  revealPremise,
   setNodeType,
+  setNodeContext,
+  resetNode,
   checkProof,
   pushProcessingError,
   clean

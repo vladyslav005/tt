@@ -123,3 +123,16 @@
 .gamma:hover {
     background-color: var(--Gamma-Hover);
 }
+
+/* Clickable sub-terms in the proof-tree builder — a not-yet-identified
+   premise's span inside its parent's rendered term (ConclusionBuilder.tsx),
+   styled distinctly from the type/context "?" slots so it reads as "click
+   to reveal" rather than "click to fill in". */
+mjx-container a[data-mjx-href^="premise:"] {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+mjx-container a[data-mjx-href^="premise:"]:hover {
+    color: hsl(var(--primary));
+}
