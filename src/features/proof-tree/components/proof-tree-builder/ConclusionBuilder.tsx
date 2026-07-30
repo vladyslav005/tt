@@ -19,9 +19,10 @@ interface ConclusionBuilderProps {
   // The context this node's Γ is built on top of — its parent's real
   // gamma, or its own gamma at the root (where there's nothing to extend).
   parentGamma: Record<string, Type | TypeScheme>;
-  // Rule chosen and valid, and (if this rule has premises) every revealed
-  // premise already has a written type — mirrors the design's "once all of
-  // a node's premises are closed, its own ? becomes eligible to fill".
+  // A rule has been chosen (right or wrong — correctness is irrelevant
+  // here), and every revealed premise already has a written type — mirrors
+  // the design's "once all of a node's premises are closed, its own ?
+  // becomes eligible to fill".
   typeSlotUnlocked: boolean;
 }
 
@@ -42,8 +43,9 @@ type EditorKind = "type" | "context" | null;
 // the technique the automatic view already uses for its Γ_n references
 // (JudgementSegments.tsx). Three kinds of slot can appear in one judgement:
 // the RHS type ("type"), an LHS context-binding addition ("context"), and —
-// once a valid rule is picked — one clickable span per not-yet-identified
-// premise's sub-term inside the rendered term itself ("premise:N").
+// once any rule is picked, correct or not — one clickable span per
+// not-yet-identified premise's sub-term inside the rendered term itself
+// ("premise:N").
 export function ConclusionBuilder({studentNode, answerNode, parentGamma, typeSlotUnlocked}: ConclusionBuilderProps) {
   const dispatch = useAppDispatch();
   const [openEditor, setOpenEditor] = useState<EditorKind>(null);
@@ -51,10 +53,10 @@ export function ConclusionBuilder({studentNode, answerNode, parentGamma, typeSlo
   const [bindingName, setBindingName] = useState("");
   const [bindingTypeDraft, setBindingTypeDraft] = useState<DraftType | null>(null);
 
-  const hasChosenValidRule = studentNode.chosenRule !== undefined && studentNode.ruleValid === true;
+  const hasChosenRule = studentNode.chosenRule !== undefined;
 
   const unrevealedPremiseIndices = new Set(
-    hasChosenValidRule
+    hasChosenRule
       ? studentNode.premises.map((p, i) => (p.revealed ? -1 : i)).filter((i) => i >= 0)
       : [],
   );

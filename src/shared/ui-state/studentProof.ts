@@ -21,9 +21,12 @@ export interface StudentProofNode {
   // wrapping) — an active identification step, not an automatic reveal.
   revealed: boolean;
   chosenRule?: Rule;
-  // Set the instant a rule is picked (see ruleAppliesToTerm) — independent
-  // of typeCheck, which only updates on an explicit Check Proof pass.
-  ruleValid?: boolean;
+  // Whether the chosen rule was actually correct — like typeCheck/
+  // contextCheck, only stamped by an explicit Check Proof pass. A rule
+  // pick is never accepted/rejected on the spot: premises and the type
+  // slot open up regardless, so a wrong guess doesn't dead-end the
+  // exercise — it just gets marked wrong later, same as a wrong type.
+  ruleCheck?: "valid" | "invalid";
   writtenType?: Type;
   typeCheck?: "valid" | "invalid";
   // True when this node's real Γ adds a binding on top of its parent's —
@@ -65,33 +68,28 @@ export function findStudentNode(root: StudentProofNode, id: string): StudentProo
   return undefined;
 }
 
-export function findAnswerNode(root: ProofTree, id: string): ProofTree | undefined {
-  if (root.id === id) return root;
-  for (const premise of root.premises) {
-    const found = findAnswerNode(premise, id);
-    if (found) return found;
-  }
-  return undefined;
-}
-
 function bindingsMatch(written: ContextBinding[], expected: ContextBinding[]): boolean {
   if (written.length !== expected.length) return false;
   return expected.every((e) => written.some((w) => w.name === e.name && typeEquals(w.type, e.type)));
 }
 
 // Diffs the student's filled-in nodes against the answer key, stamping
-// `typeCheck` (and, where applicable, `contextCheck`) on every node that
-// has the relevant fields written — nodes the student hasn't reached yet
-// are left untouched (neither valid nor invalid, just not part of this pass).
+// `ruleCheck`, `typeCheck`, and (where applicable) `contextCheck` on every
+// node that has the relevant fields written — nodes the student hasn't
+// reached yet are left untouched (neither valid nor invalid, just not part
+// of this pass). Rule and type are checked independently — a wrong rule
+// with a coincidentally-correct type still shows the type as valid; each
+// mistake is its own signal, not lumped into one pass/fail per node.
 export function diffAgainstAnswer(
   student: StudentProofNode,
   answer: ProofTree,
   parentGamma: Record<string, Type | TypeScheme> = answer.gamma,
 ): void {
+  if (student.chosenRule !== undefined) {
+    student.ruleCheck = student.chosenRule === answer.rule ? "valid" : "invalid";
+  }
   if (student.chosenRule !== undefined && student.writtenType !== undefined) {
-    student.typeCheck = student.chosenRule === answer.rule && typeEquals(student.writtenType, answer.type)
-      ? "valid"
-      : "invalid";
+    student.typeCheck = typeEquals(student.writtenType, answer.type) ? "valid" : "invalid";
   }
   if (student.requiresContextBuild && student.writtenBindings !== undefined) {
     const expected: ContextBinding[] = Object.keys(answer.gamma)
@@ -123,8 +121,10 @@ export function summarizeStudentTree(node: StudentProofNode): ProofBuildSummary 
   const contextFilled = !node.requiresContextBuild || node.writtenBindings !== undefined;
   const contextOk = !node.requiresContextBuild || node.contextCheck !== "invalid";
   const isFilled = node.chosenRule !== undefined && node.writtenType !== undefined && contextFilled;
-  const isValid = node.typeCheck === "valid" && contextOk;
-  const isInvalid = node.typeCheck === "invalid" || (node.requiresContextBuild && node.contextCheck === "invalid");
+  const isValid = node.ruleCheck === "valid" && node.typeCheck === "valid" && contextOk;
+  const isInvalid = node.ruleCheck === "invalid"
+    || node.typeCheck === "invalid"
+    || (node.requiresContextBuild && node.contextCheck === "invalid");
 
   return {
     total: 1 + sum((s) => s.total),

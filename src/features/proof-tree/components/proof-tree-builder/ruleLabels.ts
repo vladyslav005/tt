@@ -4,7 +4,7 @@ import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 // strings TexMapper's visitX methods use for the automatic derivation
 // (e.g. "T-Abs", "T-App"), so a rule picked here reads identically to how
 // it would show up in the "Automatic" tab. Partial, not exhaustive over
-// Rule — extended alongside ruleSchemas.ts as more rules join the builder.
+// Rule — extended alongside BUILDER_RULES as more rules join the builder.
 export const RULE_LABELS: Partial<Record<Rule, string>> = {
   [Rule.Var]: "T-Var",
   [Rule.Abs]: "T-Abs",

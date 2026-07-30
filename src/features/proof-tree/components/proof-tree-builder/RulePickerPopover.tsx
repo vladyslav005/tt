@@ -18,9 +18,9 @@ interface RulePickerPopoverProps {
 }
 
 // Every Phase-1 rule is offered unconditionally, including ones that won't
-// structurally fit this node's term — that's intentional (see the Proof
-// Tree Builder plan: "let them try and fail"). The instant structural
-// match/mismatch check happens inside the chooseRule reducer, not here.
+// structurally fit this node's term — that's intentional. Whether the pick
+// was actually correct is never checked here or instantly on dispatch; it
+// only surfaces later via Check Proof, same as a written type.
 export function RulePickerPopover({nodeId, children}: RulePickerPopoverProps) {
   const dispatch = useAppDispatch();
 

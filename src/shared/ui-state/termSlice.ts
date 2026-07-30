@@ -8,11 +8,9 @@ import {
   buildStudentNode,
   type ContextBinding,
   diffAgainstAnswer,
-  findAnswerNode,
   findStudentNode,
   type StudentProofNode,
 } from "@/shared/ui-state/studentProof.ts";
-import {ruleAppliesToTerm} from "@/shared/core/application/typecheck/ruleSchemas.ts";
 
 interface BuildModeState {
   active: boolean;
@@ -90,23 +88,18 @@ const counterSlice = createSlice({
       state.buildMode = {active: false};
     },
 
-    // A rule pick's structural fit (does it match this node's term shape,
-    // per ruleAppliesToTerm) is checked and stamped immediately, against
-    // the frozen answer key's term at that same node. Premises are NOT
-    // auto-revealed here — the student has to actively identify each one by
-    // clicking its sub-term in the rendered judgement (see revealPremise).
+    // Just records the pick — never accepted or rejected on the spot.
+    // Whether it was actually correct only surfaces via Check Proof (see
+    // diffAgainstAnswer's ruleCheck), same as a written type. Premises are
+    // NOT auto-revealed here either — the student has to actively identify
+    // each one by clicking its sub-term in the rendered judgement (see
+    // revealPremise), regardless of whether this rule turns out right.
     chooseRule: (state, action: { payload: { nodeId: string; rule: Rule } }) => {
-      const {studentTree, answerKey} = state.buildMode;
-      if (!studentTree || !answerKey) return;
-
-      const node = findStudentNode(studentTree, action.payload.nodeId);
-      const answerNode = findAnswerNode(answerKey, action.payload.nodeId);
-      if (!node || !answerNode) return;
-
-      const valid = ruleAppliesToTerm(action.payload.rule, answerNode.term);
+      const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.nodeId);
+      if (!node) return;
 
       node.chosenRule = action.payload.rule;
-      node.ruleValid = valid;
+      node.ruleCheck = undefined;
       node.typeCheck = undefined;
     },
 
@@ -143,7 +136,7 @@ const counterSlice = createSlice({
       if (!node) return;
 
       node.chosenRule = undefined;
-      node.ruleValid = undefined;
+      node.ruleCheck = undefined;
       node.writtenType = undefined;
       node.typeCheck = undefined;
       node.writtenBindings = undefined;

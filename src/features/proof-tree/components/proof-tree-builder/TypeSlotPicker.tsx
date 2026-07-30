@@ -8,7 +8,7 @@ import {cn} from "@/shared/lib/utils.ts";
 // custom base type, e.g. a type variable like "T"). Scoped to exactly what
 // Phase 1's rules (Var/Abs/App/Lit) can ever need as an answer: a base type
 // or an arrow of two further slots, recursively. Extend alongside
-// ruleSchemas.ts as more rules join the builder — this is not meant to be
+// BUILDER_RULES as more rules join the builder — this is not meant to be
 // the general type language's full picker (see RecordType, which has no
 // surface syntax anywhere in this app to begin with).
 export type DraftType =
