@@ -5,18 +5,23 @@ import {
   AscribeContext,
   BinaryOpContext,
   CaseContext,
+  ConsContext,
   DummyAbstractionContext,
   FixContext,
+  HeadContext,
   IfConditionContext,
   InlContext,
   InrContext,
+  IsNilContext,
   LambdaAbstractionContext,
   LambdaAbstractionUntypedContext, LetExpressionContext,
   LiteralContext,
+  NilContext,
   ParenthesesContext,
   RecordContext,
   RecordProjectionContext,
   SequencingContext,
+  TailContext,
   TupleContext,
   TupleProjectionContext, TypeAbstractionContext, TypeApplicationContext,
   VariableContext,
@@ -30,15 +35,21 @@ import type {
   BinaryOperator,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
+  Head,
   IfCondition,
   Inl,
-  Inr, Let,
+  Inr,
+  IsNil,
+  Let,
   Lit,
+  Nil,
   Record,
   RecordProjection,
   Sequencing,
+  Tail,
   Term,
   Tuple,
   TupleProjection, TypeAbs, TypeApp,
@@ -308,6 +319,51 @@ export class TermBuilderVisitor
       kind: "TypeApp",
       id: crypto.randomUUID(),
       typeArg: new TypeBuilderVisitor().visit(ctx.type_()),
+      term: this.visit(ctx.term()),
+    }
+  }
+
+  visitNil = (ctx: NilContext): Nil => {
+    return {
+      kind: "Nil",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+    }
+  }
+
+  visitCons = (ctx: ConsContext): Cons => {
+    return {
+      kind: "Cons",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+      head: this.visit(ctx.term(0)),
+      tail: this.visit(ctx.term(1)),
+    }
+  }
+
+  visitIsNil = (ctx: IsNilContext): IsNil => {
+    return {
+      kind: "IsNil",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+      term: this.visit(ctx.term()),
+    }
+  }
+
+  visitHead = (ctx: HeadContext): Head => {
+    return {
+      kind: "Head",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+      term: this.visit(ctx.term()),
+    }
+  }
+
+  visitTail = (ctx: TailContext): Tail => {
+    return {
+      kind: "Tail",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }
   }

@@ -152,6 +152,26 @@ twice ((compose identity) identity);`,
     ],
   },
   {
+    title: "Lists",
+    items: [
+      {
+        label: "Head of a list",
+        description: "cons/nil construction, head extraction (lecture's own worked example)",
+        code: `head[Nat] cons[Nat] 3 (cons[Nat] 8 nil[Nat]);`,
+      },
+      {
+        label: "isnil",
+        description: "isnil on an empty vs. a non-empty list",
+        code: `isnil[Nat] (cons[Nat] 1 nil[Nat]);`,
+      },
+      {
+        label: "tail",
+        description: "drop the first element of a list",
+        code: `tail[Nat] (cons[Nat] 1 (cons[Nat] 2 nil[Nat]));`,
+      },
+    ],
+  },
+  {
     title: "Recursion (fix)",
     items: [
       {

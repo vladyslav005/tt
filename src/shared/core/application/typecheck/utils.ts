@@ -114,6 +114,11 @@ export function typeEquals(a: Type, b: Type): boolean {
       const bIdx = b as typeof a;
       return typeEquals(a.func, bIdx.func) && termIndexEquals(a.arg, bIdx.arg);
     }
+
+    case "ListType": {
+      const bList = b as typeof a;
+      return typeEquals(a.elementType, bList.elementType);
+    }
   }
 }
 
@@ -157,6 +162,9 @@ export function typeToString(a: Type): string {
 
     case "TyIndexApp":
       return `(${typeToString(a.func)}[${termIndexToString(a.arg)}])`;
+
+    case "ListType":
+      return `(List ${typeToString(a.elementType)})`;
   }
 }
 
@@ -216,6 +224,8 @@ export function containsTypeConstructor(type: Type): boolean {
       return containsTypeConstructor(type.paramType) || containsTypeConstructor(type.body);
     case "TyIndexApp":
       return containsTypeConstructor(type.func);
+    case "ListType":
+      return containsTypeConstructor(type.elementType);
   }
 }
 
@@ -247,6 +257,8 @@ export function containsLambdaPConstruct(type: Type): boolean {
     case "TyPi":
     case "TyIndexApp":
       return true;
+    case "ListType":
+      return containsLambdaPConstruct(type.elementType);
   }
 }
 
@@ -333,6 +345,9 @@ export function substituteTypeVariable(type: Type, name: string, replacement: Ty
     case "TyIndexApp":
       // arg is a Term, not a Type — untouched by a type-variable substitution.
       return {...type, func: substituteTypeVariable(type.func, name, replacement)};
+
+    case "ListType":
+      return {...type, elementType: substituteTypeVariable(type.elementType, name, replacement)};
   }
 }
 
@@ -371,6 +386,8 @@ export function containsFreeTermVar(type: Type, name: string): boolean {
       return containsFreeTermVar(type.paramType, name) || containsFreeTermVar(type.body, name);
     case "TyIndexApp":
       return containsFreeTermVar(type.func, name) || (type.arg.kind === "Var" && type.arg.name === name);
+    case "ListType":
+      return containsFreeTermVar(type.elementType, name);
   }
 }
 
@@ -453,6 +470,9 @@ export function substituteTermInType(type: Type, name: string, replacement: Term
         func: substituteTermInType(type.func, name, replacement),
         arg: type.arg.kind === "Var" && type.arg.name === name ? replacement : type.arg,
       };
+
+    case "ListType":
+      return {...type, elementType: substituteTermInType(type.elementType, name, replacement)};
   }
 }
 
@@ -535,6 +555,9 @@ export function expandTypeAliases(type: Type, aliases: ReadonlyMap<string, Type>
 
     case "TyIndexApp":
       return {...type, func: expandTypeAliases(type.func, aliases, seen)};
+
+    case "ListType":
+      return {...type, elementType: expandTypeAliases(type.elementType, aliases, seen)};
   }
 }
 
@@ -584,5 +607,8 @@ export function normalizeType(type: Type): Type {
 
     case "TyIndexApp":
       return {...type, func: normalizeType(type.func)};
+
+    case "ListType":
+      return {...type, elementType: normalizeType(type.elementType)};
   }
 }

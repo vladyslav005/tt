@@ -111,6 +111,13 @@ function TypeView({ type }: { type: Type }) {
         </>
       );
     }
+    case "ListType":
+      return (
+        <>
+          <span className="text-blue-600 dark:text-blue-400">List </span>
+          <TypeView type={type.elementType} />
+        </>
+      );
   }
 }
 
@@ -352,6 +359,52 @@ function TermView({
             <span className="text-fuchsia-600 dark:text-fuchsia-400"> [</span>
             <TypeView type={term.typeArg} />
             <span className="text-fuchsia-600 dark:text-fuchsia-400">]</span>
+          </>
+        );
+      case "Nil":
+        return (
+          <>
+            <span className="text-blue-600 dark:text-blue-400">nil[</span>
+            <TypeView type={term.type} />
+            <span className="text-blue-600 dark:text-blue-400">]</span>
+          </>
+        );
+      case "Cons":
+        return (
+          <>
+            <span className="text-blue-600 dark:text-blue-400">cons[</span>
+            <TypeView type={term.type} />
+            <span className="text-blue-600 dark:text-blue-400">] </span>
+            <TermView term={term.head} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+            <span className="text-muted-foreground"> </span>
+            <TermView term={term.tail} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "IsNil":
+        return (
+          <>
+            <span className="text-blue-600 dark:text-blue-400">isnil[</span>
+            <TypeView type={term.type} />
+            <span className="text-blue-600 dark:text-blue-400">] </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "Head":
+        return (
+          <>
+            <span className="text-blue-600 dark:text-blue-400">head[</span>
+            <TypeView type={term.type} />
+            <span className="text-blue-600 dark:text-blue-400">] </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "Tail":
+        return (
+          <>
+            <span className="text-blue-600 dark:text-blue-400">tail[</span>
+            <TypeView type={term.type} />
+            <span className="text-blue-600 dark:text-blue-400">] </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
           </>
         );
     }

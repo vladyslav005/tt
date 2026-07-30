@@ -6,19 +6,24 @@ import type {
   ASTNode,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
   FunDecl,
+  Head,
   IfCondition,
   Inl,
   Inr,
+  IsNil,
   Kind,
   Let,
   Lit,
+  Nil,
   Program,
   Record as RecordTerm,
   RecordProjection,
   Sequencing,
+  Tail,
   Tuple,
   TupleProjection,
   TyConstructorAbs,
@@ -251,6 +256,10 @@ export class AstFlowMapper extends AstVisitor<void> {
         this.visitChild(node, "func", "func", node.func);
         this.visitChild(node, "arg", "arg", node.arg);
         return;
+
+      case "ListType":
+        this.visitChild(node, "elementType", "elem", node.elementType);
+        return;
     }
   }
 
@@ -361,6 +370,36 @@ export class AstFlowMapper extends AstVisitor<void> {
   protected visitFix(node: Fix): void {
     this.pushNode(node);
     this.visitChild(node, "term", "t", node.term);
+  }
+
+  protected visitNil(node: Nil): void {
+    this.pushNode(node);
+    this.visitChild(node, "type", "type", node.type);
+  }
+
+  protected visitCons(node: Cons): void {
+    this.pushNode(node);
+    this.visitChild(node, "head", "head", node.head);
+    this.visitChild(node, "tail", "tail", node.tail);
+    this.visitChild(node, "type", "type", node.type);
+  }
+
+  protected visitIsNil(node: IsNil): void {
+    this.pushNode(node);
+    this.visitChild(node, "type", "type", node.type);
+    this.visitChild(node, "term", "list", node.term);
+  }
+
+  protected visitHead(node: Head): void {
+    this.pushNode(node);
+    this.visitChild(node, "term", "list", node.term);
+    this.visitChild(node, "type", "type", node.type);
+  }
+
+  protected visitTail(node: Tail): void {
+    this.pushNode(node);
+    this.visitChild(node, "term", "list", node.term);
+    this.visitChild(node, "type", "type", node.type);
   }
 
   protected visitTypeAbstraction(node: TypeAbs): void {
@@ -489,6 +528,7 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "SumType":
       case "VariantType":
       case "RecordType":
+      case "ListType":
         this.nodes.push({
           id: node.id,
           type: "type",
@@ -543,6 +583,21 @@ export class AstFlowMapper extends AstVisitor<void> {
         return;
       case "Fix":
         this.nodes.push({id: node.id, type: "fix", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Nil":
+        this.nodes.push({id: node.id, type: "nil", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Cons":
+        this.nodes.push({id: node.id, type: "cons", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "IsNil":
+        this.nodes.push({id: node.id, type: "isNil", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Head":
+        this.nodes.push({id: node.id, type: "headOp", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Tail":
+        this.nodes.push({id: node.id, type: "tailOp", position: {x: 0, y: 0}, data: {term: node}});
         return;
       case "TypeAbs":
         this.nodes.push({id: node.id, type: "typeAbs", position: {x: 0, y: 0}, data: {term: node}});

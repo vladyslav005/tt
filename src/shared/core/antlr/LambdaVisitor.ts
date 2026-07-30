@@ -10,7 +10,6 @@ import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
 import { TypeAliasDeclarationContext } from "./LambdaParser.js";
 import { TypeConstructorDeclarationContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
-import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
 import { InlContext } from "./LambdaParser.js";
 import { TypeAbstractionContext } from "./LambdaParser.js";
@@ -18,26 +17,33 @@ import { IfConditionContext } from "./LambdaParser.js";
 import { InrContext } from "./LambdaParser.js";
 import { CaseContext } from "./LambdaParser.js";
 import { LambdaAbstractionContext } from "./LambdaParser.js";
-import { VariantContext } from "./LambdaParser.js";
 import { AscribeContext } from "./LambdaParser.js";
-import { FixContext } from "./LambdaParser.js";
 import { TupleProjectionContext } from "./LambdaParser.js";
 import { RecordProjectionContext } from "./LambdaParser.js";
+import { TailContext } from "./LambdaParser.js";
 import { LiteralContext } from "./LambdaParser.js";
 import { LetExpressionContext } from "./LambdaParser.js";
 import { RecordContext } from "./LambdaParser.js";
-import { ApplicationContext } from "./LambdaParser.js";
+import { IsNilContext } from "./LambdaParser.js";
 import { SequencingContext } from "./LambdaParser.js";
-import { TupleContext } from "./LambdaParser.js";
 import { ParenthesesContext } from "./LambdaParser.js";
 import { DummyAbstractionContext } from "./LambdaParser.js";
 import { BinaryOpContext } from "./LambdaParser.js";
 import { TypeApplicationContext } from "./LambdaParser.js";
+import { HeadContext } from "./LambdaParser.js";
+import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
+import { NilContext } from "./LambdaParser.js";
+import { VariantContext } from "./LambdaParser.js";
+import { ConsContext } from "./LambdaParser.js";
+import { FixContext } from "./LambdaParser.js";
+import { ApplicationContext } from "./LambdaParser.js";
+import { TupleContext } from "./LambdaParser.js";
 import { PiTypeContext } from "./LambdaParser.js";
 import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { TypeConstructorAbstractionContext } from "./LambdaParser.js";
 import { TypeConstructorApplicationContext } from "./LambdaParser.js";
+import { ListTypeContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
@@ -103,13 +109,6 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitVariable?: (ctx: VariableContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `LambdaAbstractionUntyped`
-	 * labeled alternative in `LambdaParser.term`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitLambdaAbstractionUntyped?: (ctx: LambdaAbstractionUntypedContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `VariantCase`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
@@ -159,26 +158,12 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitLambdaAbstraction?: (ctx: LambdaAbstractionContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `Variant`
-	 * labeled alternative in `LambdaParser.term`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitVariant?: (ctx: VariantContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `Ascribe`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitAscribe?: (ctx: AscribeContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `Fix`
-	 * labeled alternative in `LambdaParser.term`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFix?: (ctx: FixContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `TupleProjection`
 	 * labeled alternative in `LambdaParser.term`.
@@ -193,6 +178,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitRecordProjection?: (ctx: RecordProjectionContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Tail`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTail?: (ctx: TailContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Literal`
 	 * labeled alternative in `LambdaParser.term`.
@@ -215,12 +207,12 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitRecord?: (ctx: RecordContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `Application`
+	 * Visit a parse tree produced by the `IsNil`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitApplication?: (ctx: ApplicationContext) => Result;
+	visitIsNil?: (ctx: IsNilContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Sequencing`
 	 * labeled alternative in `LambdaParser.term`.
@@ -228,13 +220,6 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitSequencing?: (ctx: SequencingContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `Tuple`
-	 * labeled alternative in `LambdaParser.term`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTuple?: (ctx: TupleContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Parentheses`
 	 * labeled alternative in `LambdaParser.term`.
@@ -263,6 +248,62 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeApplication?: (ctx: TypeApplicationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Head`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitHead?: (ctx: HeadContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `LambdaAbstractionUntyped`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLambdaAbstractionUntyped?: (ctx: LambdaAbstractionUntypedContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Nil`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitNil?: (ctx: NilContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Variant`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitVariant?: (ctx: VariantContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Cons`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitCons?: (ctx: ConsContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Fix`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFix?: (ctx: FixContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Application`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitApplication?: (ctx: ApplicationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Tuple`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTuple?: (ctx: TupleContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `PiType`
 	 * labeled alternative in `LambdaParser.type`.
@@ -298,6 +339,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `ListType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitListType?: (ctx: ListTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `VariantType`
 	 * labeled alternative in `LambdaParser.type`.

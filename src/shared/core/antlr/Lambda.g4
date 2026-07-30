@@ -46,6 +46,11 @@ term
     | INL term AS type                                                               # Inl
     | INR term AS type                                                               # Inr
     | FIX term                                                                       # Fix
+    | NIL LBRACK type RBRACK                                                         # Nil
+    | CONS LBRACK type RBRACK term term                                              # Cons
+    | ISNIL LBRACK type RBRACK term                                                  # IsNil
+    | HEAD LBRACK type RBRACK term                                                   # Head
+    | TAIL LBRACK type RBRACK term                                                   # Tail
 
     // 7. Atomic / grouped terms
     | LT ID EQ term (COMMA ID EQ term)* MT                                           # Record
@@ -66,6 +71,7 @@ type
     // type application) bracket syntax.
     : type type                                                  # TypeConstructorApplication
     | type LBRACK term RBRACK                                    # TypeIndexApplication
+    | LIST type                                                  # ListType
 
     // 2. Sum type has higher priority than arrow
     | type PLUS type                                             # SumType
@@ -124,6 +130,13 @@ LET            : 'let';
 IN             : 'in';
 FIX            : 'fix';
 TYPEDEF        : 'typedef';
+
+NIL            : 'nil';
+CONS           : 'cons';
+ISNIL          : 'isnil';
+HEAD           : 'head';
+TAIL           : 'tail';
+LIST           : 'List';
 
 KIND_STAR      : '@'; // to avoid ambiguity with, '@' is used instead of '*' for the kind of types
 

@@ -23,7 +23,12 @@ export type Term =
   BinOp |
   TypeAbs |
   TypeApp |
-  Fix
+  Fix |
+  Nil |
+  Cons |
+  IsNil |
+  Head |
+  Tail
 
 export interface Var extends Node {
   kind: "Var"
@@ -203,4 +208,38 @@ export interface TypeApp extends Node {
   kind: "TypeApp";
   term: Term;
   typeArg: Type;
+}
+
+// =====================================================================
+// =                        LISTS (Lecture 06)                         =
+// =====================================================================
+
+export interface Nil extends Node {
+  kind: "Nil";
+  type: Type;
+}
+
+export interface Cons extends Node {
+  kind: "Cons";
+  type: Type;
+  head: Term;
+  tail: Term;
+}
+
+export interface IsNil extends Node {
+  kind: "IsNil";
+  type: Type;
+  term: Term;
+}
+
+export interface Head extends Node {
+  kind: "Head";
+  type: Type;
+  term: Term;
+}
+
+export interface Tail extends Node {
+  kind: "Tail";
+  type: Type;
+  term: Term;
 }

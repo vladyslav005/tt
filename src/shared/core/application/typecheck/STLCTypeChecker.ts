@@ -7,17 +7,21 @@ import type {
   ASTNode,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
   FunDecl,
+  Head,
   IfCondition,
   Inl,
-  Inr, Kind, Let,
+  Inr, IsNil, Kind, Let,
   Lit,
+  Nil,
   Program,
   Record,
   RecordProjection, RecordType,
   Sequencing,
+  Tail,
   Term,
   Tuple,
   TupleProjection, TupleType,
@@ -394,6 +398,12 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
           throw new Error(`Index "${termIndexToString(type.arg)}" has type ${typeToString(argType)}, but "${typeToString(type.func)}" expects an index of type ${typeToString(domainType)}`);
         }
         return {kind: func.kind.to, proof: this.kindLeaf(Rule.KindIndexApp, type, func.kind.to, delta)};
+      }
+
+      case "ListType": {
+        const element = this.kindOf(type.elementType, delta);
+        this.expectStar(element.kind, type.elementType);
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, [element.proof])};
       }
     }
   }
@@ -1210,6 +1220,131 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: expectedType}],
+    };
+  }
+
+  // =====================================================================
+  // =                        LISTS (Lecture 06)                         =
+  // =====================================================================
+
+  protected visitNil(node: Nil): InferProofTree {
+    const rule = this.ruleFor(Rule.Nil, Rule.CtNil);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, []);
+    }
+    const elementType = kindCheck.normalized;
+    const listType: Type = {kind: "ListType", id: crypto.randomUUID(), elementType};
+
+    return {
+      rule,
+      term: node,
+      type: listType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [],
+      constraints: [],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
+    };
+  }
+
+  protected visitCons(node: Cons): InferProofTree {
+    const headProof = this.visit(node.head);
+    const tailProof = this.visit(node.tail);
+    const rule = this.ruleFor(Rule.Cons, Rule.CtCons);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [headProof, tailProof]);
+    }
+    const elementType = kindCheck.normalized;
+    const listType: Type = {kind: "ListType", id: crypto.randomUUID(), elementType};
+
+    return {
+      rule,
+      term: node,
+      type: listType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [headProof, tailProof],
+      constraints: [
+        ...headProof.constraints,
+        ...tailProof.constraints,
+        {left: headProof.type, right: elementType},
+        {left: tailProof.type, right: listType},
+      ],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
+    };
+  }
+
+  protected visitIsNil(node: IsNil): InferProofTree {
+    const termProof = this.visit(node.term);
+    const rule = this.ruleFor(Rule.IsNil, Rule.CtIsNil);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const elementType = kindCheck.normalized;
+    const listType: Type = {kind: "ListType", id: crypto.randomUUID(), elementType};
+    const boolType: TyIdentifier = {kind: "TyIdentifier", id: crypto.randomUUID(), name: "Bool"};
+
+    return {
+      rule,
+      term: node,
+      type: boolType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: listType}],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
+    };
+  }
+
+  protected visitHead(node: Head): InferProofTree {
+    const termProof = this.visit(node.term);
+    const rule = this.ruleFor(Rule.Head, Rule.CtHead);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const elementType = kindCheck.normalized;
+    const listType: Type = {kind: "ListType", id: crypto.randomUUID(), elementType};
+
+    return {
+      rule,
+      term: node,
+      type: elementType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: listType}],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
+    };
+  }
+
+  protected visitTail(node: Tail): InferProofTree {
+    const termProof = this.visit(node.term);
+    const rule = this.ruleFor(Rule.Tail, Rule.CtTail);
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const elementType = kindCheck.normalized;
+    const listType: Type = {kind: "ListType", id: crypto.randomUUID(), elementType};
+
+    return {
+      rule,
+      term: node,
+      type: listType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: listType}],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
     };
   }
 

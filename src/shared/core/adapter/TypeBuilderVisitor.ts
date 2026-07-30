@@ -1,8 +1,9 @@
-import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp, TyPi, TyIndexApp} from "@/shared/core/domain/ast";
+import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp, TyPi, TyIndexApp, ListType} from "@/shared/core/domain/ast";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {
   ForallTypeContext,
   FunctionTypeContext,
+  type ListTypeContext,
   ParenTypeContext,
   SumTypeContext,
   TupleTypeContext,
@@ -114,6 +115,14 @@ export class TypeBuilderVisitor
       id: crypto.randomUUID(),
       func: this.visit(ctx.type_()),
       arg: new TermBuilderVisitor().visit(ctx.term()),
+    }
+  }
+
+  visitListType = (ctx: ListTypeContext): ListType => {
+    return {
+      kind: "ListType",
+      id: crypto.randomUUID(),
+      elementType: this.visit(ctx.type_()),
     }
   }
 }

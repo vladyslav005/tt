@@ -4,19 +4,24 @@ import type {
   Ascribe,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
   FunDecl,
   GlobalDecl,
+  Head,
   IfCondition,
   Inl,
   Inr,
+  IsNil,
   Let,
   Lit,
+  Nil,
   Program,
   Record,
   RecordProjection,
   Sequencing,
+  Tail,
   Term,
   Tuple,
   TupleProjection,
@@ -134,6 +139,16 @@ export class AstPrettyPrinter {
         return this.printTypeAbs(term);
       case "TypeApp":
         return this.printTypeApp(term);
+      case "Nil":
+        return this.printNil(term);
+      case "Cons":
+        return this.printCons(term);
+      case "IsNil":
+        return this.printIsNil(term);
+      case "Head":
+        return this.printHead(term);
+      case "Tail":
+        return this.printTail(term);
     }
   }
 
@@ -218,6 +233,26 @@ export class AstPrettyPrinter {
 
   private printTypeApp(t: TypeApp): string {
     return `${this.printTerm(t.term)} [${this.printType(t.typeArg)}]`;
+  }
+
+  private printNil(t: Nil): string {
+    return `nil[${this.printType(t.type)}]`;
+  }
+
+  private printCons(t: Cons): string {
+    return `(cons[${this.printType(t.type)}] ${this.printTerm(t.head)} ${this.printTerm(t.tail)})`;
+  }
+
+  private printIsNil(t: IsNil): string {
+    return `(isnil[${this.printType(t.type)}] ${this.printTerm(t.term)})`;
+  }
+
+  private printHead(t: Head): string {
+    return `(head[${this.printType(t.type)}] ${this.printTerm(t.term)})`;
+  }
+
+  private printTail(t: Tail): string {
+    return `(tail[${this.printType(t.type)}] ${this.printTerm(t.term)})`;
   }
 
   private printVar(v: Var): string {

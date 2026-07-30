@@ -5,17 +5,21 @@ import type {
   ASTNode,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
   FunDecl,
+  Head,
   IfCondition,
   Inl,
-  Inr, Kind, Let,
+  Inr, IsNil, Kind, Let,
   Lit,
+  Nil,
   Program,
   Record,
   RecordProjection,
   Sequencing,
+  Tail,
   Tuple,
   TupleProjection,
   Type, TypeAbs, TypeAliasDecl, TypeApp,
@@ -74,6 +78,16 @@ export abstract class AstVisitor<R> {
         return this.visitBinOp(node)
       case "Fix":
         return this.visitFix(node)
+      case "Nil":
+        return this.visitNil(node)
+      case "Cons":
+        return this.visitCons(node)
+      case "IsNil":
+        return this.visitIsNil(node)
+      case "Head":
+        return this.visitHead(node)
+      case "Tail":
+        return this.visitTail(node)
 
       /* ===== Declarations ===== */
       case "FunDecl":
@@ -111,6 +125,7 @@ export abstract class AstVisitor<R> {
       case "TyForall":
       case "TyPi":
       case "TyIndexApp":
+      case "ListType":
         return this.visitType(node)
 
       /* ===== Kinds ===== */
@@ -161,6 +176,17 @@ export abstract class AstVisitor<R> {
   protected abstract visitBinOp(node: BinOp): R
 
   protected abstract visitFix(node: Fix): R
+
+  /* ===== Lists (Lecture 06) ===== */
+  protected abstract visitNil(node: Nil): R
+
+  protected abstract visitCons(node: Cons): R
+
+  protected abstract visitIsNil(node: IsNil): R
+
+  protected abstract visitHead(node: Head): R
+
+  protected abstract visitTail(node: Tail): R
 
   /* ===== Let ===== */
   protected abstract visitLet(node: Let): R

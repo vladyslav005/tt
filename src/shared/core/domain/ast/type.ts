@@ -14,7 +14,8 @@ export type Type =
   TyConstructorAbs |
   TyConstructorApp |
   TyPi |
-  TyIndexApp;
+  TyIndexApp |
+  ListType;
 
 // A nullary type referred to by name — either a base type constant (Nat,
 // Bool, Unit) or a bound/free type variable (e.g. X in a TyForall). Which
@@ -117,4 +118,17 @@ export interface TyIndexApp extends Node {
   kind: "TyIndexApp";
   func: Type;
   arg: Term;
+}
+
+// =====================================================================
+// =                        LISTS (Lecture 06)                         =
+// =====================================================================
+
+// List T — a dedicated type former, not derived from TyConstructorApp:
+// this predates System λω̲ pedagogically and has its own primitive
+// nil/cons/isnil/head/tail term-level operations with no dependency on the
+// type-constructor/kind system.
+export interface ListType extends Node {
+  kind: "ListType";
+  elementType: Type;
 }

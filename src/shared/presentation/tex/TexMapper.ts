@@ -323,6 +323,46 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  protected visitNil(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Nil",
+      children: this.childrenWithKind(node)
+    }
+  }
+
+  protected visitCons(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Cons",
+      children: this.childrenWithKind(node)
+    }
+  }
+
+  protected visitIsNil(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-IsNil",
+      children: this.childrenWithKind(node)
+    }
+  }
+
+  protected visitHead(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Head",
+      children: this.childrenWithKind(node)
+    }
+  }
+
+  protected visitTail(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Tail",
+      children: this.childrenWithKind(node)
+    }
+  }
+
   // Only reached when Let-polymorphism is disabled — STLCTypeChecker.visitLet
   // rejects the term with Rule.Let (no premises) instead of delegating to
   // LetPolymorphismInferenceVisitor's Rule.CtLet judgment.
@@ -508,6 +548,16 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return [t(`(\\Lambda ${term.typeParam} . `), ...rec(term.body), t(")")];
       case "TypeApp":
         return [...rec(term.term), t("\\ ["), ...ty(term.typeArg), t("]")];
+      case "Nil":
+        return [t("\\text{nil}["), ...ty(term.type), t("]")];
+      case "Cons":
+        return [t("\\text{cons}["), ...ty(term.type), t("]\\ "), ...rec(term.head), t("\\ "), ...rec(term.tail)];
+      case "IsNil":
+        return [t("\\text{isnil}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
+      case "Head":
+        return [t("\\text{head}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
+      case "Tail":
+        return [t("\\text{tail}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
     }
   }
 
@@ -579,6 +629,16 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `(\\Lambda ${term.typeParam} . ${rec(term.body)})`
       case "TypeApp":
         return `${rec(term.term)}\\ [${this.typeToTex(term.typeArg)}]`
+      case "Nil":
+        return `\\text{nil}[${this.typeToTex(term.type)}]`
+      case "Cons":
+        return `\\text{cons}[${this.typeToTex(term.type)}]\\ ${rec(term.head)}\\ ${rec(term.tail)}`
+      case "IsNil":
+        return `\\text{isnil}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
+      case "Head":
+        return `\\text{head}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
+      case "Tail":
+        return `\\text{tail}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
     }
   }
 
@@ -635,6 +695,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\Pi ${type.paramVar} : ${this.typeToTex(type.paramType)} .\\, ${this.typeToTex(type.body)}`
       case "TyIndexApp":
         return `${this.typeToTex(type.func)}[${this.termToTex(type.arg)}]`
+      case "ListType":
+        return `\\text{List}\\ ${this.typeToTex(type.elementType)}`
     }
   }
 
@@ -705,6 +767,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return [t(`\\Pi ${type.paramVar} : ${this.typeToTex(type.paramType)} .\\, `), ...rec(type.body)];
       case "TyIndexApp":
         return [...rec(type.func), t(`[${this.termToTex(type.arg)}]`)];
+      case "ListType":
+        return [t("\\text{List}\\ "), ...rec(type.elementType)];
     }
   }
 }

@@ -49,7 +49,7 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
-const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp"]);
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "ListType"]);
 
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
@@ -156,6 +156,17 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
     return ty;
   }
 
+  if (raw.kind === "ListType") {
+    const elementTypeNode = firstTargetNode(byHandle, "elementType", nodeMap);
+    const ty: Type = {
+      id: raw.id ?? node.id,
+      kind: "ListType",
+      elementType: elementTypeNode ? reconstructType(elementTypeNode, nodeMap, edges, visiting) : defaultType(`${node.id}-elementType`),
+    } as Type;
+    visiting.delete(node.id);
+    return ty;
+  }
+
   visiting.delete(node.id);
   return (raw as Type) ?? defaultType(node.id);
 }
@@ -176,7 +187,8 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
     case "RecordType":
     case "TyForall":
     case "TyConstructorAbs":
-    case "TyConstructorApp": {
+    case "TyConstructorApp":
+    case "ListType": {
       visiting.delete(node.id);
       return reconstructType(node, nodeMap, edges, visiting) as any;
     }
@@ -569,6 +581,47 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
         kind: "TypeApp",
         term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`, "f"),
         typeArg: typeArgNode ? reconstructType(typeArgNode, nodeMap, edges, visiting) : (raw.typeArg as Type) ?? defaultType(`${node.id}-typeArg`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Nil": {
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Nil",
+        type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : (raw.type as Type) ?? defaultType(`${node.id}-type`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "Cons": {
+      const headNode = firstTargetNode(byHandle, "head", nodeMap);
+      const tailNode = firstTargetNode(byHandle, "tail", nodeMap);
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: "Cons",
+        head: headNode ? reconstruct(headNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-head`),
+        tail: tailNode ? reconstruct(tailNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-tail`),
+        type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : (raw.type as Type) ?? defaultType(`${node.id}-type`),
+      };
+      visiting.delete(node.id);
+      return result as any;
+    }
+
+    case "IsNil":
+    case "Head":
+    case "Tail": {
+      const termNode = firstTargetNode(byHandle, "term", nodeMap);
+      const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+      const result = {
+        id: raw.id ?? node.id,
+        kind: raw.kind,
+        term: termNode ? reconstruct(termNode, nodeMap, edges, visiting) as Term : defaultVar(`${node.id}-term`),
+        type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : (raw.type as Type) ?? defaultType(`${node.id}-type`),
       };
       visiting.delete(node.id);
       return result as any;

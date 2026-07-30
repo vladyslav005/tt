@@ -5,18 +5,23 @@ import type {
   Ascribe,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
   FunDecl,
+  Head,
   IfCondition,
   Inl,
   Inr,
+  IsNil,
   Let,
   Lit,
+  Nil,
   Program,
   Record,
   RecordProjection,
   Sequencing,
+  Tail,
   Tuple,
   TupleProjection,
   Type,
@@ -99,6 +104,12 @@ export type TypeAppNodeData = { term: TypeApp; editable?: boolean; onChange?: (p
 export type TypeAliasDeclNodeData = { term: TypeAliasDecl; editable?: boolean; onChange?: (patch: any) => void };
 export type TypeConstructorDeclNodeData = { term: TypeConstructorDecl; editable?: boolean; onChange?: (patch: any) => void };
 
+export type NilNodeData = { term: Nil; editable?: boolean; onChange?: (patch: any) => void };
+export type ConsNodeData = { term: Cons; editable?: boolean; onChange?: (patch: any) => void };
+export type IsNilNodeData = { term: IsNil; editable?: boolean; onChange?: (patch: any) => void };
+export type HeadNodeData = { term: Head; editable?: boolean; onChange?: (patch: any) => void };
+export type TailNodeData = { term: Tail; editable?: boolean; onChange?: (patch: any) => void };
+
 export type ProgramFlowNode = Node<ProgramNodeData, "program">;
 export type FunDeclFlowNode = Node<FunDeclNodeData, "funDecl">;
 export type VarDeclFlowNode = Node<VarDeclNodeData, "varDecl">;
@@ -128,6 +139,12 @@ export type TypeAppFlowNode = Node<TypeAppNodeData, "typeApp">;
 export type TypeAliasDeclFlowNode = Node<TypeAliasDeclNodeData, "typeAliasDecl">;
 export type TypeConstructorDeclFlowNode = Node<TypeConstructorDeclNodeData, "typeConstructorDecl">;
 
+export type NilFlowNode = Node<NilNodeData, "nil">;
+export type ConsFlowNode = Node<ConsNodeData, "cons">;
+export type IsNilFlowNode = Node<IsNilNodeData, "isNil">;
+export type HeadFlowNode = Node<HeadNodeData, "headOp">;
+export type TailFlowNode = Node<TailNodeData, "tailOp">;
+
 export type AstFlowNode =
   | ProgramFlowNode
   | FunDeclFlowNode
@@ -156,7 +173,12 @@ export type AstFlowNode =
   | TypeAbsFlowNode
   | TypeAppFlowNode
   | TypeAliasDeclFlowNode
-  | TypeConstructorDeclFlowNode;
+  | TypeConstructorDeclFlowNode
+  | NilFlowNode
+  | ConsFlowNode
+  | IsNilFlowNode
+  | HeadFlowNode
+  | TailFlowNode;
 
 // Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
@@ -187,6 +209,11 @@ export type TypeAbsFlowNodeType = TypeAbsNodeData;
 export type TypeAppFlowNodeType = TypeAppNodeData;
 export type TypeAliasDeclFlowNodeType = TypeAliasDeclNodeData;
 export type TypeConstructorDeclFlowNodeType = TypeConstructorDeclNodeData;
+export type NilFlowNodeType = NilNodeData;
+export type ConsFlowNodeType = ConsNodeData;
+export type IsNilFlowNodeType = IsNilNodeData;
+export type HeadFlowNodeType = HeadNodeData;
+export type TailFlowNodeType = TailNodeData;
 
 export type AstFlowGraph = {
   nodes: AstFlowNode[];

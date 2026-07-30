@@ -45,6 +45,12 @@ import {TyConstructorAppFlowNode} from "@/features/ast/components/ast/flow/TyCon
 import {TyPiFlowNode} from "@/features/ast/components/ast/flow/TyPiFlowNode";
 import {TyIndexAppFlowNode} from "@/features/ast/components/ast/flow/TyIndexAppFlowNode";
 import {TypeConstructorDeclFlowNode} from "@/features/ast/components/ast/flow/TypeConstructorDeclFlowNode";
+import {NilFlowNode} from "@/features/ast/components/ast/flow/NilFlowNode";
+import {ConsFlowNode} from "@/features/ast/components/ast/flow/ConsFlowNode";
+import {IsNilFlowNode} from "@/features/ast/components/ast/flow/IsNilFlowNode";
+import {HeadFlowNode} from "@/features/ast/components/ast/flow/HeadFlowNode";
+import {TailFlowNode} from "@/features/ast/components/ast/flow/TailFlowNode";
+import {ListTypeFlowNode} from "@/features/ast/components/ast/flow/ListTypeFlowNode";
 
 
 export interface AstProps {
@@ -75,6 +81,8 @@ function TypeFlowNodeDispatch(props: any) {
       return <TyPiFlowNode {...props} />;
     case "TyIndexApp":
       return <TyIndexAppFlowNode {...props} />;
+    case "ListType":
+      return <ListTypeFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -121,6 +129,11 @@ export const nodeTypes: NodeTypes = {
   typeApp: TypeApplicationFlowNode,
   typeAliasDecl: TypeAliasDeclFlowNode,
   typeConstructorDecl: TypeConstructorDeclFlowNode,
+  nil: NilFlowNode,
+  cons: ConsFlowNode,
+  isNil: IsNilFlowNode,
+  headOp: HeadFlowNode,
+  tailOp: TailFlowNode,
 } as NodeTypes;
 
 export function Ast({

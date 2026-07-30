@@ -55,6 +55,16 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitTypeAbstraction(node)
       case "TypeApp":
         return this.visitTypeApplication(node)
+      case "Nil":
+        return this.visitNil(node)
+      case "Cons":
+        return this.visitCons(node)
+      case "IsNil":
+        return this.visitIsNil(node)
+      case "Head":
+        return this.visitHead(node)
+      case "Tail":
+        return this.visitTail(node)
 
 
       default:
@@ -106,5 +116,16 @@ export abstract class ProofTreeVisitor<R> {
   protected abstract visitTypeAbstraction(node: ProofTree): R
 
   protected abstract visitTypeApplication(node: ProofTree): R
+
+  /* ===== Lists (Lecture 06) ===== */
+  protected abstract visitNil(node: ProofTree): R
+
+  protected abstract visitCons(node: ProofTree): R
+
+  protected abstract visitIsNil(node: ProofTree): R
+
+  protected abstract visitHead(node: ProofTree): R
+
+  protected abstract visitTail(node: ProofTree): R
 
 }

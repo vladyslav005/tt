@@ -163,6 +163,28 @@ export class Evaluator {
         }
         return undefined;
       }
+
+      case "Nil":
+        return undefined;
+
+      case "Cons":
+        return this.findStuckTerm(term.head) ?? this.findStuckTerm(term.tail);
+
+      case "IsNil":
+        return this.findStuckTerm(term.term);
+
+      case "Head":
+      case "Tail": {
+        const found = this.findStuckTerm(term.term);
+        if (found) return found;
+        if (term.term.kind !== "Nil" && term.term.kind !== "Cons") {
+          return {id: term.id, message: `Evaluation stuck: "${term.kind === "Head" ? "head" : "tail"}" requires a list (nil/cons), but got a non-list value`};
+        }
+        if (term.term.kind === "Nil") {
+          return {id: term.id, message: `Evaluation stuck: "${term.kind === "Head" ? "head" : "tail"}" of an empty list`};
+        }
+        return undefined;
+      }
     }
   }
 
@@ -190,6 +212,11 @@ export class Evaluator {
       case "Fix":
       case "TypeAbs":
       case "TypeApp":
+      case "Nil":
+      case "Cons":
+      case "IsNil":
+      case "Head":
+      case "Tail":
         return ast;
 
       case "Program": {
@@ -226,6 +253,7 @@ export class Evaluator {
       case "TyConstructorApp":
       case "TyPi":
       case "TyIndexApp":
+      case "ListType":
         throw new Error(
           `Cannot evaluate type node ${ast.kind}`,
         );

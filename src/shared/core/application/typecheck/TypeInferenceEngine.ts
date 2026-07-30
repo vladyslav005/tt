@@ -128,6 +128,9 @@ export class TypeInferenceEngine {
       case "TyIndexApp":
         return {...type, func: this.applySubstitution(type.func, substitution)};
 
+      case "ListType":
+        return {...type, elementType: this.applySubstitution(type.elementType, substitution)};
+
       default:
         return this.assertNever(type);
     }
@@ -299,6 +302,10 @@ export class TypeInferenceEngine {
         throw new Error(`Cannot unify ${typeToString(a)} with ${typeToString(b)}`);
       }
       return this.unify(a.func, b.func, substitution);
+    }
+
+    if (a.kind === "ListType" && b.kind === "ListType") {
+      return this.unify(a.elementType, b.elementType, substitution);
     }
 
     throw new Error(
@@ -486,6 +493,9 @@ export class TypeInferenceEngine {
 
       case "TyIndexApp":
         return this.freeTypeVariables(type.func);
+
+      case "ListType":
+        return this.freeTypeVariables(type.elementType);
 
       default:
         return this.assertNever(type);

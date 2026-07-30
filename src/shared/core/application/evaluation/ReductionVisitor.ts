@@ -6,19 +6,24 @@ import type {
   Ascribe,
   BinOp,
   Case,
+  Cons,
   DummyAbstraction,
   Fix,
   GlobalDecl,
+  Head,
   IfCondition,
   Inl,
   Inr,
+  IsNil,
   Kind,
   Let,
   Lit,
+  Nil,
   Program,
   Record,
   RecordProjection,
   Sequencing,
+  Tail,
   Term,
   Tuple,
   TupleProjection,
@@ -588,6 +593,98 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     };
   }
 
+  // nil[T] is already a value — nothing to reduce.
+  protected override visitNil(_node: Nil): ReductionStep | null {
+    return null;
+  }
+
+  // E-cons1 / E-cons2: reduce head first, then tail once head is a value.
+  protected override visitCons(node: Cons): ReductionStep | null {
+    if (!this.isValue(node.head)) {
+      const step = this.visit(node.head);
+      if (!step) return null;
+      return {
+        before: node,
+        after: {...node, head: step.after},
+        selectedId: step.selectedId,
+        resultId: step.resultId,
+      };
+    }
+
+    if (!this.isValue(node.tail)) {
+      const step = this.visit(node.tail);
+      if (!step) return null;
+      return {
+        before: node,
+        after: {...node, tail: step.after},
+        selectedId: step.selectedId,
+        resultId: step.resultId,
+      };
+    }
+
+    return null;
+  }
+
+  protected override visitIsNil(node: IsNil): ReductionStep | null {
+    if (node.term.kind === "Nil") {
+      // E-isnilnil
+      const after: Lit = {kind: "Lit", id: crypto.randomUUID(), value: "true"};
+      return {before: node, after, selectedId: node.id, resultId: after.id};
+    }
+
+    if (node.term.kind === "Cons" && this.isValue(node.term)) {
+      // E-isnilcons
+      const after: Lit = {kind: "Lit", id: crypto.randomUUID(), value: "false"};
+      return {before: node, after, selectedId: node.id, resultId: after.id};
+    }
+
+    // E-isnil: reduce the scrutinee.
+    const step = this.visit(node.term);
+    if (!step) return null;
+    return {
+      before: node,
+      after: {...node, term: step.after},
+      selectedId: step.selectedId,
+      resultId: step.resultId,
+    };
+  }
+
+  protected override visitHead(node: Head): ReductionStep | null {
+    if (node.term.kind === "Cons" && this.isValue(node.term)) {
+      // E-headcons
+      const after = this.cloneTermWithFreshIds(node.term.head);
+      return {before: node, after, selectedId: node.id, resultId: after.id};
+    }
+
+    // E-head: reduce the scrutinee.
+    const step = this.visit(node.term);
+    if (!step) return null;
+    return {
+      before: node,
+      after: {...node, term: step.after},
+      selectedId: step.selectedId,
+      resultId: step.resultId,
+    };
+  }
+
+  protected override visitTail(node: Tail): ReductionStep | null {
+    if (node.term.kind === "Cons" && this.isValue(node.term)) {
+      // E-tailcons
+      const after = this.cloneTermWithFreshIds(node.term.tail);
+      return {before: node, after, selectedId: node.id, resultId: after.id};
+    }
+
+    // E-tail: reduce the scrutinee.
+    const step = this.visit(node.term);
+    if (!step) return null;
+    return {
+      before: node,
+      after: {...node, term: step.after},
+      selectedId: step.selectedId,
+      resultId: step.resultId,
+    };
+  }
+
   protected override visitTypeAbstraction(node: TypeAbs): ReductionStep | null {
     // A value, like Abs — normal order continues under the binder, the
     // other two strategies stop.
@@ -806,6 +903,26 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...term,
           term: this.substituteTypeInTerm(term.term, typeVar, replacement),
           typeArg: substituteTypeVariable(term.typeArg, typeVar, replacement),
+        };
+
+      case "Nil":
+        return {...term, type: substituteTypeVariable(term.type, typeVar, replacement)};
+
+      case "Cons":
+        return {
+          ...term,
+          type: substituteTypeVariable(term.type, typeVar, replacement),
+          head: this.substituteTypeInTerm(term.head, typeVar, replacement),
+          tail: this.substituteTypeInTerm(term.tail, typeVar, replacement),
+        };
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
+        return {
+          ...term,
+          type: substituteTypeVariable(term.type, typeVar, replacement),
+          term: this.substituteTypeInTerm(term.term, typeVar, replacement),
         };
     }
   }
@@ -1064,6 +1181,21 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "TypeApp":
         // typeArg is a Type, not touched by term-variable substitution.
         return {...term, term: this.substitute(term.term, variable, replacement)};
+
+      case "Nil":
+        return term;
+
+      case "Cons":
+        return {
+          ...term,
+          head: this.substitute(term.head, variable, replacement),
+          tail: this.substitute(term.tail, variable, replacement),
+        };
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
+        return {...term, term: this.substitute(term.term, variable, replacement)};
     }
   }
 
@@ -1140,6 +1272,17 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "Fix":
         // "fix v nie je hodnota" — fix is never a value, even when its
         // argument already is (only application of the unfolded result is).
+        return false;
+
+      case "Nil":
+        return true;
+
+      case "Cons":
+        return this.isValue(term.head) && this.isValue(term.tail);
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
         return false;
     }
   }
@@ -1262,6 +1405,20 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         return this.getFreeVariables(term.body, bound);
 
       case "TypeApp":
+        return this.getFreeVariables(term.term, bound);
+
+      case "Nil":
+        return new Set();
+
+      case "Cons":
+        return new Set([
+          ...this.getFreeVariables(term.head, bound),
+          ...this.getFreeVariables(term.tail, bound),
+        ]);
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
         return this.getFreeVariables(term.term, bound);
     }
   }
@@ -1428,6 +1585,21 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
       case "TypeApp":
         return {...term, term: this.renameBoundVariable(term.term, oldName, newName)};
+
+      case "Nil":
+        return term;
+
+      case "Cons":
+        return {
+          ...term,
+          head: this.renameBoundVariable(term.head, oldName, newName),
+          tail: this.renameBoundVariable(term.tail, oldName, newName),
+        };
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
+        return {...term, term: this.renameBoundVariable(term.term, oldName, newName)};
     }
   }
 
@@ -1521,6 +1693,17 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         return this.getAllNames(term.body);
 
       case "TypeApp":
+        return this.getAllNames(term.term);
+
+      case "Nil":
+        return new Set();
+
+      case "Cons":
+        return new Set([...this.getAllNames(term.head), ...this.getAllNames(term.tail)]);
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
         return this.getAllNames(term.term);
     }
   }
@@ -1711,6 +1894,28 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           term: this.cloneTermWithFreshIds(term.term),
           typeArg: this.cloneTypeWithFreshIds(term.typeArg),
         };
+
+      case "Nil":
+        return {...term, id: crypto.randomUUID(), type: this.cloneTypeWithFreshIds(term.type)};
+
+      case "Cons":
+        return {
+          ...term,
+          id: crypto.randomUUID(),
+          type: this.cloneTypeWithFreshIds(term.type),
+          head: this.cloneTermWithFreshIds(term.head),
+          tail: this.cloneTermWithFreshIds(term.tail),
+        };
+
+      case "IsNil":
+      case "Head":
+      case "Tail":
+        return {
+          ...term,
+          id: crypto.randomUUID(),
+          type: this.cloneTypeWithFreshIds(term.type),
+          term: this.cloneTermWithFreshIds(term.term),
+        };
     }
   }
 
@@ -1796,6 +2001,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           id: crypto.randomUUID(),
           func: this.cloneTypeWithFreshIds(type.func),
           arg: this.cloneTermWithFreshIds(type.arg),
+        };
+
+      case "ListType":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          elementType: this.cloneTypeWithFreshIds(type.elementType),
         };
     }
   }

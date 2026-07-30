@@ -68,6 +68,12 @@ import {TyConstructorAppFlowNode} from "@/features/ast/components/ast/flow/TyCon
 import {TyPiFlowNode} from "@/features/ast/components/ast/flow/TyPiFlowNode";
 import {TyIndexAppFlowNode} from "@/features/ast/components/ast/flow/TyIndexAppFlowNode";
 import {TypeConstructorDeclFlowNode} from "@/features/ast/components/ast/flow/TypeConstructorDeclFlowNode";
+import {NilFlowNode} from "@/features/ast/components/ast/flow/NilFlowNode";
+import {ConsFlowNode} from "@/features/ast/components/ast/flow/ConsFlowNode";
+import {IsNilFlowNode} from "@/features/ast/components/ast/flow/IsNilFlowNode";
+import {HeadFlowNode} from "@/features/ast/components/ast/flow/HeadFlowNode";
+import {TailFlowNode} from "@/features/ast/components/ast/flow/TailFlowNode";
+import {ListTypeFlowNode} from "@/features/ast/components/ast/flow/ListTypeFlowNode";
 import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -126,6 +132,8 @@ function TypeFlowNodeDispatch(props: any) {
       return <TyPiFlowNode {...props} />;
     case "TyIndexApp":
       return <TyIndexAppFlowNode {...props} />;
+    case "ListType":
+      return <ListTypeFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -163,6 +171,11 @@ export const nodeTypes: NodeTypes = {
   fix: FixFlowNode,
   typeAbs: TypeAbstractionFlowNode,
   typeApp: TypeApplicationFlowNode,
+  nil: NilFlowNode,
+  cons: ConsFlowNode,
+  isNil: IsNilFlowNode,
+  headOp: HeadFlowNode,
+  tailOp: TailFlowNode,
 } as NodeTypes;
 
 type AddOnDropKind = "decl" | "term" | "type";
@@ -175,7 +188,7 @@ type AddOnDropKind = "decl" | "term" | "type";
 // type-context" rule would be wrong for it. It's display-only in this
 // editor for now (see makeDefaultTermNode/graphToAst.ts's reconstruct()
 // fallback for how not-yet-constructible kinds are handled generally).
-const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi"]);
+const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi", "ListType"]);
 
 // A handful of handle names are reused across both term nodes and type nodes
 // (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
@@ -200,8 +213,9 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "ascribe", "tupleProjection", "recordProjection", "record",
     "sequencing", "tuple", "dummyAbstraction", "let", "binOp", "fix",
     "typeAbs", "typeApp",
+    "nil", "cons", "isNil", "headOp", "tailOp",
   ],
-  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp"],
+  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp", "listType"],
 };
 
 // Skeleton (term, xyflow node "type" string) for each newly-added node kind,
@@ -428,6 +442,59 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           id, kind: "TyConstructorApp",
           func: { id: `${id}-func`, kind: "TyIdentifier", name: "F" },
           arg: { id: `${id}-arg`, kind: "TyIdentifier", name: "A" },
+        },
+      };
+    case "nil":
+      return {
+        type: "nil",
+        term: {
+          id, kind: "Nil",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+        },
+      };
+    case "cons":
+      return {
+        type: "cons",
+        term: {
+          id, kind: "Cons",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+          head: { id: `${id}-head`, kind: "Var", name: "x" },
+          tail: { id: `${id}-tail`, kind: "Nil", type: { id: `${id}-tail-type`, kind: "TyIdentifier", name: "T" } },
+        },
+      };
+    case "isNil":
+      return {
+        type: "isNil",
+        term: {
+          id, kind: "IsNil",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+          term: { id: `${id}-term`, kind: "Var", name: "xs" },
+        },
+      };
+    case "headOp":
+      return {
+        type: "headOp",
+        term: {
+          id, kind: "Head",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+          term: { id: `${id}-term`, kind: "Var", name: "xs" },
+        },
+      };
+    case "tailOp":
+      return {
+        type: "tailOp",
+        term: {
+          id, kind: "Tail",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "T" },
+          term: { id: `${id}-term`, kind: "Var", name: "xs" },
+        },
+      };
+    case "listType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "ListType",
+          elementType: { id: `${id}-elementType`, kind: "TyIdentifier", name: "T" },
         },
       };
     default:
@@ -1321,6 +1388,26 @@ export function AstEditor({
 
         <Separator orientation="vertical" className="h-5" />
 
+        {/* List terms (Lecture 06) */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Lists</span>
+          {([
+            { type: "nil",    label: "nil",   title: "Empty list (nil[T])" },
+            { type: "cons",   label: "cons",  title: "Cons — prepend an element (cons[T] t1 t2)" },
+            { type: "isNil",  label: "isnil", title: "Is the list empty? (isnil[T] t)" },
+            { type: "headOp", label: "head",  title: "First element (head[T] t)" },
+            { type: "tailOp", label: "tail",  title: "Remaining elements (tail[T] t)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
         {/* Tuple / record terms */}
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground mr-0.5">Tuples/Records</span>
@@ -1367,6 +1454,7 @@ export function AstEditor({
             { type: "variantType", label: "[l:]", title: "Variant Type ([l:T,...])" },
             { type: "recordType",  label: "{l:}", title: "Record Type (synthesized)" },
             { type: "forallType",  label: "∀", title: "Forall Type (∀X. T)" },
+            { type: "listType",    label: "List", title: "List Type (List T)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}

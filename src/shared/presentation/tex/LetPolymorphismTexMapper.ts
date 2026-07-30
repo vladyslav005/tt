@@ -30,6 +30,11 @@ export const CT_RULES: ReadonlySet<Rule> = new Set([
   Rule.CtLet,
   Rule.CtBinOp,
   Rule.CtFix,
+  Rule.CtNil,
+  Rule.CtCons,
+  Rule.CtIsNil,
+  Rule.CtHead,
+  Rule.CtTail,
 ]);
 
 // Renders the constraint-typing (CT) proof trees produced by
@@ -194,6 +199,16 @@ export class LetPolymorphismTexMapper {
         return this.visitBinOp(node);
       case Rule.CtFix:
         return this.visitChildren(node, "CT-Fix");
+      case Rule.CtNil:
+        return this.visitChildren(node, "CT-Nil");
+      case Rule.CtCons:
+        return this.visitChildren(node, "CT-Cons");
+      case Rule.CtIsNil:
+        return this.visitChildren(node, "CT-IsNil");
+      case Rule.CtHead:
+        return this.visitChildren(node, "CT-Head");
+      case Rule.CtTail:
+        return this.visitChildren(node, "CT-Tail");
       default:
         throw new Error("Unknown constraint-typing rule: " + node.rule);
     }
