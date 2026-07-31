@@ -39,13 +39,7 @@ import type {
 } from "@/shared/core/domain/ast";
 import { kindToString, typeToString } from "@/shared/core/application/typecheck/utils.ts";
 
-/**
- * Converts an AST back into the surface syntax used by the lambda editor.
- *
- * Output goals:
- * - Stable, readable, and parseable by the existing parser.
- * - Minimal parentheses, but always safe.
- */
+// Converts an AST back into surface syntax parseable by the existing parser, with minimal parens.
 export class AstPrettyPrinter {
   printProgram(program: Program): string {
     const parts: string[] = [];

@@ -9,12 +9,8 @@ export interface SetRegistration {
   fullTex: string;
 }
 
-// Numbers each distinct Γ the first time it's seen while walking a
-// derivation (Γ_1, Γ_2, ...), with a "recipe" explaining how it extends its
-// parent context (Γ_2 = Γ_1 ∪ {x : Nat}) — shared by TexMapper's plain "T-*"
-// judgements and LetPolymorphismTexMapper's constraint-typing ones, so a
-// Γ_n reference behaves identically (numbered, independently expandable)
-// whether or not it's inside a `let`.
+// Numbers each distinct Γ the first time it's seen while walking a derivation (Γ_1, Γ_2, ...),
+// with a "recipe" explaining how it extends its parent (Γ_2 = Γ_1 ∪ {x : Nat}).
 export class GammaRegistry {
   readonly registry: Record<string, TexRegistryEntry> = {};
   private readonly bySignature = new Map<string, SetRegistration>();
@@ -78,12 +74,7 @@ export class GammaRegistry {
     return this.bySignature.get(this.signature(gamma)) ?? null;
   }
 
-  // Clears every registration so this instance can be reused for a fresh
-  // derivation — see TexMapper.setTypeAliases, which resets this before
-  // every top-level render. Without it, a Γ that's genuinely non-empty but
-  // was never registered (because this registry still held a *previous*
-  // term's registrations) falls through refFor's null case and renders as
-  // ∅ — indistinguishable from an actually-empty context.
+  // Clears every registration so this instance can be reused for a fresh derivation.
   reset(): void {
     for (const key of Object.keys(this.registry)) {
       delete this.registry[key];

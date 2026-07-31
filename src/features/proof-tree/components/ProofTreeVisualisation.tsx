@@ -31,12 +31,7 @@ export function ProofTreeVisualisation({
   const {toTexTree} = useProofHooks()
   const containerRef = useRef<HTMLDivElement>(null);
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
-  // Deliberately NOT Radix's <TabsContent> for the panels below — mounting
-  // the zoom-pan TransformWrapper inside TabsContent's own mount/measure
-  // lifecycle caused the tab to hang (reproduced repeatedly, including in a
-  // fresh tab). <Tabs>/<TabsList>/<TabsTrigger> below only drive this local
-  // state for the switcher buttons' styling; the panels are plain
-  // conditional JSX, decoupled from Radix entirely.
+  // Not Radix's <TabsContent> — mounting TransformWrapper inside it hung the tab.
   const [activeTab, setActiveTab] = useState<"automatic" | "build-check">("automatic");
 
   const texTree = proof ? toTexTree(proof) : null;
@@ -118,7 +113,6 @@ export function ProofTreeVisualisation({
                 >
                   {({zoomIn, zoomOut, centerView}) => (
                     <>
-                      {/* Zoom Controls */}
                       <div className="absolute top-4 right-4 z-10 flex gap-2">
                         <Button
                           size="icon"
@@ -160,9 +154,6 @@ export function ProofTreeVisualisation({
                       >
                         <div className="flex items-center justify-center p-6">
                           {texTree && (
-                            // Keyed by the proof's own id so Γ/C expand state
-                            // resets instead of leaking stale labels when the
-                            // underlying derivation changes.
                             <TexRefExpansionProvider key={proof?.id ?? "none"}>
                               <ProofTreeComponentUsingCss node={texTree}/>
                             </TexRefExpansionProvider>
@@ -176,7 +167,6 @@ export function ProofTreeVisualisation({
               <details className="group">
                 <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                   <span className="inline-flex items-center gap-2">
-                    {/*<span className="transform transition-transform group-open:rotate-90">▶</span>*/}
                     View Raw Proof Data (DEBUG)
                   </span>
                 </summary>

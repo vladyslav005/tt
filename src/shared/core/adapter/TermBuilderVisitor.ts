@@ -85,9 +85,7 @@ export class TermBuilderVisitor
     }
   }
 
-  // λx.t — no parameter annotation. Only meaningful inside a `let`-bound
-  // value/body, where LetPolymorphismInferenceVisitor infers paramType as a
-  // fresh metavariable; STLCTypeChecker reports an error if one reaches it.
+  // λx.t with no annotation — only valid inside a `let`, where paramType gets inferred.
   visitLambdaAbstractionUntyped = (ctx: LambdaAbstractionUntypedContext): Abs => {
     return {
       kind: "Abs",

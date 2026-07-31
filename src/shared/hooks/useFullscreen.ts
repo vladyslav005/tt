@@ -5,17 +5,8 @@ export interface UseFullscreenOptions {
   preferNative?: boolean;
 }
 
-/**
- * Mobile-friendly fullscreen helper.
- *
- * Why this exists:
- * - iOS Safari has spotty/partial support for the Fullscreen API.
- * - Even where supported, it may require user gesture and can fail silently.
- *
- * Strategy:
- * - Try native Fullscreen API when available.
- * - If unavailable or it fails, fall back to a CSS-driven "pseudo fullscreen" mode.
- */
+// Tries the native Fullscreen API, falling back to a CSS-driven "pseudo fullscreen" mode —
+// iOS Safari's support for the real API is spotty and can fail silently.
 export function useFullscreen<T extends HTMLElement>(
   ref: React.RefObject<T | null>,
   {preferNative = true}: UseFullscreenOptions = {},

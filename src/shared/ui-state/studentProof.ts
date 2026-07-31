@@ -7,31 +7,18 @@ export interface ContextBinding {
   type: Type;
 }
 
-// The student's in-progress manual derivation for the Proof Tree Builder
-// ("Build & Check" mode). Mirrors the shape of the frozen answer-key
-// ProofTree 1:1 (same node count, same premise order) — built once when
-// entering build mode by walking that answer key — since this is a
-// syntax-directed type system, the tree's *structure* is never something
-// the student invents, only its rule/type content is.
+// The student's in-progress manual derivation for "Build & Check" mode. Mirrors the frozen
+// answer-key ProofTree 1:1 — only rule/type content is filled in, never the tree structure.
 export interface StudentProofNode {
   id: string;
-  // False for every node except the root at start — a node only becomes
-  // visible once the student clicks its corresponding sub-term inside the
-  // parent's rendered judgement (see ConclusionBuilder's premise-click
-  // wrapping) — an active identification step, not an automatic reveal.
+  // Revealed by clicking the corresponding sub-term (see ConclusionBuilder).
   revealed: boolean;
   chosenRule?: Rule;
-  // Whether the chosen rule was actually correct — like typeCheck/
-  // contextCheck, only stamped by an explicit Check Proof pass. A rule
-  // pick is never accepted/rejected on the spot: premises and the type
-  // slot open up regardless, so a wrong guess doesn't dead-end the
-  // exercise — it just gets marked wrong later, same as a wrong type.
+  // Only stamped by Check Proof — a wrong pick doesn't block the exercise.
   ruleCheck?: "valid" | "invalid";
   writtenType?: Type;
   typeCheck?: "valid" | "invalid";
-  // True when this node's real Γ adds a binding on top of its parent's —
-  // a purely structural fact (derived from the answer key's gamma, not the
-  // binding's actual name/type), so exposing it doesn't leak the answer.
+  // True when this node's real Γ adds a binding on top of its parent's.
   requiresContextBuild?: boolean;
   writtenBindings?: ContextBinding[];
   contextCheck?: "valid" | "invalid";
@@ -44,12 +31,7 @@ export function buildStudentNode(
   parentGamma: Record<string, Type | TypeScheme> = answer.gamma,
 ): StudentProofNode {
   const requiresContextBuild = Object.keys(answer.gamma).some((k) => !(k in parentGamma));
-  // T-Var's real premise (when present) is the "jump to definition"
-  // sub-proof for a global reference — a genuinely separate derivation the
-  // student can build too, not a structural child of THIS node's own term.
-  // Its own parentGamma is its own gamma (zero-diff root), not this node's
-  // — the reference site's scope and the declaration site's scope are
-  // usually unrelated, so diffing one against the other would misfire.
+  // A T-Var's "jump to definition" premise has its own unrelated scope.
   const childParentGamma = (p: ProofTree) => answer.rule === Rule.Var ? p.gamma : answer.gamma;
   return {
     id: answer.id ?? crypto.randomUUID(),
@@ -73,20 +55,53 @@ function bindingsMatch(written: ContextBinding[], expected: ContextBinding[]): b
   return expected.every((e) => written.some((w) => w.name === e.name && typeEquals(w.type, e.type)));
 }
 
-// Diffs the student's filled-in nodes against the answer key, stamping
-// `ruleCheck`, `typeCheck`, and (where applicable) `contextCheck` on every
-// node that has the relevant fields written — nodes the student hasn't
-// reached yet are left untouched (neither valid nor invalid, just not part
-// of this pass). Rule and type are checked independently — a wrong rule
-// with a coincidentally-correct type still shows the type as valid; each
-// mistake is its own signal, not lumped into one pass/fail per node.
+// Maps each constraint-mode (Ct*) rule to its plain equivalent, since the rule picker only offers
+// plain ones — comparisons must normalize both sides first.
+const CT_TO_PLAIN_RULE: Partial<Record<Rule, Rule>> = {
+  [Rule.CtVarLet]: Rule.Var,
+  [Rule.CtVar]: Rule.Var,
+  [Rule.CtAbs]: Rule.Abs,
+  [Rule.CtAbsInf]: Rule.Abs,
+  [Rule.CtApp]: Rule.App,
+  [Rule.CtLit]: Rule.Lit,
+  [Rule.CtIf]: Rule.If,
+  [Rule.CtInl]: Rule.Inl,
+  [Rule.CtInr]: Rule.Inr,
+  [Rule.CtCase]: Rule.Case,
+  [Rule.CtVariantCase]: Rule.VariantCase,
+  [Rule.CtVariant]: Rule.Variant,
+  [Rule.CtAscribe]: Rule.Ascribe,
+  [Rule.CtTuple]: Rule.Tuple,
+  [Rule.CtTupleProjection]: Rule.TupleProjection,
+  [Rule.CtRecord]: Rule.Record,
+  [Rule.CtRecordProjection]: Rule.RecordProjection,
+  [Rule.CtSequencing]: Rule.Sequencing,
+  [Rule.CtDummyAbs]: Rule.DummyAbs,
+  [Rule.CtLet]: Rule.Let,
+  [Rule.CtBinOp]: Rule.BinOp,
+  [Rule.CtFix]: Rule.Fix,
+  [Rule.CtNil]: Rule.Nil,
+  [Rule.CtCons]: Rule.Cons,
+  [Rule.CtIsNil]: Rule.IsNil,
+  [Rule.CtHead]: Rule.Head,
+  [Rule.CtTail]: Rule.Tail,
+  [Rule.CtFold]: Rule.Fold,
+  [Rule.CtUnfold]: Rule.Unfold,
+};
+
+function canonicalRule(rule: Rule): Rule {
+  return CT_TO_PLAIN_RULE[rule] ?? rule;
+}
+
+// Diffs filled-in nodes against the answer key, stamping ruleCheck/typeCheck/
+// contextCheck independently — unreached nodes are left untouched.
 export function diffAgainstAnswer(
   student: StudentProofNode,
   answer: ProofTree,
   parentGamma: Record<string, Type | TypeScheme> = answer.gamma,
 ): void {
   if (student.chosenRule !== undefined) {
-    student.ruleCheck = student.chosenRule === answer.rule ? "valid" : "invalid";
+    student.ruleCheck = canonicalRule(student.chosenRule) === canonicalRule(answer.rule) ? "valid" : "invalid";
   }
   if (student.chosenRule !== undefined && student.writtenType !== undefined) {
     student.typeCheck = typeEquals(student.writtenType, answer.type) ? "valid" : "invalid";
@@ -94,7 +109,12 @@ export function diffAgainstAnswer(
   if (student.requiresContextBuild && student.writtenBindings !== undefined) {
     const expected: ContextBinding[] = Object.keys(answer.gamma)
       .filter((k) => !(k in parentGamma))
-      .map((k) => ({name: k, type: answer.gamma[k] as Type}));
+      .map((k) => {
+        const bound = answer.gamma[k];
+        // Γ entries are TypeScheme-wrapped — unwrap before comparing.
+        const type = bound.kind === "TypeScheme" ? bound.type : bound;
+        return {name: k, type};
+      });
     student.contextCheck = bindingsMatch(student.writtenBindings, expected) ? "valid" : "invalid";
   }
   student.premises.forEach((premise, index) => {
@@ -112,10 +132,7 @@ export interface ProofBuildSummary {
   invalid: number;
 }
 
-// Node counts for the "Check Proof" summary strip — total exercise size vs.
-// how much of it the student has filled in and how much of that is right.
-// A node that requires a context binding only counts as filled/valid once
-// that binding is written/correct too, on top of the existing rule+type bar.
+// Node counts for the "Check Proof" summary strip.
 export function summarizeStudentTree(node: StudentProofNode): ProofBuildSummary {
   const children = node.premises.map(summarizeStudentTree);
   const sum = (pick: (s: ProofBuildSummary) => number) => children.reduce((n, s) => n + pick(s), 0);
@@ -136,9 +153,7 @@ export function summarizeStudentTree(node: StudentProofNode): ProofBuildSummary 
   };
 }
 
-// Whether the answer-key proof itself contains any error node — Build &
-// Check mode requires the term to already type-check; it isn't (yet) about
-// proving a term is ill-typed.
+// Build & Check requires the term to already type-check.
 export function countProofErrors(proof: ProofTree): number {
   return (proof.error ? 1 : 0) + proof.premises.reduce((n, p) => n + countProofErrors(p), 0);
 }

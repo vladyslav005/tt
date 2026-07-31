@@ -72,7 +72,6 @@ export function AstEditorContainer({
 
   const copyFromViewer = () => {
     if (viewerAST) {
-      // viewerAST.id = "origin"
       setAst(viewerAST)
       const newGraph = mapAstToFlow(viewerAST);
       newGraph.nodes.forEach((node) => {node.data.editable = true;});

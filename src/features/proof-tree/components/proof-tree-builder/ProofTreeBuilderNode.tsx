@@ -18,30 +18,17 @@ import "@/features/proof-tree/components/proof-tree-using-css/ProofTree.css";
 interface ProofTreeBuilderNodeProps {
   studentNode: StudentProofNode;
   answerNode: ProofTree;
-  // The context this node's own Γ was built on top of — its parent's real
-  // gamma (or its own, at the root, where there's nothing to extend).
+  // The context this node's own Γ was built on top of.
   parentGamma: Record<string, Type | TypeScheme>;
-  // Built once for the whole exercise (ProofTreeBuilder.tsx) — numbers
-  // every distinct Γ as Γ_1, Γ_2, ... so a judgement's context renders as a
-  // short reference instead of spelling out the whole set inline every
-  // time (which is what made a tree with a few nested scopes balloon).
+  // Numbers every distinct Γ once as Γ_1, Γ_2, ... (see ProofTreeBuilder.tsx).
   registry: GammaRegistry;
-  // Student-controlled (ProofTreeBuilder's "Highlight mistakes" switch) —
-  // off by default so a wrong rule pick or a failed Check Proof doesn't
-  // visually give away "this one's wrong" just by looking at the tree; the
-  // underlying structural rejection (no premises spawn from an invalid
-  // rule) still applies either way, only the red/tooltip feedback is gated.
   highlightMistakes: boolean;
   root?: boolean;
 }
 
-// A LOCAL variable's membership in Γ is a given, mechanical fact — nothing
-// further to derive, so it's shown as a static, non-interactive leaf rather
-// than something to click through (same treatment context extension
-// already gets). A GLOBAL reference is different: it has a real "jump to
-// definition" sub-proof (answerNode.premises[0]), which the student CAN
-// build — that case falls through to the normal premisesToShow rendering
-// below instead of this leaf (see the isLocalVar check at the call site).
+// A local variable's Γ membership is a given fact, shown as a static leaf.
+// A global reference has a real "jump to definition" premise instead (see
+// isLocalVar below).
 function VariableMembershipLeaf({answerNode, registry}: { answerNode: ProofTree; registry: GammaRegistry }) {
   const name = (answerNode.term as {name?: string}).name ?? "?";
   const judgement = `${name} : ${TexMapper.typeToTex(answerNode.type)} \\in ${gammaRefTex(answerNode.gamma, registry, false)}`;
@@ -58,41 +45,20 @@ function VariableMembershipLeaf({answerNode, registry}: { answerNode: ProofTree;
   );
 }
 
-// Structurally mirrors ProofTreeComponentUsingCss (same .proof-node >
-// .premises + .conclusion shape, same ProofTree.css classes, imported
-// above) so a finished hand-built tree looks the same as the automatic
-// one — including that EVERY node shows the premises line once its rule is
-// decided, leaves included (the automatic view always does; a leaf's
-// "children" there is an empty array, not omitted, so the line still
-// draws) — but recurses over the (student, answer) pair in lockstep
-// instead of a single already-solved TexTree, and only shows premises the
-// student has revealed. Note this is gated on ANY rule being chosen, not a
-// correct one — a wrong pick still lets the student explore the real
-// premises and fill in the rest of the subtree; only Check Proof judges it.
-// Memoized so that picking a rule / writing a type on one node — which,
-// under Immer, gives every ANCESTOR of that node a new object reference —
-// doesn't force every UNTOUCHED sibling subtree (and its own MathJax
-// typesetting) to re-render too. Immer's structural sharing means a node
-// whose own data didn't change keeps the exact same object reference, so
-// a plain reference-equality check here is exactly the right comparison.
+// Mirrors ProofTreeComponentUsingCss's DOM shape so a hand-built tree looks
+// like the automatic one, but recurses over (student, answer) in lockstep
+// and only shows revealed premises. Memoized since Immer gives every
+// ancestor of an edited node a new reference — this keeps untouched sibling
+// subtrees from re-rendering (and re-typesetting via MathJax).
 export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentNode, answerNode, parentGamma, registry, highlightMistakes, root = true}: ProofTreeBuilderNodeProps) {
   const dispatch = useAppDispatch();
   const hasChosenRule = studentNode.chosenRule !== undefined;
-  // A LOCAL var (no real premises) gets the static membership leaf; a
-  // GLOBAL reference (answerNode.premises.length > 0, its "jump to
-  // definition" sub-proof) falls through to the normal premisesToShow path
-  // below instead, same as any other rule — it's a real derivation the
-  // student can build, not a given fact. Keyed off the REAL rule/premise
-  // count, not the student's guess, since this is about the term's actual
-  // shape, not whether they picked correctly.
+  // Keyed off the real rule/premise count, not the student's guess.
   const isLocalVar = hasChosenRule && answerNode.rule === Rule.Var && answerNode.premises.length === 0;
   const isLeaf = hasChosenRule && studentNode.premises.length === 0;
   const showDashedPlaceholder = !hasChosenRule;
-  // Pairs each shown premise with its own ORIGINAL index (not its position
-  // in this filtered/shown list) — premises can be revealed in any order
-  // (see ConclusionBuilder's premise-click wrapping), so a revealed premise
-  // at original index 1 with index 0 still unrevealed must not shift up and
-  // accidentally pair with answerNode.premises[0].
+  // Original index, not position in this filtered list — premises can be
+  // revealed out of order.
   const premisesToShow = hasChosenRule
     ? studentNode.premises
       .map((premise, originalIndex) => ({premise, originalIndex}))
@@ -126,10 +92,7 @@ export const ProofTreeBuilderNode = memo(function ProofTreeBuilderNode({studentN
         {!isLocalVar && premisesToShow.map(({premise, originalIndex}, displayIndex) => {
           const answerPremise = answerNode.premises[originalIndex];
           if (!answerPremise) return null;
-          // A global var's jump-to-definition premise is its OWN root, not
-          // a structural child of this node's term — its parentGamma is its
-          // own gamma (see studentProof.ts's matching childParentGamma),
-          // not this node's, since the two scopes are usually unrelated.
+          // A global var's jump-to-definition premise has its own unrelated scope.
           const childParentGamma = answerNode.rule === Rule.Var ? answerPremise.gamma : answerNode.gamma;
           return (
             <Fragment key={premise.id}>

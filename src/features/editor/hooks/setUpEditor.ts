@@ -14,7 +14,6 @@ export function useSetUpEditor() {
       tokenizer: {
         root: [
           [/\b(Nat|Bool|Unit)\b/, "builtInType"],
-          // [/iszero|succ|pred/, "builtInFunction"],
           [/true|false|True|False|Unit|unit/, "constant"],
 
           [/(\b)\w+(\b)/, {
@@ -192,7 +191,6 @@ export function useSetUpEditor() {
       ],
     });
 
-    // Register the completion provider for vars, based on regex
     monaco.languages.registerCompletionItemProvider("lambda", {
       provideCompletionItems: (model: any, position: any) => {
         try {

@@ -12,9 +12,7 @@ export abstract class ProofTreeVisitor<R> {
       case "Abs":
         return this.visitAbs(node)
       case "App":
-      // System λP: applying a Π-typed function shares App's rendering shape
-      // — node.rule still distinguishes it (see TexMapper.visitApp) for the
-      // T-App vs T-PiApp rule label.
+      // TPiApp (System λP) shares App's rendering; TexMapper picks the T-App vs T-PiApp label.
       case "TPiApp":
         return this.visitApp(node)
       case "Lit":

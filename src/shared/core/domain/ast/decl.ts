@@ -20,20 +20,14 @@ export interface FunDecl extends Node {
 
 }
 
-// typedef X = T; — a transparent synonym: every occurrence of X in a later
-// type annotation is expanded to T during typechecking (see
-// SLTLCTypeChecker.expandAliases). Has no runtime value — the evaluator
-// skips these entirely.
+// typedef X = T; — a transparent synonym, expanded to T during typechecking. No runtime value.
 export interface TypeAliasDecl extends Node {
   kind: "TypeAliasDecl"
   name: string
   type: Type
 }
 
-// typedef X : K; — declares X as an opaque, dependently-kinded type
-// constructor (e.g. "Vec : Nat -> *") with no definition — unlike
-// TypeAliasDecl, there is nothing to expand X to; it's a free family whose
-// only observable property is its kind. System λP.
+// typedef X : K; — declares X as an opaque type constructor (e.g. "Vec : Nat -> *") with no definition.
 export interface TypeConstructorDecl extends Node {
   kind: "TypeConstructorDecl"
   name: string

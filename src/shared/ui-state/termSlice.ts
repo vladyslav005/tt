@@ -14,9 +14,7 @@ import {
 
 interface BuildModeState {
   active: boolean;
-  // Snapshot of `proof` taken the moment build mode is entered — frozen for
-  // the duration of the exercise so the "answer" can't drift under the
-  // student while they're mid-construction.
+  // Frozen snapshot of `proof` so the answer can't drift mid-exercise.
   answerKey?: ProofTree;
   studentTree?: StudentProofNode;
 }
@@ -71,10 +69,6 @@ const counterSlice = createSlice({
       state.enabledTheories[action.payload.id] = action.payload.enabled;
     },
 
-    // Snapshots the current `proof` as the (frozen) answer key and builds
-    // the initial, all-hidden-except-root student tree from it. No-ops if
-    // there's no proof yet — the UI is expected to gate the entry point on
-    // that (and on the proof being error-free) before ever dispatching this.
     enterBuildMode: (state) => {
       if (!state.proof) return;
       state.buildMode = {
@@ -88,12 +82,7 @@ const counterSlice = createSlice({
       state.buildMode = {active: false};
     },
 
-    // Just records the pick — never accepted or rejected on the spot.
-    // Whether it was actually correct only surfaces via Check Proof (see
-    // diffAgainstAnswer's ruleCheck), same as a written type. Premises are
-    // NOT auto-revealed here either — the student has to actively identify
-    // each one by clicking its sub-term in the rendered judgement (see
-    // revealPremise), regardless of whether this rule turns out right.
+    // Correctness only surfaces later via Check Proof.
     chooseRule: (state, action: { payload: { nodeId: string; rule: Rule } }) => {
       const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.nodeId);
       if (!node) return;
@@ -103,8 +92,6 @@ const counterSlice = createSlice({
       node.typeCheck = undefined;
     },
 
-    // Dispatched when the student clicks a premise's sub-term inside its
-    // parent's rendered judgement — the "identify the premise" step.
     revealPremise: (state, action: { payload: { premiseId: string } }) => {
       const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.premiseId);
       if (!node) return;
@@ -128,9 +115,7 @@ const counterSlice = createSlice({
       node.contextCheck = undefined;
     },
 
-    // Clears a single node's own progress (rule/type/context) and re-hides
-    // its direct premises so they must be re-identified — but leaves
-    // grandchildren's own filled-in data untouched (non-destructive).
+    // Clears this node's own progress and re-hides its direct premises.
     resetNode: (state, action: { payload: { nodeId: string } }) => {
       const node = state.buildMode.studentTree && findStudentNode(state.buildMode.studentTree, action.payload.nodeId);
       if (!node) return;
@@ -144,9 +129,6 @@ const counterSlice = createSlice({
       node.premises.forEach((premise) => { premise.revealed = false; });
     },
 
-    // Diffs every currently-filled (rule + type both written) node against
-    // the frozen answer key, stamping typeCheck "valid"/"invalid". Nodes
-    // the student hasn't reached yet are left alone — re-runnable any time.
     checkProof: (state) => {
       if (!state.buildMode.studentTree || !state.buildMode.answerKey) return;
       diffAgainstAnswer(state.buildMode.studentTree, state.buildMode.answerKey);

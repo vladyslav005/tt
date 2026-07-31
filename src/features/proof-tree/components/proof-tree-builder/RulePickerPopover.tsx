@@ -17,10 +17,7 @@ interface RulePickerPopoverProps {
   children: ReactNode;
 }
 
-// Every Phase-1 rule is offered unconditionally, including ones that won't
-// structurally fit this node's term — that's intentional. Whether the pick
-// was actually correct is never checked here or instantly on dispatch; it
-// only surfaces later via Check Proof, same as a written type.
+// Every Phase-1 rule is offered unconditionally; correctness is only checked later via Check Proof.
 export function RulePickerPopover({nodeId, children}: RulePickerPopoverProps) {
   const dispatch = useAppDispatch();
 

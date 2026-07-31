@@ -6,10 +6,7 @@ import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCir
 import { cn } from "@/shared/lib/utils";
 import { expandTypeAliases, normalizeType, typeEquals } from "@/shared/core/application/typecheck/utils.ts";
 
-// The alias table, provided once at the top so TypeView (called deep inside
-// TermView's recursion, with no other route down to it) can compute what a
-// type-constructor application reduces to — e.g. "Endo Nat" ⇒ "Nat → Nat" —
-// without threading a new prop through every TermView case.
+// Lets TypeView (nested deep in TermView) resolve type aliases without threading a prop through every case.
 const TypeAliasesContext = createContext<Record<string, Type>>({});
 
 function TypeView({ type }: { type: Type }) {
@@ -585,9 +582,7 @@ interface EvaluationStepsViewerProps {
   typeAliases?: Record<string, Type>;
 }
 
-// Thin wrapper providing the alias table via context — everything else stays
-// in EvaluationStepsViewerInner unchanged, so its several early `return`s
-// don't each need to be wrapped individually.
+// Wraps EvaluationStepsViewerInner so its early returns don't each need the provider individually.
 export function EvaluationStepsViewer({ evaluation, typeAliases = {} }: EvaluationStepsViewerProps) {
   return (
     <TypeAliasesContext.Provider value={typeAliases}>

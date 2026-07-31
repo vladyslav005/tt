@@ -15,44 +15,14 @@ import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
 
 export interface TextEditorProps {
-  /**
-   * The default value of the editor
-   */
   defaultValue?: string;
-  /**
-   * The value of the editor (controlled mode)
-   */
-  value?: string;
-  /**
-   * The language of the editor
-   * @default "lambda"
-   */
-  language?: string;
-  /**
-   * The height of the editor
-   * @default "90vh"
-   */
-  height?: string | number;
-  /**
-   * Callback when the editor value changes
-   */
+  value?: string; // controlled mode
+  language?: string; // default "lambda"
+  height?: string | number; // default "90vh"
   onChange?: OnChange;
-  /**
-   * Callback when the editor is mounted
-   */
   onMount?: OnMount;
-  /**
-   * Whether the editor is read-only
-   * @default false
-   */
   readOnly?: boolean;
-  /**
-   * Additional CSS class name
-   */
   className?: string;
-  /**
-   * Additional editor options
-   */
   options?: Record<string, any>;
 }
 
@@ -100,7 +70,6 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     }
   }, [monaco, setUpMonacoLanguage, isMonacoReady]);
 
-  // Handle before editor mount - set up themes before first render
   const handleBeforeMount = (monaco: any) => {
     if (!isMonacoReady) {
       console.log('Setting up Monaco language and themes before mount');
@@ -109,11 +78,9 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     }
   };
 
-  // Handle editor mount
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
-    // Set the theme immediately after mount
     console.log('Editor mounted - setting initial theme:', monacoTheme);
     monaco.editor.setTheme(monacoTheme);
 
@@ -128,8 +95,6 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       ],
       precondition: 'editorTextFocus',
       run: () => {
-        // const currentValue = editor.getValue();
-        // parseAndTypeCheck(currentValue);
       }
     });
 

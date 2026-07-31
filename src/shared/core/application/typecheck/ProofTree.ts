@@ -8,20 +8,9 @@ export interface ProofTree {
   type: Type
   gamma: Record<string, Type | TypeScheme>
   error?: string
-  // A kind derivation (Δ ⊢ T :: K) justifying that this node's own type is
-  // well-kinded — only ever set when that type mentions a System λω̲ type
-  // constructor; every other node (the overwhelming majority) leaves this
-  // unset, since an ordinary type's kind is trivially * and not worth
-  // showing. Rendered as an extra premise alongside `premises`, not merged
-  // into it, since a KindProofTree judges a Type rather than a Term.
+  // Kind derivation (Δ ⊢ T :: K) for this node's type, only set when the type mentions a λω̲ constructor.
   kindPremise?: KindProofTree
-  // The (Conv) rule made visible: set only when this node's annotation
-  // needed an actual β-reduction to reach normal form (e.g. "Endo Nat" ->
-  // "Nat -> Nat") — never set for a type that was already normal. This
-  // checker applies Conv eagerly (see normalizeType) rather than keeping
-  // both forms around and reconciling them lazily during unification, so
-  // there's no separate moment elsewhere where this conversion "happens" —
-  // this field exists purely to show the reader that it did.
+  // The (Conv) rule made visible, set only when the annotation needed a β-reduction to normal form.
   typeConversion?: TypeConversion
 }
 
@@ -30,11 +19,7 @@ export interface TypeConversion {
   after: Type;
 }
 
-// A kinding derivation Δ ⊢ subject :: resultKind — the System λω̲ analogue of
-// ProofTree, but for the judgment that classifies a *type* rather than a
-// term. Kept as a separate shape (not squeezed into ProofTree) because its
-// subject is a Type, not a Term, and its context is a kind context (type
-// constructor variable -> Kind), not a Gamma.
+// A kinding derivation Δ ⊢ subject :: resultKind — the λω̲ analogue of ProofTree, for Types rather than Terms.
 export interface KindProofTree {
   rule: Rule
   premises: KindProofTree[]
@@ -97,17 +82,11 @@ export enum Rule {
   Fold = "Fold",
   Unfold = "Unfold",
 
-  // System F is explicit/syntax-directed (no unification involved), so it
-  // gets plain (non-Ct) rule names regardless of whether it appears inside
-  // a `let` — TexMapper renders these directly rather than delegating to
-  // LetPolymorphismTexMapper.
+  // System F is syntax-directed, so it always gets plain (non-Ct) rule names, even inside a `let`.
   TypeAbs = "TypeAbs",
   TypeApp = "TypeApp",
 
-  // System λω̲ term-level dispatch targets — unreachable in practice (a Type
-  // node, including these two, is never fed through AstVisitor.visit(); see
-  // kindOf/checkKindAnnotation in STLCTypeChecker for where kind-checking
-  // actually happens), kept only so AstVisitor's dispatch stays exhaustive.
+  // Unreachable in practice — kept only so AstVisitor's dispatch stays exhaustive.
   TyConstructorAbs = "TyConstructorAbs",
   TyConstructorApp = "TyConstructorApp",
 
@@ -128,9 +107,7 @@ export enum Rule {
   // kinded type constructor to a term index.
   KindPi = "KindPi",
   KindIndexApp = "KindIndexApp",
-  // μX.T is well-kinded (*) whenever T is, with X:* bound for the duration —
-  // mirrors KindForall's shape (TyForall reuses the same binder-kinding
-  // pattern).
+  // μX.T is well-kinded (*) whenever T is, with X:* bound for the duration.
   KindMu = "KindMu",
   // The (Conv) rule made visible — see ProofTree.typeConversion.
   Conv = "Conv",

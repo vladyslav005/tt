@@ -190,7 +190,6 @@ export type AstFlowNode =
   | FoldFlowNode
   | UnfoldFlowNode;
 
-// Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
 export type FunDeclFlowNodeType = FunDeclNodeData;
 export type VarDeclFlowNodeType = VarDeclNodeData;

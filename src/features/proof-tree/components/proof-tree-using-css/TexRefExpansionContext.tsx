@@ -7,11 +7,8 @@ interface TexRefExpansionValue {
 
 const TexRefExpansionContext = createContext<TexRefExpansionValue | null>(null);
 
-// Owns which specific Γ_n/C_n occurrences are currently shown expanded
-// (their recipe) rather than collapsed (just the label). Keyed per rendered
-// occurrence (node id + position within its judgement), not per label, so
-// clicking one Γ_2 only expands that one instance — other occurrences of
-// the same Γ_2 elsewhere in the tree are unaffected.
+// Tracks which Γ_n/C_n occurrences are expanded, keyed per rendered
+// occurrence so other instances of the same label are unaffected.
 export function TexRefExpansionProvider({children}: { children: ReactNode }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 

@@ -1,10 +1,6 @@
 import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 
-// Display labels for the Phase-1 rule set only — mirrors the literal
-// strings TexMapper's visitX methods use for the automatic derivation
-// (e.g. "T-Abs", "T-App"), so a rule picked here reads identically to how
-// it would show up in the "Automatic" tab. Partial, not exhaustive over
-// Rule — extended alongside BUILDER_RULES as more rules join the builder.
+// Display labels for the Phase-1 rule set, matching TexMapper's labels.
 export const RULE_LABELS: Partial<Record<Rule, string>> = {
   [Rule.Var]: "T-Var",
   [Rule.Abs]: "T-Abs",

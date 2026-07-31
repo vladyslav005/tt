@@ -1,9 +1,7 @@
 import {isKind} from "@/shared/core/domain/ast";
 import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
 
-// System λP restricts a TyIndexApp's term index to a Var (looked up in Γ)
-// or a Lit (a Nat literal) — see STLCTypeChecker.kindOf's TyIndexApp case —
-// so equality/printing of an index never needs full term evaluation.
+// A TyIndexApp's term index is always a Var or a Lit, so this never needs full term evaluation.
 export function termIndexEquals(a: Term, b: Term): boolean {
   if (a.kind === "Var" && b.kind === "Var") return a.name === b.name;
   if (a.kind === "Lit" && b.kind === "Lit") return a.value === b.value;
@@ -18,9 +16,7 @@ export function termIndexToString(t: Term): string {
 
 const ARITHMETIC_OPERATORS: ReadonlySet<BinaryOperator> = new Set(["+", "-", "*", "/"]);
 
-// Arithmetic operators type as Nat -> Nat -> Nat; the rest (comparisons)
-// type as Nat -> Nat -> Bool. Shared by both type checkers so the one
-// BinOp visitor method in each picks the right result/rule per operator.
+// Arithmetic operators type as Nat -> Nat -> Nat; comparisons type as Nat -> Nat -> Bool.
 export function isArithmeticOperator(operator: BinaryOperator): boolean {
   return ARITHMETIC_OPERATORS.has(operator);
 }
@@ -86,8 +82,7 @@ export function typeEquals(a: Type, b: Type): boolean {
 
     case "TyForall": {
       const bForall = b as typeof a;
-      // Structural equality only — no alpha-conversion, matching every
-      // other binder-free comparison in this function.
+      // Structural equality only — no alpha-conversion.
       return a.typeVariable === bForall.typeVariable && typeEquals(a.type, bForall.type);
     }
 
@@ -122,8 +117,7 @@ export function typeEquals(a: Type, b: Type): boolean {
 
     case "RecursiveType": {
       const bMu = b as typeof a;
-      // Structural equality only — no alpha-conversion, matching TyForall
-      // (and every other binder-free comparison in this function).
+      // Structural equality only — no alpha-conversion.
       return a.typeVariable === bMu.typeVariable && typeEquals(a.type, bMu.type);
     }
   }
@@ -178,10 +172,7 @@ export function typeToString(a: Type): string {
   }
 }
 
-// "@" (not "*", which the grammar reserves for MUL/tuple) is the concrete
-// syntax for the kind of types — matches KIND_STAR in Lambda.g4 — so this
-// stays parseable by AstPrettyPrinter's round-trip, unlike TexMapper's
-// kindToTex (LaTeX-only, never re-parsed).
+// "@" (not "*", reserved for MUL/tuple) is the concrete syntax for the kind of types.
 export function kindToString(k: Kind): string {
   switch (k.kind) {
     case "StarKind":
@@ -207,9 +198,7 @@ export function kindEquals(a: Kind, b: Kind): boolean {
   return false;
 }
 
-// Whether `type` mentions a System λω̲ type constructor anywhere inside it —
-// gates kind-checking so an ordinary STLC/System F type (whose kind is
-// always trivially *) never pays for or shows a kind derivation.
+// Gates kind-checking so an ordinary type (kind trivially *) never shows a kind derivation.
 export function containsTypeConstructor(type: Type): boolean {
   switch (type.kind) {
     case "TyIdentifier":
@@ -241,10 +230,7 @@ export function containsTypeConstructor(type: Type): boolean {
   }
 }
 
-// Whether `type` mentions a System λP construct anywhere inside it (a
-// Π-type or a term-indexed type application) — the λP analogue of
-// containsTypeConstructor above, gating kind-checking's λP-specific
-// diagnostics independently of System Fω's.
+// Whether `type` mentions a λP construct (Π-type or term-indexed application) — gates λP diagnostics.
 export function containsLambdaPConstruct(type: Type): boolean {
   switch (type.kind) {
     case "TyIdentifier":
@@ -276,11 +262,7 @@ export function containsLambdaPConstruct(type: Type): boolean {
   }
 }
 
-// Capture-avoiding substitution of a type *variable* (a TyIdentifier by
-// name) with a concrete type — the System F analogue of
-// TypeInferenceEngine.applySubstitution, which substitutes TyMetaVars
-// instead. Used both by type-application typechecking (t [T]) and by
-// evaluation's beta-reduction of (ΛX.t) [T].
+// Capture-avoiding substitution of a type variable (TyIdentifier by name) with a concrete type.
 export function substituteTypeVariable(type: Type, name: string, replacement: Type): Type {
   switch (type.kind) {
     case "TyIdentifier":
@@ -372,14 +354,8 @@ export function substituteTypeVariable(type: Type, name: string, replacement: Ty
   }
 }
 
-// Whether `type` mentions `name` as a free term-index (inside a
-// TyIndexApp's arg) anywhere within it — used by visitAbs to decide
-// whether a λ's inferred type must be a dependent TyPi rather than a
-// plain TyArrow: an ordinary term-level abstraction always synthesizes a
-// TyArrow, but if the body's type itself refers back to the parameter
-// (e.g. "λn:Nat. λx:Vec[n]. n" — the inner abstraction's type "Vec[n] ->
-// Nat" mentions the outer "n"), the outer type must be Πn:Nat. (Vec[n] ->
-// Nat) instead, or it could never match an explicit Π-type annotation.
+// Whether `type` mentions `name` as a free term-index — used by visitAbs to decide whether a λ's
+// inferred type must be a dependent TyPi (e.g. "λn:Nat. λx:Vec[n]. n") rather than a plain TyArrow.
 export function containsFreeTermVar(type: Type, name: string): boolean {
   switch (type.kind) {
     case "TyIdentifier":
@@ -414,14 +390,8 @@ export function containsFreeTermVar(type: Type, name: string): boolean {
   }
 }
 
-// Capture-avoiding substitution of a *term* variable inside a Type — the
-// System λP analogue of substituteTypeVariable above, needed when a
-// Πx:A.B-typed function is applied: the argument term is substituted for x
-// inside the dependent result type B. Restricted to the same Var/Lit term
-// shapes STLCTypeChecker accepts as index arguments (see kindOf's
-// TyIndexApp case) — a free Var occurrence inside a TyIndexApp's index is
-// replaced when it matches `name`; anything else in that position is
-// already rejected earlier by kind-checking.
+// Capture-avoiding substitution of a term variable inside a Type — needed when a Πx:A.B-typed
+// function is applied and the argument term is substituted for x inside the dependent result type B.
 export function substituteTermInType(type: Type, name: string, replacement: Term): Type {
   switch (type.kind) {
     case "TyIdentifier":
@@ -502,12 +472,8 @@ export function substituteTermInType(type: Type, name: string, replacement: Term
   }
 }
 
-// Expands any TyIdentifier naming a registered `typedef` into its underlying
-// type, recursively. Standalone (pure) so it's reusable outside the checker
-// — e.g. by the Evaluation view, which only has the alias table
-// (SLTLCTypeChecker.getTypeAliases()), not the checker instance itself.
-// `seen` guards against a cyclic typedef chain looping forever; it just
-// stops expanding rather than erroring.
+// Expands any TyIdentifier naming a registered `typedef` into its underlying type, recursively.
+// `seen` guards against a cyclic typedef chain looping forever.
 export function expandTypeAliases(type: Type, aliases: ReadonlyMap<string, Type>, seen: ReadonlySet<string> = new Set()): Type {
   switch (type.kind) {
     case "TyIdentifier": {
@@ -590,11 +556,8 @@ export function expandTypeAliases(type: Type, aliases: ReadonlyMap<string, Type>
   }
 }
 
-// Beta-reduces any TyConstructorApp((λX:K.T), T') to T[X:=T'], recursively
-// — standalone (pure) so it's reusable outside the checker (see
-// expandTypeAliases above for why). A "stuck" application (func is a bound
-// type-constructor variable, not literally an abstraction) is left as-is —
-// already in normal form.
+// Beta-reduces any TyConstructorApp((λX:K.T), T') to T[X:=T'], recursively. A "stuck" application
+// (func is a bound type-constructor variable, not an abstraction) is left as-is.
 export function normalizeType(type: Type): Type {
   switch (type.kind) {
     case "TyIdentifier":

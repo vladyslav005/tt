@@ -28,8 +28,6 @@ export const Conclusion = (props: ConclusionCenterProps) => {
   const {isDef = false, isExpanded = false, onToggle} = props;
   const containsError = props.node.error !== undefined;
   const hasSegments = !!props.node.judgementSegments;
-  // The old "expand context" menu item is superseded by clicking a Γ_n/C_n
-  // label directly wherever judgementSegments are available.
   const hasExpandableGamma = !hasSegments && !!props.node.judgementFull;
   const hasContextMenu = containsError || hasExpandableGamma;
   const [gammaExpanded, setGammaExpanded] = useState(false);

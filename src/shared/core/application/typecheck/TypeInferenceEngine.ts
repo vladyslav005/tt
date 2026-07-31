@@ -12,10 +12,7 @@ export class TypeInferenceEngine {
 
   private freshCounter = 0;
 
-  // Metavariable names (freshCounter) are only meaningful within a single
-  // typecheck run — call this at the start of each one, or names keep
-  // climbing ('A, 'B, ... 'Z, 'A_1, ...) across every keystroke instead of
-  // restarting fresh each time.
+  // Call at the start of each typecheck run, or metavariable names keep climbing across keystrokes.
   reset(): void {
     this.freshCounter = 0;
   }
@@ -431,10 +428,7 @@ export class TypeInferenceEngine {
       ),
     };
 
-    // Constraints are generated (and displayed) alongside a node's raw,
-    // pre-solve type — without this, a solved node would show its final
-    // type next to a constraint still mentioning a metavariable that no
-    // longer appears anywhere else in the tree.
+    // Substitute constraints too, or a solved node's final type would sit next to a stale metavariable.
     if ("constraints" in proof) {
       (next as unknown as InferProofTree).constraints = (proof as unknown as InferProofTree).constraints.map(
         (c) => ({

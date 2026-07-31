@@ -18,9 +18,7 @@ export type Type =
   ListType |
   RecursiveType;
 
-// A nullary type referred to by name — either a base type constant (Nat,
-// Bool, Unit) or a bound/free type variable (e.g. X in a TyForall). Which
-// one it is depends on context, not on this node.
+// A base type constant (Nat, Bool, Unit) or a type variable (e.g. X in TyForall) — context decides which.
 export interface TyIdentifier extends Node {
   kind: "TyIdentifier"
   name: string
@@ -51,8 +49,7 @@ export interface VariantType extends Node {
   }[]
 }
 
-// Synthesized from a Record term during typechecking — there is no surface
-// syntax for it, since record types are always inferred from field literals.
+// Synthesized from a Record term during typechecking — no surface syntax for it.
 export interface RecordType extends Node {
   kind: "RecordType"
   fields: {
@@ -77,10 +74,8 @@ export interface TyForall extends Node {
 // =                        SYSTEM λω̲                                  =
 // =====================================================================
 
-// λA:K. T — a type constructor, e.g. "λA:*. A -> A" has kind * -> *.
-// Distinct from TypeAbs (term.ts): that's a term abstracted over a type
-// (System F, Λ, produces a TyForall when checked); this is a type itself
-// abstracted over another type, classified by a Kind rather than a Type.
+// λA:K. T — a type constructor, e.g. "λA:*. A -> A" has kind * -> *. Distinct from TypeAbs (term.ts),
+// which abstracts a term over a type; this abstracts a type over another type.
 export interface TyConstructorAbs extends Node {
   kind: "TyConstructorAbs";
   typeParam: string;
@@ -99,11 +94,8 @@ export interface TyConstructorApp extends Node {
 // =                        SYSTEM λP                                  =
 // =====================================================================
 
-// Π x:A. B — a type that depends on a *term* variable x:A, e.g.
-// "Π n:Nat. Vec[n] -> Nat". "A -> B" (TyArrow) is this binder's
-// non-dependent special case, when x doesn't occur free in B — kept as its
-// own node rather than folding TyArrow into TyPi, matching how TyForall
-// coexists with ordinary types.
+// Π x:A. B — a type depending on a term variable x:A, e.g. "Π n:Nat. Vec[n] -> Nat".
+// TyArrow is this binder's non-dependent special case, kept as its own node.
 export interface TyPi extends Node {
   kind: "TyPi";
   paramVar: string;
@@ -111,10 +103,8 @@ export interface TyPi extends Node {
   body: Type;
 }
 
-// F[t] — applies a dependently-kinded type constructor to a *term* index,
-// e.g. "Vec[n]" or "Vec[3]". The one place a Term is embedded inside a
-// Type node; distinct from TyConstructorApp, which only ever applies a
-// type constructor to another type.
+// F[t] — applies a dependently-kinded type constructor to a term index, e.g. "Vec[n]".
+// The one place a Term is embedded inside a Type node.
 export interface TyIndexApp extends Node {
   kind: "TyIndexApp";
   func: Type;
@@ -125,10 +115,8 @@ export interface TyIndexApp extends Node {
 // =                        LISTS (Lecture 06)                         =
 // =====================================================================
 
-// List T — a dedicated type former, not derived from TyConstructorApp:
-// this predates System λω̲ pedagogically and has its own primitive
-// nil/cons/isnil/head/tail term-level operations with no dependency on the
-// type-constructor/kind system.
+// List T — a dedicated type former, not derived from TyConstructorApp, with its own primitive
+// nil/cons/isnil/head/tail term-level operations.
 export interface ListType extends Node {
   kind: "ListType";
   elementType: Type;
@@ -138,11 +126,8 @@ export interface ListType extends Node {
 // =                 ISO-RECURSIVE TYPES (Lecture 06)                  =
 // =====================================================================
 
-// μX.T — a self-referential type, e.g. "μX.[zero:Unit, succ:X]" (Peano
-// naturals). Isomorphic (not equal) to its one-step unfolding [X↦μX.T]T —
-// term-level fold/unfold witness the isomorphism explicitly rather than
-// the type system silently identifying the two, mirroring TyForall's own
-// binder shape (typeVariable/type field names).
+// μX.T — a self-referential type, isomorphic (not equal) to its unfolding [X↦μX.T]T;
+// term-level fold/unfold witness that isomorphism explicitly.
 export interface RecursiveType extends Node {
   kind: "RecursiveType";
   typeVariable: string;

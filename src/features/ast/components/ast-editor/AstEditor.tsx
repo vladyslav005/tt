@@ -144,9 +144,6 @@ function TypeFlowNodeDispatch(props: any) {
   }
 }
 
-// Node kinds beyond this core set can be *displayed* here (e.g. via "Copy from
-// viewer" in AstEditorContainer) but are not yet constructible through this
-// editor's toolbar/connection UI — see graphToAst.ts's reconstruct() fallback.
 export const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
@@ -187,23 +184,12 @@ export const nodeTypes: NodeTypes = {
 
 type AddOnDropKind = "decl" | "term" | "type";
 
-// Node kinds whose own handles always point at further *types* (as opposed to
-// term/program nodes, whose handles are term-context except "type"/"paramType").
-// TyIndexApp is deliberately excluded: unlike every other entry here, its
-// two children are mixed-context — "func" is a Type but "arg" is a Term
-// (the term index, e.g. "Vec[n]") — so a blanket "all handles are
-// type-context" rule would be wrong for it. It's display-only in this
-// editor for now (see makeDefaultTermNode/graphToAst.ts's reconstruct()
-// fallback for how not-yet-constructible kinds are handled generally).
+// Node kinds whose handles always point at further types. TyIndexApp is
+// excluded — its "arg" handle is a term index, not a type.
 const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi", "ListType", "RecursiveType"]);
 
-// A handful of handle names are reused across both term nodes and type nodes
-// (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
-// TupleType, "field-N" on Record/Variant vs. VariantType/RecordType) — so the
-// handle name alone can't tell us what kind of node belongs on the other end.
-// The source node's own kind disambiguates: handles coming off a type node are
-// always type-context, everything else defaults to term-context except the
-// handles that explicitly carry a nested type ("type", "paramType").
+// Handle names are reused across term and type nodes, so the source node's
+// own kind disambiguates which context a handle belongs to.
 function expectedChildKind(sourceKind: string | undefined, handleId: string | undefined): AddOnDropKind | null {
   if (!handleId) return null;
   if (handleId === "global-decl") return "decl";
@@ -226,9 +212,7 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
   type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp", "listType", "recursiveType"],
 };
 
-// Skeleton (term, xyflow node "type" string) for each newly-added node kind,
-// shared by addStandaloneNode and commitAddNodeOnDrop. Returns null for the
-// original 8 kinds, which keep their existing inline construction below.
+// Skeleton for each newly-added node kind; null for the original 8 kinds.
 function makeDefaultTermNode(nodeType: string, id: string): { type: string; term: any } | null {
   switch (nodeType) {
     case "inl":
@@ -542,14 +526,13 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
   }
 }
 
-// Inner editor must run under ReactFlowProvider (required for useReactFlow)
+// Must run under ReactFlowProvider (required for useReactFlow).
 export function AstEditor({
   fullScreen = false,
   setAST,
   graph,
   setGraph,
 }: AstProps) {
-  // NOTE: useReactFlow must be used under ReactFlowProvider in AstEditorContainer
   const rf = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -564,17 +547,15 @@ export function AstEditor({
     clientY: number;
   }>(null);
 
-  // popup position relative to wrapper
   const [dropPopupPos, setDropPopupPos] = useState<null | { x: number; y: number }>(null);
 
   const [addOnDropChoice, setAddOnDropChoice] = useState<string | null>(null);
   const [addOnDropOpen, setAddOnDropOpen] = useState(false);
   const addOnDropTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  // Node right-click context menu
   const [nodeCtxMenu, setNodeCtxMenu] = useState<null | { x: number; y: number; nodeId: string }>(null);
 
-  // Undo / redo stacks (refs so mutations don't trigger re-renders)
+  // Refs, not state, so undo/redo pushes don't trigger re-renders.
   const undoStackRef = useRef<AstFlowGraph[]>([]);
   const redoStackRef = useRef<AstFlowGraph[]>([]);
 
@@ -597,12 +578,10 @@ export function AstEditor({
     setGraph(snapshot);
   }, [graph, setGraph]);
 
-  // Keep AST in sync with graph (node edits + edge edits)
   useEffect(() => {
     pendingAstRef.current = graphToAst(graph);
   }, [graph]);
 
-  // Emit AST updates after graph state changes
   useEffect(() => {
     if (!pendingAstRef.current) return;
     setAST(pendingAstRef.current);
@@ -701,7 +680,6 @@ export function AstEditor({
   }, []);
 
   useEffect(() => {
-    // Ensure editable nodes have an onChange handler so Inputs are editable after copying nodes from viewer
     const needsPatch = graph.nodes.some((n: any) => n.data?.editable && typeof (n.data as any).onChange !== "function");
     if (!needsPatch) return;
 
@@ -998,7 +976,6 @@ export function AstEditor({
     });
   }, [graph, snapshotHistory]);
 
-  // Keyboard shortcuts
   const onEditorKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const target = event.target as HTMLElement;

@@ -19,23 +19,14 @@ import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-us
 interface ConclusionBuilderProps {
   studentNode: StudentProofNode;
   answerNode: ProofTree;
-  // The context this node's Γ is built on top of — its parent's real
-  // gamma, or its own gamma at the root (where there's nothing to extend).
   parentGamma: Record<string, Type | TypeScheme>;
   registry: GammaRegistry;
-  // A rule has been chosen (right or wrong — correctness is irrelevant
-  // here), and every revealed premise already has a written type — mirrors
-  // the design's "once all of a node's premises are closed, its own ?
-  // becomes eligible to fill".
+  // True once a rule is chosen and every revealed premise has a type.
   typeSlotUnlocked: boolean;
 }
 
-// Numbered short form (Γ_n) by default, full recipe only when this specific
-// occurrence has been toggled open — same registry-backed behavior the
-// Automatic tab already has (JudgementSegments.tsx), so a builder judgement
-// never has to spell out a whole context inline. `hrefKey`, when given,
-// wraps the result so it's independently clickable; omit it for read-only
-// spots (e.g. the local-var membership leaf) that don't need a toggle.
+// Numbered short form (Γ_n) by default, full recipe when toggled open.
+// `hrefKey`, when given, makes the result independently clickable.
 export function gammaRefTex(
   gamma: Record<string, Type | TypeScheme>,
   registry: GammaRegistry,
@@ -48,12 +39,7 @@ export function gammaRefTex(
   return hrefKey ? `\\href{${hrefKey}}{${content}}` : content;
 }
 
-// Distinct types already visible in a Γ, offered as quick-pick chips in the
-// type popover — skips the plain base types (Nat/Bool/Unit) since those
-// already have their own dedicated buttons; the useful case is reusing a
-// compound type (an arrow) already sitting in scope without rebuilding it
-// click-by-click. Deduped by rendered label, which is unambiguous for the
-// TyIdentifier/TyArrow shapes this picker deals in.
+// Distinct non-base types already visible in Γ, offered as quick-pick chips.
 function contextTypeOptions(gamma: Record<string, Type | TypeScheme>): Type[] {
   const seen = new Map<string, Type>();
   for (const value of Object.values(gamma)) {
@@ -66,17 +52,9 @@ function contextTypeOptions(gamma: Record<string, Type | TypeScheme>): Type[] {
 
 type EditorKind = "type" | "context" | null;
 
-// Renders one node's judgement as a single combined MathJax expression —
-// same reasoning as JudgementSegments.tsx's own comment (adjacent MathJax
-// fragments don't share a baseline) — with each interactive slot wrapped in
-// \href{key}{...} so MathJax renders it as a real, clickable <a>, exactly
-// the technique the automatic view already uses for its Γ_n references
-// (JudgementSegments.tsx). Four kinds of slot can appear in one judgement:
-// the LHS context ("gamma", toggles short/full — always available, not
-// gated on any pick), an LHS context-binding addition ("context"), the RHS
-// type ("type"), and — once any rule is picked, correct or not — one
-// clickable span per not-yet-identified premise's sub-term inside the
-// rendered term itself ("premise:N").
+// Renders one node's judgement as a single MathJax expression, with each
+// interactive slot wrapped in \href{key}{...} (gamma/context/type/premise:N)
+// so MathJax renders it as a real clickable link.
 export function ConclusionBuilder({studentNode, answerNode, parentGamma, registry, typeSlotUnlocked}: ConclusionBuilderProps) {
   const dispatch = useAppDispatch();
   const {isExpanded, toggle} = useTexRefExpansion();
@@ -94,10 +72,7 @@ export function ConclusionBuilder({studentNode, answerNode, parentGamma, registr
       : [],
   );
 
-  // A global var reference's term is just its bare name — nothing inside it
-  // to click into like an App's func/arg — so its one premise (the "jump to
-  // definition" sub-proof) is revealed by clicking the WHOLE term instead
-  // of a sub-term within it.
+  // A global var's premise is revealed by clicking the whole term (no sub-term to click).
   const isGlobalVarRef = answerNode.rule === Rule.Var && answerNode.premises.length > 0;
 
   const termTex = unrevealedPremiseIndices.size === 0
@@ -117,10 +92,6 @@ export function ConclusionBuilder({studentNode, answerNode, parentGamma, registr
     ? studentNode.writtenBindings.map((b) => `${b.name}:${TexMapper.typeToTex(b.type)}`).join(", ")
     : "?";
 
-  // Same "Γ_n ∪ {...}" recipe shape the Automatic tab already uses for a
-  // context-extending node (GammaRegistry's own recipe format) — never a
-  // literal "∅, x:Nat": when the parent context is itself empty there's
-  // nothing to union with, so the braces stand alone.
   const parentGammaRef = registry.refFor(parentGamma);
   const parentGammaTex = parentGammaRef
     ? `\\href{gamma}{${isExpanded(gammaKey) ? parentGammaRef.fullTex : parentGammaRef.shortTex}}`
@@ -148,8 +119,7 @@ export function ConclusionBuilder({studentNode, answerNode, parentGamma, registr
   const onJudgementClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
     const anchor = (e.target as HTMLElement).closest("a");
     if (!anchor) return;
-    // MathJax's CHTML output renders \href{}{} as data-mjx-href, not a real
-    // href — see JudgementSegments.tsx for the same technique/comment.
+    // MathJax's CHTML output renders \href{}{} as data-mjx-href, not a real href.
     const key = anchor.getAttribute("data-mjx-href");
     if (key === null) return;
 

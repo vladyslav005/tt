@@ -16,9 +16,6 @@ export function ProofTreeComponentUsingCss(
   const isDef = node.rule === "T-Def" || node.rule === "CT-Def";
   const [expanded, setExpanded] = useState(false);
 
-  // Collapsed, a T-Def/CT-Def should read as a plain T-Var/CT-Var leaf (the
-  // definition's proof is only revealed on expand) rather than showing the
-  // full derivation unprompted.
   const showCollapsedAsVar = isDef && !expanded && node.collapsedChildren !== undefined;
   const displayRule = showCollapsedAsVar ? (node.collapsedRule ?? node.rule) : node.rule;
   const displayChildren = showCollapsedAsVar ? node.collapsedChildren : node.children;

@@ -62,7 +62,6 @@ export class AstFlowMapper extends AstVisitor<void> {
   }
 
   protected visitProgram(node: Program): void {
-    // Visit main term if it exists (outside the loop!)
     if (node.term) {
       this.visit(node.term);
       this.pushEdge({
@@ -75,7 +74,6 @@ export class AstFlowMapper extends AstVisitor<void> {
 
     this.pushNode(node);
 
-    // Visit global declarations
     node.globals.forEach((decl) => {
       this.visit(decl);
       this.pushEdge({
@@ -105,7 +103,6 @@ export class AstFlowMapper extends AstVisitor<void> {
       });
     }
 
-    // result type (if present)
     if (node.type) {
       this.visit((node as any).type);
       this.pushEdge({
@@ -150,7 +147,6 @@ export class AstFlowMapper extends AstVisitor<void> {
   protected visitTermDecl(node: FunDecl): void {
     this.pushNode(node);
 
-    // type
     this.visit((node as any).type);
     this.pushEdge({
       id: `e-${node.id}-type-${(node as any).type.id}`,
@@ -171,7 +167,6 @@ export class AstFlowMapper extends AstVisitor<void> {
   protected visitTypeDecl(node: VarDecl): void {
     this.pushNode(node);
 
-    // type
     this.visit((node as any).type);
     this.pushEdge({
       id: `e-${node.id}-type-${(node as any).type.id}`,
@@ -180,8 +175,6 @@ export class AstFlowMapper extends AstVisitor<void> {
       target: (node as any).type.id,
     });
 
-    // value TODO:
-    // this.visit(node.value);
     this.pushEdge({
       id: `e-${node.id}-value-${node.value.id}`,
       source: node.id,
@@ -195,8 +188,7 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "type", "type", node.type);
   }
 
-  // No children to wire — paramKind is inline data (like TyConstructorAbs's
-  // own paramKind), not something a user connects visually.
+  // paramKind is inline data, not a wired-up child node.
   protected visitTypeConstructorDecl(node: TypeConstructorDecl): void {
     this.pushNode(node);
   }
@@ -431,9 +423,7 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "term", "term", node.term);
   }
 
-  // paramKind is inline data (like TyForall.typeVariable), not its own
-  // graph node/edge — kinds are simple annotations, not something a user
-  // wires up visually.
+  // paramKind is inline data, not a wired-up child node.
   protected visitTypeConstructorAbstraction(node: TyConstructorAbs): void {
     this.pushNode(node);
     this.visitChild(node, "body", "body", node.body);
@@ -461,7 +451,6 @@ export class AstFlowMapper extends AstVisitor<void> {
   }
 
   private pushNode(node: ASTNode): void {
-    // Prevent duplicate nodes
     if (this.visitedNodes.has(node.id)) {
       return;
     }

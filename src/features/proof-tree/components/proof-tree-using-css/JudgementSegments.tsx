@@ -10,16 +10,9 @@ interface JudgementSegmentsProps {
   className?: string;
 }
 
-// Renders a judgement as ONE combined MathJax expression — never split
-// across several independently-typeset spans, since adjacent MathJax
-// fragments don't reliably share a baseline and cause exactly the misaligned,
-// multi-row mess this replaced. Each numbered Γ_n/C_n reference is wrapped
-// in \href{i}{...} (part of MathJax's core tex input, no extra extension
-// needed), which MathJax renders as a real inline <a> within that same
-// single typeset formula — clickable in place, perfectly aligned with its
-// surroundings. The click is intercepted at the container (preventing the
-// browser from actually navigating) and toggles that one occurrence only,
-// keyed by this node's id plus the segment's position.
+// Renders a judgement as one combined MathJax expression (adjacent MathJax
+// fragments don't share a baseline). Each Γ_n/C_n reference is wrapped in
+// \href{i}{...}, clickable in place and toggled per occurrence.
 export function JudgementSegments({segments, registry, nodeId, className}: JudgementSegmentsProps) {
   const {isExpanded, toggle} = useTexRefExpansion();
 
@@ -44,8 +37,7 @@ export function JudgementSegments({segments, registry, nodeId, className}: Judge
     if (!anchor) {
       return;
     }
-    // MathJax's CHTML output renders \href{}{} as data-mjx-href, not a real
-    // href attribute — it deliberately avoids letting the browser navigate.
+    // MathJax's CHTML output renders \href{}{} as data-mjx-href, not a real href.
     const href = anchor.getAttribute("data-mjx-href");
     if (href === null) {
       return;

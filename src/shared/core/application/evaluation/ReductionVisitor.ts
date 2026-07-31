@@ -83,9 +83,6 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     super();
   }
 
-  /**
-   * Performs exactly one reduction step.
-   */
   public reduce(term: Term): ReductionStep | null {
     return this.visit(term);
   }
@@ -122,10 +119,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
   protected override visitAbs(
     node: Abs,
   ): ReductionStep | null {
-    /*
-     * Normal-order reduction continues under abstractions.
-     * Call by name and call by value stop at an abstraction.
-     */
+    // Only normal-order reduction continues under abstractions.
     if (this.strategy !== EvaluationStrategy.NORMAL) {
       return null;
     }
@@ -158,10 +152,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
   ): ReductionStep | null {
     const isBetaRedex = node.func.kind === "Abs" || node.func.kind === "DummyAbstraction";
 
-    /*
-     * Normal order and call by name reduce an outer
-     * beta-redex immediately.
-     */
+    // Normal order and call-by-name reduce an outer beta-redex immediately.
     if (
       isBetaRedex &&
       this.strategy !== EvaluationStrategy.CALL_BY_VALUE
@@ -169,10 +160,6 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       return this.betaReduce(node);
     }
 
-    /*
-     * All strategies first attempt to reduce the
-     * function side.
-     */
     const functionStep = this.visit(node.func);
 
     if (functionStep) {
@@ -187,18 +174,11 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       };
     }
 
-    /*
-     * Call by name never independently evaluates
-     * the argument.
-     */
+    // Call-by-name never independently evaluates the argument.
     if (this.strategy === EvaluationStrategy.CALL_BY_NAME) {
       return null;
     }
 
-    /*
-     * Normal order checks the argument after the
-     * function cannot reduce.
-     */
     if (this.strategy === EvaluationStrategy.NORMAL) {
       const argumentStep = this.visit(node.arg);
 
@@ -217,10 +197,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       };
     }
 
-    /*
-     * Call by value requires the function to be a value
-     * before evaluating the argument.
-     */
+    // Call-by-value requires the function to be a value before evaluating the argument.
     if (!this.isValue(node.func)) {
       return null;
     }
@@ -243,27 +220,17 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       };
     }
 
-    /*
-     * Under call by value, beta-reduction happens only
-     * after the argument is a value.
-     */
     if (isBetaRedex) {
       return this.betaReduce(node);
     }
 
-    /*
-     * For example, applying a literal as a function
-     * produces a stuck term.
-     */
+    // e.g. applying a literal as a function is stuck.
     return null;
   }
 
   private betaReduce(node: App): ReductionStep {
     if (node.func.kind === "DummyAbstraction") {
-      /*
-       * The parameter is anonymous and never referenced,
-       * so the argument is simply discarded.
-       */
+      // Anonymous parameter, never referenced — argument is discarded.
       const after = this.cloneTermWithFreshIds(node.func.body);
       return {
         before: node,
@@ -739,14 +706,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     };
   }
 
-  // Per the course material (lecture 08, "Vyhodnocovacie pravidlá"): unlike
-  // App, this is ONE fixed rule, not parameterized by the language's
-  // evaluation strategy — "V procese vyhodnotenia termu t[T], najskôr
-  // redukujeme t na hodnotu (E-Tapp), a následne pristúpime k typovej
-  // inštanciácii (E-TappTabs)" ("first reduce t to a value, then apply
-  // type instantiation"). this.strategy still governs how node.term's own
-  // subterms reduce (via the recursive this.visit call below) — it's only
-  // the E-Tapp/E-TappTabs step itself that doesn't branch on it.
+  // Unlike App, type application has one fixed rule regardless of evaluation strategy.
   protected override visitTypeApplication(node: TypeApp): ReductionStep | null {
     // E-TappTabs: term is already a value (a TypeAbs), instantiate.
     if (node.term.kind === "TypeAbs") {
@@ -788,13 +748,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     };
   }
 
-  /**
-   * Capture-avoiding substitution of a type *variable* throughout a term
-   * (into every embedded Type annotation) — the System F analogue of
-   * substitute() below, which substitutes a term variable instead.
-   *
-   * term[typeVar := replacement]
-   */
+  // Capture-avoiding substitution of a type variable into every embedded Type annotation in a term.
   private substituteTypeInTerm(term: Term, typeVar: string, replacement: Type): Term {
     switch (term.kind) {
       case "Var":
@@ -963,20 +917,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
   }
 
   protected override visitLet(node: Let): ReductionStep | null {
-    /*
-     * `let x = t1 in t2` is a redex the moment it's formed — unlike App,
-     * it never needs to wait for anything to become an abstraction.
-     * Normal order and call by name substitute immediately, exactly like
-     * a beta-redex under those two strategies (see visitApp).
-     */
+    // `let` is a redex the moment it's formed; normal order and call-by-name substitute immediately.
     if (this.strategy !== EvaluationStrategy.CALL_BY_VALUE) {
       return this.letReduce(node);
     }
 
-    /*
-     * Call by value requires the bound value to be a value before
-     * substituting it into the body.
-     */
+    // Call-by-value requires the bound value to be a value before substituting it into the body.
     if (!this.isValue(node.value)) {
       const valueStep = this.visit(node.value);
 
@@ -1009,11 +955,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     };
   }
 
-  /**
-   * Capture-avoiding substitution:
-   *
-   * term[variable := replacement]
-   */
+  // Capture-avoiding substitution: term[variable := replacement].
   private substitute(
     term: Term,
     variable: string,
@@ -1025,11 +967,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           return term;
         }
 
-        /*
-         * A fresh copy is required for every occurrence.
-         * Otherwise duplicated substituted terms would
-         * contain duplicated node IDs.
-         */
+        // Fresh copy per occurrence, or duplicated substitutions would share node IDs.
         return this.cloneTermWithFreshIds(replacement);
 
       case "Lit":
@@ -1051,11 +989,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         };
 
       case "Abs": {
-        /*
-         * The inner abstraction shadows the variable.
-         *
-         * (λx. M)[x := N] = λx. M
-         */
+        // Inner abstraction shadows the variable: (λx. M)[x := N] = λx. M
         if (term.param === variable) {
           return term;
         }
@@ -1063,10 +997,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         const replacementFreeVariables =
           this.getFreeVariables(replacement);
 
-        /*
-         * Alpha-conversion is required when the binder
-         * could capture a free variable from replacement.
-         */
+        // Alpha-conversion needed if the binder would capture a free variable from replacement.
         if (replacementFreeVariables.has(term.param)) {
           const unavailableNames = new Set([
             ...this.getAllNames(term.body),
@@ -1236,11 +1167,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     }
   }
 
-  /**
-   * Substitutes under a named binder (used by Case/VariantCase branches),
-   * alpha-converting the binder when it would capture a free variable of
-   * the replacement — mirrors the Abs case of substitute().
-   */
+  // Substitutes under a named binder (Case/VariantCase branches); alpha-converts like the Abs case above.
   private substituteUnderBinder(
     boundName: string,
     body: Term,
@@ -1468,13 +1395,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     }
   }
 
-  /**
-   * Renames occurrences bound by an outer abstraction.
-   *
-   * It stops when it encounters another abstraction
-   * with the same parameter because that abstraction
-   * introduces a new binding.
-   */
+  // Renames occurrences bound by an outer abstraction; stops at a nested one with the same param.
   private renameBoundVariable(
     term: Term,
     oldName: string,
@@ -1508,10 +1429,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         };
 
       case "Abs":
-        /*
-         * A nested abstraction with the same name
-         * shadows the outer abstraction.
-         */
+        // A nested abstraction with the same name shadows the outer one.
         if (term.param === oldName) {
           return term;
         }

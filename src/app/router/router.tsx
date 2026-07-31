@@ -11,7 +11,6 @@ export const router = createBrowserRouter([
     path: "/", element: <AppLayout/>,
     errorElement: <ErrorPage/>,
     children: [
-      // default index: redirect to analytics
       {index: true, element: <Navigate to="/main" replace/>},
       {path: "/main", element: <MainPage/>},
       {path: "/about", element: <AboutPage/>},

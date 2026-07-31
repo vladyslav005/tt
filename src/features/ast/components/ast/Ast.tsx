@@ -93,8 +93,7 @@ function TypeFlowNodeDispatch(props: any) {
   }
 }
 
-// Rendered as a <Panel> child of <ReactFlow>, which supplies the context
-// useReactFlow() needs — Ast itself isn't wrapped in a ReactFlowProvider.
+// Needs the ReactFlow context from its parent <Panel>.
 function CenterViewButton() {
   const rf = useReactFlow();
   return (
@@ -150,7 +149,6 @@ export function Ast({
   const { mapAstToFlow } = useMapAstToFlow()
   const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [], edges: [] });
 
-  // Update graph when AST changes
   useEffect(() => {
     const newGraph = mapAstToFlow();
     const layoutGraph = layoutAstFlow(newGraph.nodes, newGraph.edges);

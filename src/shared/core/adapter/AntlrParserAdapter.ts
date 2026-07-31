@@ -19,11 +19,7 @@ export class AntlrParserAdapter implements Parser {
   }
 }
 
-// Parses just a `type` expression (e.g. "Nat -> Nat"), not a whole program —
-// mirrors AntlrParserAdapter.parseExpression exactly but enters the grammar
-// at parser.type_() instead of parser.expression(). Used by the Proof Tree
-// Builder's type-fill-in popover, where the student is writing a single
-// type, not a full program.
+// Parses a standalone `type` expression, e.g. for the Proof Tree Builder's type-fill-in popover.
 export function parseTypeExpression(input: string): Type {
   const chars = CharStreams.fromString(input)
   const lexer = new LambdaLexer(chars)

@@ -20,9 +20,7 @@ const BINOP_TEX_SYMBOLS: Record<BinaryOperator, string> = {
   "!=": "\\neq",
 };
 
-// Suffix only — callers prefix "T-" (plain rules) or "CT-" (constraint
-// rules), so the one BinOp visitor method still displays a distinct rule
-// per operator without duplicating this table in both TeX mappers.
+// Suffix only — callers prefix "T-" or "CT-", so one BinOp visitor method displays a distinct rule per operator.
 const BINOP_RULE_NAMES: Record<BinaryOperator, string> = {
   "+": "Plus",
   "-": "Minus",
@@ -47,14 +45,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     this.typeAliasRegistry = typeAliasRegistry;
   }
 
-  // Called once before each top-level visit() — mirrors
-  // SLTLCTypeChecker.setTheories()'s "set state, then use" pattern, since
-  // this mapper is a long-lived DI singleton rather than constructed fresh
-  // per render. Also resets the Γ registry here (see GammaRegistry.reset):
-  // it's built lazily on first visit() and, being singleton state, must be
-  // thrown away before each new top-level render or a later term's
-  // genuinely non-empty contexts silently render as ∅ (never registered,
-  // indistinguishable from empty).
+  // Called once before each top-level visit(), since this mapper is a long-lived singleton;
+  // also resets the Γ registry so a previous render's registrations don't leak into this one.
   setTypeAliases(aliases: { [name: string]: Type }): void {
     this.typeAliasRegistry = new TypeAliasRegistry(aliases);
     this.gammaRegistry.reset();
@@ -62,8 +54,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   }
 
   visit(node: ProofTree): TexTree {
-    // A constraint-typing (CT-*) proof tree — e.g. a `let` embedded in an
-    // otherwise plain-rule tree — belongs to LetPolymorphismTexMapper.
+    // A constraint-typing (CT-*) proof tree belongs to LetPolymorphismTexMapper.
     if (CT_RULES.has(node.rule)) {
       return new LetPolymorphismTexMapper(this.typeAliasRegistry).visit(node);
     }
@@ -80,11 +71,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return tex;
   }
 
-  // One pass building Γ_n labels for the whole plain-rule subtree, mirroring
-  // LetPolymorphismTexMapper's registry so a Γ_n reference is numbered and
-  // independently expandable the same way whether or not it's inside a
-  // `let`. CT-rule premises (an embedded let) are skipped — those get their
-  // own independent registry via the LetPolymorphismTexMapper delegation.
+  // One pass building Γ_n labels for the whole plain-rule subtree. CT-rule premises (an embedded
+  // let) are skipped — those get their own registry via the LetPolymorphismTexMapper delegation.
   private buildGammaRegistry(node: ProofTree, parent: ProofTree | null): void {
     this.gammaRegistry.register(node.gamma, parent?.gamma ?? null);
 
@@ -95,12 +83,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  // node.premises rendered as TexTree children, plus (when present) the
-  // node's own kind derivation and/or type-level conversion as extra
-  // trailing children — shared by every rule whose type annotation might
-  // mention a System λω̲ type constructor (Abs, DummyAbstraction, Ascribe,
-  // Inl, Inr, Variant, TypeApplication). A no-op for every other rule,
-  // since kindPremise/typeConversion are only ever set at those sites.
+  // node.premises as TexTree children, plus the node's kind derivation/type conversion if present.
   private childrenWithKind(node: ProofTree): TexTree[] {
     const children = node.premises.map((child) => this.visit(child));
     if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise));
@@ -120,11 +103,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     [Rule.KindMu]: "K-Mu",
   };
 
-  // Renders a kinding derivation (Δ ⊢ T :: K) into the same TexTree shape
-  // used for term judgements, so the UI's tree component doesn't need to
-  // know kind nodes are a different data type. No Γ_n-style numbering here
-  // (unlike judgements()) — kind contexts in this language are shallow
-  // enough that literal rendering stays readable.
+  // Renders a kinding derivation (Δ ⊢ T :: K) into the same TexTree shape used for term judgements.
   static kindProofTex(node: KindProofTree): TexTree {
     const deltaEntries = Object.entries(node.delta);
     const deltaTex = deltaEntries.length === 0
@@ -138,11 +117,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     };
   }
 
-  // The (Conv) rule made visible, as a leaf fact rather than a real
-  // sub-derivation (there's nothing further to expand — β-reduction here is
-  // decidable and total, so this checker applies it eagerly instead of
-  // keeping both forms around for later reconciliation; see
-  // ProofTree.typeConversion).
+  // The (Conv) rule made visible as a leaf fact — nothing further to expand.
   static conversionTex(conversion: TypeConversion): TexTree {
     return {
       judgement: `${this.typeToTex(conversion.before)} \\equiv_\\beta ${this.typeToTex(conversion.after)}`,
@@ -174,8 +149,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         rule: "T-Def",
         meta: (node.term as any).name as string,
         children: node.premises.map(child => this.visit(child)),
-        // Collapsed, a global-variable reference is indistinguishable from
-        // a plain variable lookup — only expanding it reveals the T-Def proof.
+        // Collapsed, looks like a plain variable lookup — expanding reveals the T-Def proof.
         collapsedRule: "T-Var",
         collapsedChildren: [this.variableMembershipTex(node)],
       }
@@ -380,9 +354,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  // Only reached when Let-polymorphism is disabled — STLCTypeChecker.visitLet
-  // rejects the term with Rule.Let (no premises) instead of delegating to
-  // LetPolymorphismInferenceVisitor's Rule.CtLet judgment.
+  // Only reached when Let-polymorphism is disabled (checker rejects the term instead of using CtLet).
   protected visitLet(node: ProofTree): TexTree {
     return {
       ...this.judgements(node),
@@ -465,13 +437,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  // Segment-producing counterpart to termToTex — used wherever the term is
-  // rendered interactively (judgements()), so a type embedded *inside* the
-  // term (a λ parameter's annotation, an ascription, ...) gets its own
-  // independently clickable ref segment whenever it matches a typedef, the
-  // same way the judgement's own top-level type already does. termToTex
-  // itself stays untouched, plain-string, for the few call sites that only
-  // need inert text (e.g. TexTree.judgement's non-interactive fallback).
+  // Segment-producing counterpart to termToTex — used for interactive rendering, so a type
+  // embedded inside the term (a λ's annotation, an ascription, ...) gets its own clickable ref segment.
   static termToTexSegments(term: Term, aliasRegistry: TypeAliasRegistry): TexSegment[] {
     const t = (value: string): TexSegment => ({kind: "tex", value});
     const ty = (type: Type): TexSegment[] => this.typeToTexSegments(type, aliasRegistry);
@@ -582,12 +549,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  // `wrap`, when given, is applied only to the term's own DIRECT children
-  // (not threaded into their own recursive rendering) — lets a caller mark
-  // exactly "this immediate sub-term" spans (e.g. an App's func/arg, an
-  // Abs's body) as individually addressable in the resulting TeX string,
-  // without touching every other call site in the app that only wants
-  // plain inert text (they simply omit the second argument).
+  // `wrap`, when given, applies only to the term's own direct children — lets a caller mark
+  // individual immediate sub-term spans (e.g. an App's func/arg) as addressable in the TeX string.
   static termToTex(term: Term, wrap?: (subterm: Term, tex: string) => string): string {
     const rec = (sub: Term): string => {
       const tex = this.termToTex(sub);
@@ -727,15 +690,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
-  // Segment-producing counterpart to typeToTex, mirroring
-  // termToTexSegments's own relationship to termToTex. Checks the alias
-  // registry at *every* position a Type can appear, not just the top — so a
-  // type-constructor name used inside a larger type (e.g. "Endo" inside
-  // "Endo Nat") is independently clickable to reveal its typedef
-  // definition, the same way a top-level alias reference already is. Only
-  // recurses into a type's own structure when the whole thing doesn't
-  // already match an alias (preserving the existing whole-type fold, e.g.
-  // some "<Nat*Nat>" folding to "MyPair").
+  // Segment-producing counterpart to typeToTex. Checks the alias registry at every position a
+  // Type can appear, not just the top, so a nested type-constructor name is independently clickable.
   static typeToTexSegments(type: Type, aliasRegistry: TypeAliasRegistry): TexSegment[] {
     const ref = aliasRegistry.refFor(type);
     if (ref) {

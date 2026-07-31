@@ -27,10 +27,7 @@ export class Evaluator {
     const globals = new Map<string, Term>();
 
     for (const declaration of ast.globals) {
-      // A typedef (alias or opaque type-constructor declaration) has no
-      // runtime value — it's purely a type-level name, already expanded
-      // away (or, for an opaque constructor, never had one) by the checker
-      // before evaluation runs.
+      // A typedef has no runtime value — purely type-level.
       if (declaration.kind === "TypeAliasDecl" || declaration.kind === "TypeConstructorDecl") continue;
       globals.set(declaration.name, declaration.value);
     }

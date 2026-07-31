@@ -68,22 +68,12 @@ import {
 import {TypeInferenceEngine} from "@/shared/core/application/typecheck/TypeInferenceEngine.ts";
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@/shared/core/domain/typeTheory.ts";
 
-// Whether a variable was bound by an ordinary binder (a lambda parameter,
-// monomorphic within its scope) or by `let` (looked up as a TypeScheme and
-// freshly instantiated on every use) — purely for labeling the proof tree
-// with the matching CT-Var / CT-VarLet rule; it has no effect on the type
-// that gets computed.
+// Whether a variable was bound by an ordinary binder or by `let` — purely for picking the
+// matching CT-Var / CT-VarLet proof-tree label; has no effect on the computed type.
 type VarOrigin = Rule.CtVar | Rule.CtVarLet;
 
-// Single typechecker for the whole language: every rule is written once, in
-// constraint-generation/unification style, so that theories compose freely
-// (a System F type application inside a `let`-bound value works because
-// there's only one traversal — not two visitors blind to each other's node
-// kinds). "Plain STLC" isn't a different algorithm here, just this same
-// engine with `inferring` false: no metavariables get introduced (an
-// unannotated lambda is rejected instead), so unification degenerates to
-// ordinary type equality checking, and proof nodes keep their plain (T-*)
-// rule labels instead of the constraint (CT-*) ones.
+// Single typechecker for the whole language, written once in constraint-generation/unification
+// style so theories compose freely. "Plain STLC" is just this engine with `inferring` false.
 export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   private schemeContext: Gamma<TypeScheme> = new Gamma<TypeScheme>();
@@ -93,20 +83,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   private theories: TypeTheoryConfig = DEFAULT_TYPE_THEORY_CONFIG;
   private readonly engine: TypeInferenceEngine = new TypeInferenceEngine();
 
-  // name -> fully-expanded underlying type, populated in declaration order
-  // by visitTypeAliasDecl.
+  // name -> fully-expanded underlying type, populated by visitTypeAliasDecl.
   private typeAliases: Map<string, Type> = new Map();
 
-  // name -> declared kind, populated by visitTypeConstructorDecl (System
-  // λP's opaque "typedef X : K;"). Consulted by kindOf's TyIdentifier case
-  // alongside Δ (which only ever holds *locally* bound type-constructor
-  // variables, e.g. Fω's λX:K) — this is the global counterpart.
+  // name -> declared kind (System λP's opaque "typedef X : K;"), the global counterpart to Δ.
   private kindContext: Map<string, Kind> = new Map();
 
-  // >0 while checking a `let`'s value+body (nesting-safe via a counter, not
-  // a boolean, since a `let` can appear inside another `let`'s value). While
-  // true — or while the Type inference theory is on — rules use their CT-*
-  // label and an unannotated lambda parameter is allowed.
+  // >0 while checking a `let`'s value+body (a counter, since lets can nest).
   private polymorphicScope = 0;
 
   private get inferring(): boolean {
@@ -121,28 +104,18 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     return this.errorBuffer;
   }
 
-  // The typedef table built up by the most recent check() run — exposed so
-  // the proof-tree renderer can offer "show as alias" for any node whose
-  // type happens to match one, not just nodes that literally wrote it.
+  // Exposed so the proof-tree renderer can offer "show as alias" for any matching type.
   public getTypeAliases(): { [name: string]: Type } {
     return Object.fromEntries(this.typeAliases);
   }
 
-  // Which optional type theories (beyond core STLC, which is always on) the
-  // next check() run should honor. Set before checking — a visitLet or
-  // visitTypeAbstraction/visitTypeApplication belonging to a disabled theory
-  // is rejected as a type error instead of being checked, so switching a
-  // theory off shows the user how the very same term stops typechecking.
+  // Optional theories beyond core STLC; a construct belonging to a disabled theory is a type error.
   public setTheories(theories: TypeTheoryConfig): void {
     this.theories = theories;
   }
 
-  // Public entry point: runs inference over the whole program, then solves
-  // whatever constraints are still outstanding once, at the end, and
-  // applies the resulting substitution to the whole proof tree. (A nested
-  // `let` still solves+generalizes its own value eagerly, via checkLet —
-  // this only closes out whatever constraints that process legitimately
-  // deferred, e.g. from an App or BinOp outside of any let.)
+  // Runs inference over the whole program, then solves whatever constraints are still outstanding
+  // (a nested `let` already solved+generalized its own value eagerly, via checkLet).
   public check(program: Program): InferProofTree {
     this.schemeContext = new Gamma<TypeScheme>();
     this.varOrigin = new Gamma<VarOrigin>();
@@ -171,9 +144,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     return proof;
   }
 
-  // Extends both the type context and the var-origin tracking with a single
-  // binding for the duration of `fn`, then restores both — even if `fn`
-  // throws. Handles shadowing (Gamma.add throws on a name already present).
+  // Extends both the type context and var-origin tracking for the duration of `fn`, then restores both.
   private withBinding<T>(
     name: string,
     scheme: TypeScheme,
@@ -206,9 +177,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
-  // Builds a leaf error proof and records the message — shared by every
-  // "this construct isn't allowed here" gate (disabled theory, missing
-  // annotation, ...).
+  // Builds a leaf error proof and records the message — shared by every "not allowed here" gate.
   private reject(term: ASTNode, rule: Rule, msg: string, premises: InferProofTree[] = []): InferProofTree {
     this.errorBuffer.push(new Error(msg));
     return {
@@ -222,10 +191,8 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     };
   }
 
-  // Solves + applies a proof's own constraints immediately (rather than
-  // deferring to the top-level check()) — needed wherever a fully concrete
-  // type is required right now: a global declaration's value, compared
-  // against its declared type before the next declaration can be checked.
+  // Solves + applies a proof's own constraints immediately, rather than deferring to check() —
+  // needed where a fully concrete type is required right now (e.g. a global declaration's value).
   private solveLocally(proof: InferProofTree): InferProofTree {
     try {
       const substitution = this.engine.solve(proof.constraints);
@@ -237,13 +204,8 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
-  // Called once at every point a Type first enters the checker from surface
-  // syntax (a param/ascription/declaration annotation) — everything
-  // downstream (unify, generalize, typeEquals, ...) only ever sees
-  // already-expanded types and never needs to know aliases exist. Thin
-  // wrapper around the standalone expandTypeAliases (utils.ts) — pulled out
-  // so the Evaluation view can reuse the exact same expansion logic without
-  // needing a checker instance, just the alias table.
+  // Called once wherever a Type first enters the checker from surface syntax — everything
+  // downstream only ever sees already-expanded types.
   private expandAliases(type: Type, seen: ReadonlySet<string> = new Set()): Type {
     return expandTypeAliases(type, this.typeAliases, seen);
   }
@@ -278,11 +240,8 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
-  // Δ ⊢ type :: K — computes the kind of an already-expandAliases'd type,
-  // building the derivation as it goes. Every branch that isn't a System
-  // λω̲ construct just requires * from its immediate parts, mirroring PTS's
-  // Form rule (Γ⊢A:s, Γ⊢B:s ⟹ Γ⊢A→B:s) generalized to n-ary structural
-  // formers (tuples, variants, records) rather than only binary arrows.
+  // Δ ⊢ type :: K — computes the kind of an already-expandAliases'd type, building the derivation
+  // as it goes. Every branch that isn't a λω̲ construct just requires * from its immediate parts.
   private kindOf(type: Type, delta: ReadonlyMap<string, Kind>): { kind: Kind; proof: KindProofTree } {
     switch (type.kind) {
       case "TyIdentifier": {
@@ -290,10 +249,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
         if (bound) {
           return {kind: bound, proof: this.kindLeaf(Rule.KindVar, type, bound, delta)};
         }
-        // A base type (Nat/Bool/Unit) or a name this checker never
-        // validated as in-scope — both are treated as kind * axiomatically,
-        // consistent with how the rest of the checker never rejects a bare
-        // opaque type name either.
+        // A base type or an unvalidated name — both treated as kind * axiomatically.
         return {kind: SLTLCTypeChecker.STAR, proof: this.kindLeaf(Rule.KindBase, type, SLTLCTypeChecker.STAR, delta)};
       }
 
@@ -371,11 +327,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       case "TyPi": {
         const paramKind = this.kindOf(type.paramType, delta);
         this.expectStar(paramKind.kind, type.paramType);
-        // paramVar is a *term* variable, not a type/kind-context (Δ)
-        // binding — the Π-type introduces it itself (this binder is
-        // independent of any surrounding term-level λ, even though by
-        // convention they share a name), so it's bound into the ambient Γ
-        // right here for the duration of checking the body.
+        // paramVar is a term variable, bound into the ambient Γ for the duration of checking the body.
         const body = this.withBinding(
           type.paramVar,
           {kind: "TypeScheme", vars: [], type: type.paramType},
@@ -418,11 +370,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     }
   }
 
-  // System λP restricts a TyIndexApp's term index to a Var (looked up in
-  // the ambient Γ) or a Lit (a Nat/Bool/Unit literal) — see the comment on
-  // termIndexEquals/termIndexToString (utils.ts) for why this keeps index
-  // equality simple. Anything else is rejected here rather than silently
-  // mis-typed.
+  // System λP restricts a TyIndexApp's term index to a Var (looked up in Γ) or a Lit.
   private indexTermType(term: Term): Type {
     if (term.kind === "Var") {
       const scheme = this.schemeContext.get(term.name);
@@ -437,25 +385,14 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     throw new Error(`System λP index expressions are limited to variables and literals — got a "${term.kind}"`);
   }
 
-  // Run *after* kind-checking (so the kind derivation matches what the user
-  // actually wrote) but before the type is bound/compared/unified against
-  // anything else, since "Endo Nat" and "Nat -> Nat" must be interchangeable
-  // there even though they're structurally different ASTs. Thin wrapper
-  // around the standalone normalizeType (utils.ts) — pulled out for the same
-  // reason as expandAliases above.
+  // Run after kind-checking but before the type is bound/compared/unified against anything else,
+  // so e.g. "Endo Nat" and "Nat -> Nat" are interchangeable despite being different ASTs.
   private normalizeType(type: Type): Type {
     return normalizeType(type);
   }
 
-  // Kind-checks a (already expandAliases'd) type used as a term annotation.
-  // A no-op — {rejected: false} with no premise — for any type that doesn't
-  // mention a System λω̲ construct, which is the overwhelming common case:
-  // an ordinary STLC/System F type is trivially kind * and this checker
-  // behaves exactly as it did before this theory existed. Only once a type
-  // constructor is actually used does this (a) gate on the theory being
-  // enabled, (b) verify the annotation itself has kind * (not e.g. @->@,
-  // a constructor applied to too few arguments), and (c) return the
-  // derivation to attach as the node's kindPremise.
+  // Kind-checks an (already expandAliases'd) type used as a term annotation. A no-op for any type
+  // that doesn't mention a λω̲ construct; otherwise gates on the theory flag and requires kind *.
   private checkKindAnnotation(type: Type): { rejected: false; kindPremise?: KindProofTree; conversion?: TypeConversion; normalized: Type } | { rejected: true; message: string } {
     const usesFOmega = containsTypeConstructor(type);
     const usesLambdaP = containsLambdaPConstruct(type);
@@ -487,10 +424,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
         };
       }
       const normalized = this.normalizeType(type);
-      // The (Conv) rule's effect, made visible: this annotation and its
-      // normal form are only the same *type* up to β-reduction — as written
-      // they're different ASTs. Surfaced only when reduction actually did
-      // something (i.e. never for a type that was already in normal form).
+      // The (Conv) rule's effect made visible — only set when reduction actually did something.
       const conversion: TypeConversion | undefined = typeEquals(type, normalized)
         ? undefined
         : {before: type, after: normalized};
@@ -530,8 +464,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
     const valueProof = this.solveLocally(this.visit(node.value));
 
-    // Always add the declared type to context so subsequent declarations
-    // and the main term can still be type-checked.
+    // Add the declared type regardless, so later declarations still type-check.
     this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: declaredType});
     this.globalProofs.set(node.name, valueProof);
 
@@ -556,15 +489,11 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   }
 
   protected visitTypeAliasDecl(node: TypeAliasDecl): InferProofTree {
-    // Expanding node.type now (rather than lazily at lookup) means a later
-    // typedef built from this one only ever needs to resolve one level.
+    // Expand now, not lazily, so a later typedef built on this one only resolves one level.
     const expanded = this.expandAliases(node.type);
     let normalized = expanded;
 
-    // A typedef's own RHS may itself be a type constructor (that's the
-    // whole point of "typedef List = λX:@. ..."), so unlike a term
-    // annotation it's not required to have kind @ here — only that it's
-    // internally well-kinded, and only reachable behind the theory flag.
+    // The RHS may itself be a type constructor, so unlike a term annotation it need not have kind @.
     const usesFOmega = containsTypeConstructor(expanded);
     const usesLambdaP = containsLambdaPConstruct(expanded);
     if (usesFOmega || usesLambdaP) {
@@ -575,8 +504,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       } else {
         try {
           this.kindOf(expanded, new Map());
-          // Reduce away any redex in the RHS itself (e.g. "(λA:@.A) Nat")
-          // so every later use of this alias starts from its normal form.
+          // Reduce away any redex in the RHS so every later use starts from its normal form.
           normalized = this.normalizeType(expanded);
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
@@ -589,10 +517,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     return {} as InferProofTree;
   }
 
-  // typedef X : K; — System λP's opaque type-constructor declaration (e.g.
-  // "Vec : Nat -> @"). Unlike visitTypeAliasDecl there's no RHS type to
-  // kind-check — X's kind *is* the declaration — so this just registers it
-  // in the global kind context for kindOf's TyIdentifier case to find.
+  // typedef X : K; — System λP's opaque type constructor. No RHS to kind-check; just registers X's kind.
   protected visitTypeConstructorDecl(node: TypeConstructorDecl): InferProofTree {
     if (!this.theories.systemLambdaP) {
       this.errorBuffer.push(new Error(`typedef "${node.name}": declaring an opaque type constructor requires enabling the "System λP" theory`));
@@ -635,8 +560,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       constraints: [],
     };
 
-    // Only a name that isn't locally shadowed can still refer to a global
-    // declaration — used to show a "jump to definition" premise.
+    // Only a name that isn't locally shadowed can refer to a global — used for "jump to definition".
     if (!this.varOrigin.has(node.name)) {
       const definitionProof = this.globalProofs.get(node.name);
       if (definitionProof) {
@@ -658,10 +582,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       );
     }
 
-    // An omitted annotation (λx.t) gets a fresh metavariable instead of a
-    // rigid, given type — this is the one thing that lets `generalize` at
-    // the enclosing `let` (or plain unification, under Type inference)
-    // find something genuinely free to pin down or quantify over.
+    // An omitted annotation gets a fresh metavariable, so generalize/unification has something to pin down.
     let paramType = node.paramType ? this.expandAliases(node.paramType) : this.engine.freshTyMetaVar();
     const rule = this.inferring ? (node.paramType ? Rule.CtAbs : Rule.CtAbsInf) : Rule.Abs;
 
@@ -684,12 +605,8 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       () => this.visit(node.body),
     );
 
-    // System λP: if the body's type itself mentions this parameter as a
-    // term-index (e.g. the inner abstraction's type in "λn:Nat.
-    // λx:Vec[n]. n"), the whole abstraction is dependently typed — a plain
-    // TyArrow could never structurally match a Πn:A.B annotation, since
-    // that binder is otherwise only ever introduced by an explicit
-    // annotation, never synthesized.
+    // System λP: if the body's type mentions this parameter as a term-index, the whole
+    // abstraction is dependently typed (e.g. "λn:Nat. λx:Vec[n]. n") — a plain TyArrow can't match.
     const type: TyArrow | TyPi = containsFreeTermVar(bodyProof.type, node.param)
       ? {kind: "TyPi", id: crypto.randomUUID(), paramVar: node.param, paramType, body: bodyProof.type}
       : {kind: "TyArrow", id: crypto.randomUUID(), from: paramType, to: bodyProof.type};
@@ -710,13 +627,8 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const funcProof = this.visit(node.func);
     const argProof = this.visit(node.arg);
 
-    // System λP: applying a Π-typed function substitutes the *argument
-    // term itself* into the dependent result type — something the generic
-    // metavar/unification path below can't express (it only ever produces
-    // a fresh, unrelated result type). Only fires once funcProof.type is
-    // already a concrete TyPi (not, say, an unresolved metavar under
-    // inference) — see substituteTermInType's doc comment for why the
-    // index restriction (Var/Lit only) keeps this tractable.
+    // System λP: applying a Π-typed function substitutes the argument term itself into the
+    // dependent result type — something the generic metavar/unification path can't express.
     const funcType = this.normalizeType(funcProof.type);
     if (funcType.kind === "TyPi") {
       if (!this.theories.systemLambdaP) {
@@ -1447,9 +1359,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
     let valueSubstitution: Substitution;
 
-    // 2. Solve only the constraints from the value — it must be fully
-    // resolved before we generalize, otherwise metavariables that are
-    // actually pinned down later would incorrectly look "free".
+    // 2. Solve the value's constraints first — must be fully resolved before generalizing.
     try {
       valueSubstitution = this.engine.solve(valueProof.constraints);
     } catch (error) {
@@ -1473,15 +1383,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       valueSubstitution,
     );
 
-    // 4. Apply the substitution to the ambient context too — metavariables
-    // from enclosing scopes may have been resolved while checking the value.
+    // 4. Apply the substitution to the ambient context too — enclosing metavariables may have resolved.
     this.schemeContext = this.engine.applySubstitutionToContext(
       this.schemeContext,
       valueSubstitution,
     );
 
-    // 5. Generalize the solved value type over whatever metavariables are
-    // free in it but not in the (substituted) surrounding context.
+    // 5. Generalize over metavariables free in the value but not in the surrounding context.
     const generalizedScheme = this.engine.generalize(
       solvedValueType,
       this.schemeContext,
@@ -1495,8 +1403,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       () => this.visit(node.body),
     );
 
-    // 7. Return the body's type and its (still unsolved) constraints — the
-    // enclosing check() (or an outer `let`) solves those.
+    // 7. Return the body's type; its still-unsolved constraints are solved by check() or an outer let.
     return {
       rule: Rule.CtLet,
       term: node,
@@ -1580,11 +1487,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // =                        SYSTEM λω̲                                  =
   // =====================================================================
 
-  // Unreachable in practice: a Type node is never fed through
-  // AstVisitor.visit() (see checkKindAnnotation/kindOf above, which is
-  // where real kind-checking happens, called directly on the raw Type at
-  // each annotation site). Kept only so AstVisitor's dispatch stays
-  // exhaustive; reject rather than silently doing nothing if ever reached.
+  // Unreachable in practice (kind-checking calls kindOf directly); kept for AstVisitor's exhaustiveness.
   protected visitTypeConstructorAbstraction(node: TyConstructorAbs): InferProofTree {
     return this.reject(node, Rule.TyConstructorAbs, `Type constructor abstraction "λ${node.typeParam}:${kindToString(node.paramKind)}. T" is not yet supported`);
   }
@@ -1606,9 +1509,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     };
   }
 
-  // Kinds are never visited directly today — they only ever appear nested
-  // inside a TyConstructorAbs, which rejects before recursing into its
-  // paramKind. Present for AstVisitor's exhaustiveness only.
+  // Kinds are never visited directly today. Present for AstVisitor's exhaustiveness only.
   protected visitKind(node: Kind): InferProofTree {
     return {
       rule: "Kind" as never,

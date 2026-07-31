@@ -4,9 +4,7 @@ import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
 import {GammaRegistry, type SetRegistration} from "@/shared/presentation/tex/GammaRegistry.ts";
 import {TypeAliasRegistry} from "@/shared/presentation/tex/TypeAliasRegistry.ts";
 
-// The rules produced by LetPolymorphismInferenceVisitor's constraint-typing
-// (CT) judgment — kept separate from TexMapper's plain "T-*" rule set so
-// neither visitor grows to cover both judgments.
+// The rules produced by the constraint-typing (CT) judgment — kept separate from TexMapper's plain "T-*" set.
 export const CT_RULES: ReadonlySet<Rule> = new Set([
   Rule.CtVar,
   Rule.CtVarLet,
@@ -39,22 +37,10 @@ export const CT_RULES: ReadonlySet<Rule> = new Set([
   Rule.CtUnfold,
 ]);
 
-// Renders the constraint-typing (CT) proof trees produced by
-// LetPolymorphismInferenceVisitor into TexTree, mirroring TexMapper's "T-*"
-// rules as "CT-*" rules and additionally showing each judgment's pending
-// constraint set (Γ ⊢ t : T | C). A node whose rule isn't one of CT_RULES
-// (e.g. a global definition's plain-rule proof, attached as a premise) is
-// delegated back to TexMapper — the two mappers compose across whichever
-// judgment a given subtree was produced under.
-//
-// Every distinct Γ/constraint-set encountered while walking one derivation
-// is numbered (Γ_1, Γ_2, ... / C_1, C_2, ...) the first time it appears, and
-// carries a "recipe" explaining how it was built from the previous one plus
-// whatever was just added (Γ_2 = Γ_1 ∪ {id : ∀A.A→A}), mirroring how
-// instantiate(...) already explains a CT-VarLet lookup. The UI renders each
-// reference as independently clickable — collapsed to just its label, or
-// expanded to its recipe — via `registry` (shared by reference across every
-// node of one derivation) and each judgement's `judgementSegments`.
+// Renders CT proof trees into TexTree as "CT-*" rules, additionally showing each judgment's
+// pending constraint set (Γ ⊢ t : T | C). A node whose rule isn't in CT_RULES delegates to TexMapper.
+// Every distinct Γ/constraint-set is numbered the first time it appears (Γ_1, C_1, ...), with a
+// "recipe" explaining how it was built, independently clickable via `registry`/`judgementSegments`.
 export class LetPolymorphismTexMapper {
 
   private readonly registry: Record<string, TexRegistryEntry> = {};
@@ -229,8 +215,7 @@ export class LetPolymorphismTexMapper {
         rule: "CT-Def",
         meta: (node.term as any).name as string,
         children: node.premises.map((child) => this.visit(child)),
-        // Collapsed, a global-variable reference is indistinguishable from a
-        // plain CT-Var/CT-VarLet lookup — only expanding it reveals the proof.
+        // Collapsed, looks like a plain CT-Var/CT-VarLet lookup — expanding reveals the proof.
         collapsedRule: ruleLabel,
         collapsedChildren: [this.variableMembershipTex(node)],
       };
@@ -298,10 +283,7 @@ export class LetPolymorphismTexMapper {
     };
   }
 
-  // Mirrors TexMapper.childrenWithKind — kindPremise/typeConversion are
-  // only ever set on Abs/DummyAbs/Ascribe/Inl/Inr/Variant nodes (see
-  // STLCTypeChecker), a no-op for every rule routed through visitChildren
-  // that isn't one of those (CtCase, CtTuple, CtSequencing, ...).
+  // Mirrors TexMapper.childrenWithKind — a no-op for rules that never set kindPremise/typeConversion.
   private childrenWithKind(node: InferProofTree): TexTree[] {
     const children = node.premises.map((child) => this.visit(child));
     if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise));
@@ -318,10 +300,7 @@ export class LetPolymorphismTexMapper {
     const [valueProof, bodyProof] = node.premises;
     const letName = (node.term as any).name as string;
 
-    // The value itself may have failed to type-check (e.g. an occurs-check
-    // or unification failure while solving its own constraints) — that
-    // error path returns only the value's proof, with no body to
-    // generalize into.
+    // The value may have failed to type-check — that error path has no body to generalize into.
     if (!bodyProof) {
       return {
         ...this.judgements(node),
@@ -341,9 +320,7 @@ export class LetPolymorphismTexMapper {
     };
   }
 
-  // Shows the generalize(T, Γ) = S step that turns the value's solved type
-  // into the scheme bound for the body — the dual of instantiate(...) shown
-  // at each CT-VarLet use site.
+  // Shows the generalize(T, Γ) = S step, the dual of instantiate(...) shown at each CT-VarLet site.
   private generalizeTex(valueProof: ProofTree, bodyProof: ProofTree, letName: string): TexTree {
     const scheme = bodyProof.gamma[letName];
     const schemeTex = scheme !== undefined ? TexMapper.typeToTex(scheme) : TexMapper.typeToTex(valueProof.type);

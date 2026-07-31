@@ -13,23 +13,12 @@ import {cn} from "@/shared/lib/utils.ts";
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {ZoomIn, ZoomOut, Crosshair} from "lucide-react";
 
-// Top-level container for the "Build & Check" tab. Owns no derivation state
-// itself (that all lives in state.term.buildMode) — just renders the
-// student's tree against the frozen answer key, plus the Check Proof
-// button and a summary strip.
 export function ProofTreeBuilder() {
   const dispatch = useAppDispatch();
   const {studentTree, answerKey} = useAppSelector((state) => state.term.buildMode);
   const proof = useAppSelector((state) => state.term.proof);
-  // Off by default — a wrong rule pick or failed check stays visually
-  // neutral until the student opts in, so the tree doesn't give the answer
-  // away just by looking "wrong" the instant something doesn't match.
   const [highlightMistakes, setHighlightMistakes] = useState(false);
-  // Numbers every distinct Γ in the answer key once (Γ_1, Γ_2, ...) — same
-  // registry-backed short/full toggle the Automatic tab already has, so a
-  // judgement's context never has to spell out the whole set inline (see
-  // buildGammaRegistry). Hook must run unconditionally, before the early
-  // return below, hence the empty fallback when there's no answer key yet.
+  // Hook must run unconditionally, before the early return below.
   const registry = useMemo(() => (answerKey ? buildGammaRegistry(answerKey) : new GammaRegistry()), [answerKey]);
 
   if (!studentTree || !answerKey) {
@@ -136,10 +125,6 @@ export function ProofTreeBuilder() {
                 wrapperStyle={{width: "100%", height: "100%", overflow: "hidden", minHeight: "600px"}}
               >
                 <div className="flex items-center justify-center p-6">
-                  {/* Keyed by the answer key's own id so Γ expand state
-                      resets instead of leaking stale labels into a new
-                      exercise — mirrors ProofTreeVisualisation's Automatic
-                      tab usage of the same provider. */}
                   <TexRefExpansionProvider key={answerKey.id ?? "none"}>
                     <ProofTreeBuilderNode
                       studentNode={studentTree}
@@ -155,6 +140,19 @@ export function ProofTreeBuilder() {
           )}
         </TransformWrapper>
       </div>
+
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+          <span className="inline-flex items-center gap-2">
+            View Raw Student Proof Data (DEBUG)
+          </span>
+        </summary>
+        <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+          <pre className="text-xs overflow-x-auto text-foreground/80">
+            {JSON.stringify({studentTree, answerKey, summary}, null, 2)}
+          </pre>
+        </div>
+      </details>
     </div>
   );
 }

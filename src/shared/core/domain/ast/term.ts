@@ -40,10 +40,7 @@ export interface Var extends Node {
 export interface Abs extends Node {
   kind: "Abs"
   param: string
-  // Omitted for an unannotated parameter (λx. t) — only legal as (part of)
-  // a `let`-bound value, where LetPolymorphismInferenceVisitor infers it as
-  // a fresh metavariable; STLCTypeChecker has no way to make sense of a
-  // missing annotation and reports an error if one reaches it directly.
+  // Omitted for an unannotated parameter (λx. t) — only legal inside a `let`-bound value, where it's inferred.
   paramType?: Type
   body: Term
   type?: Type
@@ -250,9 +247,7 @@ export interface Tail extends Node {
 // =                 ISO-RECURSIVE TYPES (Lecture 06)                  =
 // =====================================================================
 
-// fold_{μX.T} t : μX.T — witnesses [X↦μX.T]T ≅ μX.T going "into" the
-// recursive type. `type` is the whole μX.T annotation (matching how
-// Inl/Nil/Head store their bracket annotation, not just its unfolding).
+// fold_{μX.T} t : μX.T — witnesses [X↦μX.T]T ≅ μX.T going "into" the recursive type.
 export interface Fold extends Node {
   kind: "Fold";
   type: Type;
