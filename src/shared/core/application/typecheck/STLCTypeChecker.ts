@@ -227,11 +227,11 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   private static readonly STAR: Kind = {kind: "StarKind", id: "star-sentinel"};
 
   private kindLeaf(rule: Rule, subject: Type, resultKind: Kind, delta: ReadonlyMap<string, Kind>): KindProofTree {
-    return {rule, subject, resultKind, delta: Object.fromEntries(delta), premises: []};
+    return {rule, subject, resultKind, delta: Object.fromEntries(delta), gamma: this.schemeContext.serializeGamma(), premises: [], id: subject.id};
   }
 
   private kindNode(rule: Rule, subject: Type, resultKind: Kind, delta: ReadonlyMap<string, Kind>, premises: KindProofTree[]): KindProofTree {
-    return {rule, subject, resultKind, delta: Object.fromEntries(delta), premises};
+    return {rule, subject, resultKind, delta: Object.fromEntries(delta), gamma: this.schemeContext.serializeGamma(), premises, id: subject.id};
   }
 
   private expectStar(kind: Kind, subject: Type): void {

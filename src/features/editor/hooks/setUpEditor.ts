@@ -29,6 +29,7 @@ export function useSetUpEditor() {
           [/<=/, "leq"],
           [/==/, "eq"],
           [/!=/, "neq"],
+          [/\/\/.*$/, "comment"],
           [/\//, "div"],
           [/\^/, "pow"],
           [/\+/, "plus"],
@@ -53,7 +54,6 @@ export function useSetUpEditor() {
         ],
         whitespace: [
           [/[ \t\r\n]+/, "white"],
-          [/\/\/.*$/, "comment"],
         ],
       },
     });

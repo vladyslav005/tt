@@ -1,12 +1,25 @@
 import type {TexRegistryEntry} from "@/shared/presentation/tex/texTree.ts";
 import type {TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {Type} from "@/shared/core/domain/ast";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
+import type {Kind, Type} from "@/shared/core/domain/ast";
+import {TexMapper, kindToTex} from "@/shared/presentation/tex/TexMapper.ts";
 
 export interface SetRegistration {
   key: string;
   shortTex: string;
   fullTex: string;
+}
+
+// A context entry is either a term binding (x : T) or a type-variable/kind binding (X : K) — the
+// lecture treats both as entries of one unified, ordered Γ (type variables before term variables),
+// so this registry doesn't distinguish them structurally, only in how each entry renders.
+export type ContextValue = Type | TypeScheme | Kind;
+
+function isKindValue(v: ContextValue): v is Kind {
+  return v.kind === "StarKind" || v.kind === "KindArrow";
+}
+
+function entryToTex(v: ContextValue): string {
+  return isKindValue(v) ? kindToTex(v) : TexMapper.typeToTex(v);
 }
 
 // Numbers each distinct Γ the first time it's seen while walking a derivation (Γ_1, Γ_2, ...),
@@ -16,16 +29,16 @@ export class GammaRegistry {
   private readonly bySignature = new Map<string, SetRegistration>();
   private nextIndex = 1;
 
-  private signature(gamma: Record<string, Type | TypeScheme>): string {
+  private signature(gamma: Record<string, ContextValue>): string {
     return Object.entries(gamma)
-      .map(([name, t]) => `${name}:${TexMapper.typeToTex(t)}`)
+      .map(([name, t]) => `${name}:${entryToTex(t)}`)
       .sort()
       .join(",");
   }
 
   register(
-    gamma: Record<string, Type | TypeScheme>,
-    parentGamma: Record<string, Type | TypeScheme> | null,
+    gamma: Record<string, ContextValue>,
+    parentGamma: Record<string, ContextValue> | null,
   ): SetRegistration | null {
     const entries = Object.entries(gamma);
     if (entries.length === 0) {
@@ -46,7 +59,7 @@ export class GammaRegistry {
     const parentKeys = new Set(parentEntries.map(([name]) => name));
     const added = entries.filter(([name]) => !parentKeys.has(name));
     const addedTex = added.length > 0
-      ? `\\{ ${added.map(([name, t]) => `${name} : ${TexMapper.typeToTex(t)}`).join(", ")} \\}`
+      ? `\\{ ${added.map(([name, t]) => `${name} : ${entryToTex(t)}`).join(", ")} \\}`
       : null;
 
     const index = this.nextIndex++;
@@ -59,7 +72,7 @@ export class GammaRegistry {
         ? addedTex
         : parentReg
           ? parentReg.shortTex
-          : `\\{ ${entries.map(([name, t]) => `${name} : ${TexMapper.typeToTex(t)}`).join(", ")} \\}`;
+          : `\\{ ${entries.map(([name, t]) => `${name} : ${entryToTex(t)}`).join(", ")} \\}`;
 
     const registration: SetRegistration = {key, shortTex, fullTex: `${shortTex} = ${recipe}`};
     this.bySignature.set(signature, registration);
@@ -67,7 +80,7 @@ export class GammaRegistry {
     return registration;
   }
 
-  refFor(gamma: Record<string, Type | TypeScheme>): SetRegistration | null {
+  refFor(gamma: Record<string, ContextValue>): SetRegistration | null {
     if (Object.keys(gamma).length === 0) {
       return null;
     }

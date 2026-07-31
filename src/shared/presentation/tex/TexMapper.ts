@@ -4,7 +4,7 @@ import {type KindProofTree, type ProofTree, Rule, type TypeConversion, type Type
 import {isKind} from "@/shared/core/domain/ast";
 import type {BinaryOperator, Kind, Term, Type} from "@/shared/core/domain/ast";
 import {CT_RULES, LetPolymorphismTexMapper} from "@/shared/presentation/tex/LetPolymorphismTexMapper.ts";
-import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {GammaRegistry, type ContextValue} from "@/shared/presentation/tex/GammaRegistry.ts";
 import {TypeAliasRegistry} from "@/shared/presentation/tex/TypeAliasRegistry.ts";
 
 const BINOP_TEX_SYMBOLS: Record<BinaryOperator, string> = {
@@ -76,6 +76,10 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   private buildGammaRegistry(node: ProofTree, parent: ProofTree | null): void {
     this.gammaRegistry.register(node.gamma, parent?.gamma ?? null);
 
+    if (node.kindPremise) {
+      this.buildKindGammaRegistry(node.kindPremise, node.gamma);
+    }
+
     for (const premise of node.premises) {
       if (!CT_RULES.has(premise.rule)) {
         this.buildGammaRegistry(premise, node);
@@ -83,10 +87,22 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  // Δ (type variables) and Γ (term variables) are just one combined, ordered context — a
+  // KindProofTree node's Δ growing relative to its parent (entering a λX:K abstraction's body)
+  // registers exactly like a term node's Γ growing, producing the same "Γ_n = Γ_m ∪ {X : K}" recipe.
+  private buildKindGammaRegistry(node: KindProofTree, parentGamma: Record<string, ContextValue>): void {
+    const combined: Record<string, ContextValue> = {...node.delta, ...node.gamma};
+    this.gammaRegistry.register(combined, parentGamma);
+
+    for (const premise of node.premises) {
+      this.buildKindGammaRegistry(premise, combined);
+    }
+  }
+
   // node.premises as TexTree children, plus the node's kind derivation/type conversion if present.
   private childrenWithKind(node: ProofTree): TexTree[] {
     const children = node.premises.map((child) => this.visit(child));
-    if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise));
+    if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise, this.gammaRegistry));
     if (node.typeConversion) children.push(TexMapper.conversionTex(node.typeConversion));
     return children;
   }
@@ -103,17 +119,29 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     [Rule.KindMu]: "K-Mu",
   };
 
-  // Renders a kinding derivation (Δ ⊢ T :: K) into the same TexTree shape used for term judgements.
-  static kindProofTex(node: KindProofTree): TexTree {
-    const deltaEntries = Object.entries(node.delta);
-    const deltaTex = deltaEntries.length === 0
-      ? "\\vdash"
-      : `${deltaEntries.map(([name, k]) => `${name}:${kindToTex(k)}`).join(", ")} \\vdash`;
+  // Renders a kinding derivation (Δ, Γ ⊢ T : K) into the same TexTree shape used for term judgements.
+  // Δ and Γ are one combined, ordered context (type variables before term variables, per the lecture's
+  // unified-context PTS presentation) — registered together by buildKindGammaRegistry, so it's a single
+  // Γ_n reference here, exactly like every other Γ in the tree (including the "Γ_n = Γ_m ∪ {X : K}"
+  // recipe when Δ grows entering a λX:K abstraction's body). A single ":" throughout, not "::", since
+  // the lecture uses one relation across all levels.
+  static kindProofTex(node: KindProofTree, gammaRegistry: GammaRegistry): TexTree {
+    const combined: Record<string, ContextValue> = {...node.delta, ...node.gamma};
+    const ref = gammaRegistry.refFor(combined);
+
+    const contextSeg: TexSegment = ref ? {kind: "ref", key: ref.key} : {kind: "tex", value: "\\emptyset"};
+    const contextTex = ref ? ref.shortTex : "\\emptyset";
 
     return {
-      judgement: `${deltaTex}\\, ${this.typeToTex(node.subject)} :: ${kindToTex(node.resultKind)}`,
+      judgement: `${contextTex} \\vdash\\, ${this.typeToTex(node.subject)} : ${kindToTex(node.resultKind)}`,
+      judgementSegments: [
+        contextSeg,
+        {kind: "tex", value: ` \\vdash\\, ${this.typeToTex(node.subject)} : ${kindToTex(node.resultKind)}`},
+      ],
+      registry: gammaRegistry.registry,
       rule: this.KIND_RULE_LABELS[node.rule] ?? node.rule,
-      children: node.premises.map((p) => this.kindProofTex(p)),
+      id: node.id,
+      children: node.premises.map((p) => this.kindProofTex(p, gammaRegistry)),
     };
   }
 
@@ -758,7 +786,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   }
 }
 
-function kindToTex(k: Kind): string {
+export function kindToTex(k: Kind): string {
   switch (k.kind) {
     case "StarKind":
       return "*"

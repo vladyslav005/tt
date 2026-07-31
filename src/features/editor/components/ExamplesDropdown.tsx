@@ -362,7 +362,7 @@ apply inc 5;`,
     items: [
       {
         label: "Dependent Head (System λP)",
-        description: "typedef Vec : Nat -> @ declares an opaque, term-indexed type family; head's Πn:Nat.Vec[n]->Nat type instantiates its own argument's expected type per call — enable the System λP theory",
+        description: "typedef Vec : Nat -> @ declares an opaque, term-indexed type family; vecHead's Πn:Nat.Vec[n]->Nat type instantiates its own argument's expected type per call — enable the System λP theory",
         code: `// Vec is a family of types indexed by a Nat: Vec[0], Vec[1], Vec[2] ...
 // are each distinct, unrelated types. It's declared "opaque" — only its
 // kind is given (Nat -> @, i.e. "feed it a number, get back a type"), not
@@ -373,15 +373,15 @@ typedef Vec : Nat -> @;
 // v3 has type Vec[3] specifically, not Vec[4], not Vec[100].
 v3 : Vec[3];
 
-// head's type is a Π-type (dependent function type): give it a number n,
+// vecHead's type is a Π-type (dependent function type): give it a number n,
 // and it hands back a function expecting Vec[n] — THE SAME n — and
 // producing Nat. Unlike a plain A -> B, the type of the 2nd argument
-// changes with whichever n you passed first: head 3 expects Vec[3],
-// head 5 expects Vec[5].
-head = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
+// changes with whichever n you passed first: vecHead 3 expects Vec[3],
+// vecHead 5 expects Vec[5].
+vecHead = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
 
-// head 3 has type Vec[3] -> Nat, and v3 : Vec[3] — matches, type-checks.
-head 3 v3;`,
+// vecHead 3 has type Vec[3] -> Nat, and v3 : Vec[3] — matches, type-checks.
+vecHead 3 v3;`,
       },
       {
         label: "Dependent Head: Index Mismatch (System λP)",
@@ -392,13 +392,13 @@ typedef Vec : Nat -> @;
 // v4 has type Vec[4], NOT Vec[3].
 v4 : Vec[4];
 
-head = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
+vecHead = λ n : Nat . λ x : Vec[n] . n : Π n : Nat . Vec[n] -> Nat;
 
-// head 3 expects an argument of type Vec[3], but v4 : Vec[4] is a
+// vecHead 3 expects an argument of type Vec[3], but v4 : Vec[4] is a
 // DIFFERENT type (Vec[3] ≠ Vec[4], same as Nat ≠ Bool) — so this is
 // rejected: "Cannot unify Vec[3] with Vec[4]". That's the payoff of
 // dependent types: the mismatch is caught before the program ever runs.
-head 3 v4;`,
+vecHead 3 v4;`,
       },
     ],
   },

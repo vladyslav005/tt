@@ -1,7 +1,7 @@
 import type {TexRegistryEntry, TexSegment, TexTree} from "@/shared/presentation/tex/texTree.ts";
-import {type Constraint, type InferProofTree, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {type Constraint, type InferProofTree, type KindProofTree, type ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
-import {GammaRegistry, type SetRegistration} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {GammaRegistry, type ContextValue, type SetRegistration} from "@/shared/presentation/tex/GammaRegistry.ts";
 import {TypeAliasRegistry} from "@/shared/presentation/tex/TypeAliasRegistry.ts";
 
 // The rules produced by the constraint-typing (CT) judgment — kept separate from TexMapper's plain "T-*" set.
@@ -73,6 +73,10 @@ export class LetPolymorphismTexMapper {
   private buildRegistry(node: InferProofTree, parent: InferProofTree | null): void {
     this.gammaRegistry.register(node.gamma, parent?.gamma ?? null);
 
+    if (node.kindPremise) {
+      this.buildKindGammaRegistry(node.kindPremise, node.gamma);
+    }
+
     for (const premise of node.premises) {
       if (CT_RULES.has(premise.rule)) {
         this.buildRegistry(premise as InferProofTree, node);
@@ -80,6 +84,16 @@ export class LetPolymorphismTexMapper {
     }
 
     this.registerConstraints(node);
+  }
+
+  // Mirrors TexMapper.buildKindGammaRegistry — Δ and Γ are one combined, ordered context.
+  private buildKindGammaRegistry(node: KindProofTree, parentGamma: Record<string, ContextValue>): void {
+    const combined: Record<string, ContextValue> = {...node.delta, ...node.gamma};
+    this.gammaRegistry.register(combined, parentGamma);
+
+    for (const premise of node.premises) {
+      this.buildKindGammaRegistry(premise, combined);
+    }
   }
 
   private registerConstraints(node: InferProofTree): SetRegistration | null {
@@ -286,7 +300,7 @@ export class LetPolymorphismTexMapper {
   // Mirrors TexMapper.childrenWithKind — a no-op for rules that never set kindPremise/typeConversion.
   private childrenWithKind(node: InferProofTree): TexTree[] {
     const children = node.premises.map((child) => this.visit(child));
-    if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise));
+    if (node.kindPremise) children.push(TexMapper.kindProofTex(node.kindPremise, this.gammaRegistry));
     if (node.typeConversion) children.push(TexMapper.conversionTex(node.typeConversion));
     return children;
   }

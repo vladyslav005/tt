@@ -8,7 +8,7 @@ export interface ProofTree {
   type: Type
   gamma: Record<string, Type | TypeScheme>
   error?: string
-  // Kind derivation (Δ ⊢ T :: K) for this node's type, only set when the type mentions a λω̲ constructor.
+  // Kind derivation (Δ, Γ ⊢ T : K) for this node's type, only set when the type mentions a λω̲ constructor.
   kindPremise?: KindProofTree
   // The (Conv) rule made visible, set only when the annotation needed a β-reduction to normal form.
   typeConversion?: TypeConversion
@@ -19,7 +19,9 @@ export interface TypeConversion {
   after: Type;
 }
 
-// A kinding derivation Δ ⊢ subject :: resultKind — the λω̲ analogue of ProofTree, for Types rather than Terms.
+// A kinding derivation Δ, Γ ⊢ subject : resultKind — the λω̲ analogue of ProofTree, for Types rather
+// than Terms. Δ and Γ are rendered as one ordered context (type variables before term variables),
+// matching the unified-context PTS presentation the lecture uses.
 export interface KindProofTree {
   rule: Rule
   premises: KindProofTree[]
@@ -27,6 +29,7 @@ export interface KindProofTree {
   subject: Type
   resultKind: Kind
   delta: Record<string, Kind>
+  gamma: Record<string, Type | TypeScheme>
   error?: string
 }
 
