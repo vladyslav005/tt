@@ -9,6 +9,7 @@ import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
 import { TypeAliasDeclarationContext } from "./LambdaParser.js";
 import { TypeConstructorDeclarationContext } from "./LambdaParser.js";
+import { FoldContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
 import { InlContext } from "./LambdaParser.js";
@@ -33,23 +34,25 @@ import { TypeApplicationContext } from "./LambdaParser.js";
 import { HeadContext } from "./LambdaParser.js";
 import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { NilContext } from "./LambdaParser.js";
+import { UnfoldContext } from "./LambdaParser.js";
 import { VariantContext } from "./LambdaParser.js";
 import { ConsContext } from "./LambdaParser.js";
 import { FixContext } from "./LambdaParser.js";
 import { ApplicationContext } from "./LambdaParser.js";
 import { TupleContext } from "./LambdaParser.js";
 import { PiTypeContext } from "./LambdaParser.js";
-import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { TypeConstructorAbstractionContext } from "./LambdaParser.js";
-import { TypeConstructorApplicationContext } from "./LambdaParser.js";
-import { ListTypeContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
+import { ParenTypeContext } from "./LambdaParser.js";
+import { SumTypeContext } from "./LambdaParser.js";
+import { TypeConstructorApplicationContext } from "./LambdaParser.js";
+import { ListTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
 import { TypeIndexApplicationContext } from "./LambdaParser.js";
 import { ForallTypeContext } from "./LambdaParser.js";
-import { ParenTypeContext } from "./LambdaParser.js";
+import { RecursiveTypeContext } from "./LambdaParser.js";
 import { TypeVariableContext } from "./LambdaParser.js";
 import { ConstantContext } from "./LambdaParser.js";
 import { DependentKindArrowContext } from "./LambdaParser.js";
@@ -101,6 +104,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeConstructorDeclaration?: (ctx: TypeConstructorDeclarationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Fold`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFold?: (ctx: FoldContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Variable`
 	 * labeled alternative in `LambdaParser.term`.
@@ -270,6 +280,13 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitNil?: (ctx: NilContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `Unfold`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitUnfold?: (ctx: UnfoldContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `Variant`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
@@ -312,13 +329,6 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitPiType?: (ctx: PiTypeContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `SumType`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSumType?: (ctx: SumTypeContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `TypeIdentifier`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -333,20 +343,6 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitTypeConstructorAbstraction?: (ctx: TypeConstructorAbstractionContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `TypeConstructorApplication`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `ListType`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitListType?: (ctx: ListTypeContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `VariantType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -360,6 +356,34 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitFunctionType?: (ctx: FunctionTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `ParenType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitParenType?: (ctx: ParenTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `SumType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSumType?: (ctx: SumTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `TypeConstructorApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `ListType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitListType?: (ctx: ListTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `TupleType`
 	 * labeled alternative in `LambdaParser.type`.
@@ -382,12 +406,12 @@ export default class LambdaVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitForallType?: (ctx: ForallTypeContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `ParenType`
+	 * Visit a parse tree produced by the `RecursiveType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitParenType?: (ctx: ParenTypeContext) => Result;
+	visitRecursiveType?: (ctx: RecursiveTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by `LambdaParser.typeVariable`.
 	 * @param ctx the parse tree

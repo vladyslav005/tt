@@ -7,6 +7,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   FunDecl,
   GlobalDecl,
   Head,
@@ -30,6 +31,7 @@ import type {
   TypeAliasDecl,
   TypeApp,
   TypeConstructorDecl,
+  Unfold,
   Var,
   VarDecl,
   Variant,
@@ -149,6 +151,10 @@ export class AstPrettyPrinter {
         return this.printHead(term);
       case "Tail":
         return this.printTail(term);
+      case "Fold":
+        return this.printFold(term);
+      case "Unfold":
+        return this.printUnfold(term);
     }
   }
 
@@ -253,6 +259,14 @@ export class AstPrettyPrinter {
 
   private printTail(t: Tail): string {
     return `(tail[${this.printType(t.type)}] ${this.printTerm(t.term)})`;
+  }
+
+  private printFold(t: Fold): string {
+    return `(fold[${this.printType(t.type)}] ${this.printTerm(t.term)})`;
+  }
+
+  private printUnfold(t: Unfold): string {
+    return `(unfold[${this.printType(t.type)}] ${this.printTerm(t.term)})`;
   }
 
   private printVar(v: Var): string {

@@ -118,6 +118,14 @@ function TypeView({ type }: { type: Type }) {
           <TypeView type={type.elementType} />
         </>
       );
+    case "RecursiveType":
+      return (
+        <>
+          <span className="text-green-600 dark:text-green-400">μ{type.typeVariable}</span>
+          <span className="text-muted-foreground">. </span>
+          <TypeView type={type.type} />
+        </>
+      );
   }
 }
 
@@ -404,6 +412,24 @@ function TermView({
             <span className="text-blue-600 dark:text-blue-400">tail[</span>
             <TypeView type={term.type} />
             <span className="text-blue-600 dark:text-blue-400">] </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "Fold":
+        return (
+          <>
+            <span className="text-green-600 dark:text-green-400">fold[</span>
+            <TypeView type={term.type} />
+            <span className="text-green-600 dark:text-green-400">] </span>
+            <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
+          </>
+        );
+      case "Unfold":
+        return (
+          <>
+            <span className="text-green-600 dark:text-green-400">unfold[</span>
+            <TypeView type={term.type} />
+            <span className="text-green-600 dark:text-green-400">] </span>
             <TermView term={term.term} selectedId={selectedId} resultId={resultId} errorId={errorId} />
           </>
         );

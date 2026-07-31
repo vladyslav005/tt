@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, Type, TypeAliasDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, RecursiveType, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, Type, TypeAliasDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;
@@ -49,7 +49,7 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
-const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "ListType"]);
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "ListType", "RecursiveType"]);
 
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
@@ -167,6 +167,18 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
     return ty;
   }
 
+  if (raw.kind === "RecursiveType") {
+    const typeNode = firstTargetNode(byHandle, "type", nodeMap);
+    const ty: RecursiveType = {
+      id: raw.id ?? node.id,
+      kind: "RecursiveType",
+      typeVariable: raw.typeVariable ?? "X",
+      type: typeNode ? reconstructType(typeNode, nodeMap, edges, visiting) : defaultType(`${node.id}-type`),
+    };
+    visiting.delete(node.id);
+    return ty;
+  }
+
   visiting.delete(node.id);
   return (raw as Type) ?? defaultType(node.id);
 }
@@ -188,7 +200,8 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
     case "TyForall":
     case "TyConstructorAbs":
     case "TyConstructorApp":
-    case "ListType": {
+    case "ListType":
+    case "RecursiveType": {
       visiting.delete(node.id);
       return reconstructType(node, nodeMap, edges, visiting) as any;
     }
@@ -614,7 +627,9 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
 
     case "IsNil":
     case "Head":
-    case "Tail": {
+    case "Tail":
+    case "Fold":
+    case "Unfold": {
       const termNode = firstTargetNode(byHandle, "term", nodeMap);
       const typeNode = firstTargetNode(byHandle, "type", nodeMap);
       const result = {

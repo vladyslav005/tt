@@ -65,6 +65,10 @@ export abstract class ProofTreeVisitor<R> {
         return this.visitHead(node)
       case "Tail":
         return this.visitTail(node)
+      case "Fold":
+        return this.visitFold(node)
+      case "Unfold":
+        return this.visitUnfold(node)
 
 
       default:
@@ -127,5 +131,10 @@ export abstract class ProofTreeVisitor<R> {
   protected abstract visitHead(node: ProofTree): R
 
   protected abstract visitTail(node: ProofTree): R
+
+  /* ===== Iso-recursive types (Lecture 06) ===== */
+  protected abstract visitFold(node: ProofTree): R
+
+  protected abstract visitUnfold(node: ProofTree): R
 
 }

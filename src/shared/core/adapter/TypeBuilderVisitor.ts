@@ -1,4 +1,4 @@
-import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp, TyPi, TyIndexApp, ListType} from "@/shared/core/domain/ast";
+import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp, TyPi, TyIndexApp, ListType, RecursiveType} from "@/shared/core/domain/ast";
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {
   ForallTypeContext,
@@ -12,6 +12,7 @@ import {
   type TypeIdentifierContext, VariantTypeContext,
   type PiTypeContext,
   type TypeIndexApplicationContext,
+  type RecursiveTypeContext,
 } from "@/shared/core/antlr/LambdaParser.ts";
 import {KindBuilderVisitor} from "@/shared/core/adapter/KindBuilderVisitor.ts";
 import {TermBuilderVisitor} from "@/shared/core/adapter/TermBuilderVisitor.ts";
@@ -123,6 +124,15 @@ export class TypeBuilderVisitor
       kind: "ListType",
       id: crypto.randomUUID(),
       elementType: this.visit(ctx.type_()),
+    }
+  }
+
+  visitRecursiveType = (ctx: RecursiveTypeContext): RecursiveType => {
+    return {
+      kind: "RecursiveType",
+      id: crypto.randomUUID(),
+      typeVariable: ctx.typeVariable().getText(),
+      type: this.visit(ctx.type_()),
     }
   }
 }

@@ -9,6 +9,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   GlobalDecl,
   Head,
   IfCondition,
@@ -32,6 +33,7 @@ import type {
   Type,
   TypeAbs,
   TypeApp,
+  Unfold,
   Var,
   Variant,
   VariantCase,
@@ -685,6 +687,37 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     };
   }
 
+  // E-fold: reduce the wrapped term; fold_{μX.T} v is itself already a value.
+  protected override visitFold(node: Fold): ReductionStep | null {
+    if (this.isValue(node.term)) return null;
+    const step = this.visit(node.term);
+    if (!step) return null;
+    return {
+      before: node,
+      after: {...node, term: step.after},
+      selectedId: step.selectedId,
+      resultId: step.resultId,
+    };
+  }
+
+  protected override visitUnfold(node: Unfold): ReductionStep | null {
+    if (node.term.kind === "Fold" && this.isValue(node.term)) {
+      // E-unfoldfold: unfold_{μX.T} (fold_{μX.T} v) → v
+      const after = this.cloneTermWithFreshIds(node.term.term);
+      return {before: node, after, selectedId: node.id, resultId: after.id};
+    }
+
+    // E-unfold: reduce the wrapped term.
+    const step = this.visit(node.term);
+    if (!step) return null;
+    return {
+      before: node,
+      after: {...node, term: step.after},
+      selectedId: step.selectedId,
+      resultId: step.resultId,
+    };
+  }
+
   protected override visitTypeAbstraction(node: TypeAbs): ReductionStep | null {
     // A value, like Abs — normal order continues under the binder, the
     // other two strategies stop.
@@ -919,6 +952,8 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return {
           ...term,
           type: substituteTypeVariable(term.type, typeVar, replacement),
@@ -1195,6 +1230,8 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return {...term, term: this.substitute(term.term, variable, replacement)};
     }
   }
@@ -1283,6 +1320,12 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+        return false;
+
+      case "Fold":
+        return this.isValue(term.term);
+
+      case "Unfold":
         return false;
     }
   }
@@ -1419,6 +1462,8 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return this.getFreeVariables(term.term, bound);
     }
   }
@@ -1599,6 +1644,8 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return {...term, term: this.renameBoundVariable(term.term, oldName, newName)};
     }
   }
@@ -1704,6 +1751,8 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return this.getAllNames(term.term);
     }
   }
@@ -1910,6 +1959,8 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return {
           ...term,
           id: crypto.randomUUID(),
@@ -2008,6 +2059,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
           ...type,
           id: crypto.randomUUID(),
           elementType: this.cloneTypeWithFreshIds(type.elementType),
+        };
+
+      case "RecursiveType":
+        return {
+          ...type,
+          id: crypto.randomUUID(),
+          type: this.cloneTypeWithFreshIds(type.type),
         };
     }
   }

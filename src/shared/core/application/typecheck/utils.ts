@@ -119,6 +119,13 @@ export function typeEquals(a: Type, b: Type): boolean {
       const bList = b as typeof a;
       return typeEquals(a.elementType, bList.elementType);
     }
+
+    case "RecursiveType": {
+      const bMu = b as typeof a;
+      // Structural equality only — no alpha-conversion, matching TyForall
+      // (and every other binder-free comparison in this function).
+      return a.typeVariable === bMu.typeVariable && typeEquals(a.type, bMu.type);
+    }
   }
 }
 
@@ -165,6 +172,9 @@ export function typeToString(a: Type): string {
 
     case "ListType":
       return `(List ${typeToString(a.elementType)})`;
+
+    case "RecursiveType":
+      return `(μ${a.typeVariable}. ${typeToString(a.type)})`;
   }
 }
 
@@ -226,6 +236,8 @@ export function containsTypeConstructor(type: Type): boolean {
       return containsTypeConstructor(type.func);
     case "ListType":
       return containsTypeConstructor(type.elementType);
+    case "RecursiveType":
+      return containsTypeConstructor(type.type);
   }
 }
 
@@ -259,6 +271,8 @@ export function containsLambdaPConstruct(type: Type): boolean {
       return true;
     case "ListType":
       return containsLambdaPConstruct(type.elementType);
+    case "RecursiveType":
+      return containsLambdaPConstruct(type.type);
   }
 }
 
@@ -348,6 +362,13 @@ export function substituteTypeVariable(type: Type, name: string, replacement: Ty
 
     case "ListType":
       return {...type, elementType: substituteTypeVariable(type.elementType, name, replacement)};
+
+    case "RecursiveType":
+      // The bound variable shadows an outer variable of the same name.
+      if (type.typeVariable === name) {
+        return type;
+      }
+      return {...type, type: substituteTypeVariable(type.type, name, replacement)};
   }
 }
 
@@ -388,6 +409,8 @@ export function containsFreeTermVar(type: Type, name: string): boolean {
       return containsFreeTermVar(type.func, name) || (type.arg.kind === "Var" && type.arg.name === name);
     case "ListType":
       return containsFreeTermVar(type.elementType, name);
+    case "RecursiveType":
+      return containsFreeTermVar(type.type, name);
   }
 }
 
@@ -473,6 +496,9 @@ export function substituteTermInType(type: Type, name: string, replacement: Term
 
     case "ListType":
       return {...type, elementType: substituteTermInType(type.elementType, name, replacement)};
+
+    case "RecursiveType":
+      return {...type, type: substituteTermInType(type.type, name, replacement)};
   }
 }
 
@@ -558,6 +584,9 @@ export function expandTypeAliases(type: Type, aliases: ReadonlyMap<string, Type>
 
     case "ListType":
       return {...type, elementType: expandTypeAliases(type.elementType, aliases, seen)};
+
+    case "RecursiveType":
+      return {...type, type: expandTypeAliases(type.type, aliases, seen)};
   }
 }
 
@@ -610,5 +639,8 @@ export function normalizeType(type: Type): Type {
 
     case "ListType":
       return {...type, elementType: normalizeType(type.elementType)};
+
+    case "RecursiveType":
+      return {...type, type: normalizeType(type.type)};
   }
 }

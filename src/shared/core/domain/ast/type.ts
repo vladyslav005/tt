@@ -15,7 +15,8 @@ export type Type =
   TyConstructorApp |
   TyPi |
   TyIndexApp |
-  ListType;
+  ListType |
+  RecursiveType;
 
 // A nullary type referred to by name — either a base type constant (Nat,
 // Bool, Unit) or a bound/free type variable (e.g. X in a TyForall). Which
@@ -131,4 +132,19 @@ export interface TyIndexApp extends Node {
 export interface ListType extends Node {
   kind: "ListType";
   elementType: Type;
+}
+
+// =====================================================================
+// =                 ISO-RECURSIVE TYPES (Lecture 06)                  =
+// =====================================================================
+
+// μX.T — a self-referential type, e.g. "μX.[zero:Unit, succ:X]" (Peano
+// naturals). Isomorphic (not equal) to its one-step unfolding [X↦μX.T]T —
+// term-level fold/unfold witness the isomorphism explicitly rather than
+// the type system silently identifying the two, mirroring TyForall's own
+// binder shape (typeVariable/type field names).
+export interface RecursiveType extends Node {
+  kind: "RecursiveType";
+  typeVariable: string;
+  type: Type;
 }

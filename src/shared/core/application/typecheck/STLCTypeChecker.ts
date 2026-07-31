@@ -10,6 +10,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   FunDecl,
   Head,
   IfCondition,
@@ -31,6 +32,7 @@ import type {
   TypeAliasDecl,
   TypeApp,
   TypeConstructorDecl,
+  Unfold,
   Var,
   VarDecl,
   Variant,
@@ -404,6 +406,14 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
         const element = this.kindOf(type.elementType, delta);
         this.expectStar(element.kind, type.elementType);
         return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindForm, type, SLTLCTypeChecker.STAR, delta, [element.proof])};
+      }
+
+      case "RecursiveType": {
+        const innerDelta = new Map(delta);
+        innerDelta.set(type.typeVariable, SLTLCTypeChecker.STAR);
+        const body = this.kindOf(type.type, innerDelta);
+        this.expectStar(body.kind, type.type);
+        return {kind: SLTLCTypeChecker.STAR, proof: this.kindNode(Rule.KindMu, type, SLTLCTypeChecker.STAR, delta, [body.proof])};
       }
     }
   }
@@ -1343,6 +1353,76 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       gamma: this.schemeContext.serializeGamma(),
       premises: [termProof],
       constraints: [...termProof.constraints, {left: termProof.type, right: listType}],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
+    };
+  }
+
+  // =====================================================================
+  // =                 ISO-RECURSIVE TYPES (Lecture 06)                  =
+  // =====================================================================
+
+  protected visitFold(node: Fold): InferProofTree {
+    const termProof = this.visit(node.term);
+    const rule = this.ruleFor(Rule.Fold, Rule.CtFold);
+
+    if (!this.theories.isoRecursiveTypes) {
+      return this.reject(node, rule, `"fold" is not part of plain STLC — enable the "Iso-recursive types (μ)" theory to use it`, [termProof]);
+    }
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const recType = kindCheck.normalized;
+
+    if (recType.kind !== "RecursiveType") {
+      const msg = `"fold" must be annotated with a recursive type (e.g. "fold[μX.T] t"), but got ${typeToString(recType)}`;
+      return this.reject(node, rule, msg, [termProof]);
+    }
+
+    const unfolded = substituteTypeVariable(recType.type, recType.typeVariable, recType);
+
+    return {
+      rule,
+      term: node,
+      type: recType,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: unfolded}],
+      kindPremise: kindCheck.kindPremise,
+      typeConversion: kindCheck.conversion,
+    };
+  }
+
+  protected visitUnfold(node: Unfold): InferProofTree {
+    const termProof = this.visit(node.term);
+    const rule = this.ruleFor(Rule.Unfold, Rule.CtUnfold);
+
+    if (!this.theories.isoRecursiveTypes) {
+      return this.reject(node, rule, `"unfold" is not part of plain STLC — enable the "Iso-recursive types (μ)" theory to use it`, [termProof]);
+    }
+
+    const kindCheck = this.checkKindAnnotation(this.expandAliases(node.type));
+    if (kindCheck.rejected) {
+      return this.reject(node, rule, kindCheck.message, [termProof]);
+    }
+    const recType = kindCheck.normalized;
+
+    if (recType.kind !== "RecursiveType") {
+      const msg = `"unfold" must be annotated with a recursive type (e.g. "unfold[μX.T] t"), but got ${typeToString(recType)}`;
+      return this.reject(node, rule, msg, [termProof]);
+    }
+
+    const unfolded = substituteTypeVariable(recType.type, recType.typeVariable, recType);
+
+    return {
+      rule,
+      term: node,
+      type: unfolded,
+      gamma: this.schemeContext.serializeGamma(),
+      premises: [termProof],
+      constraints: [...termProof.constraints, {left: termProof.type, right: recType}],
       kindPremise: kindCheck.kindPremise,
       typeConversion: kindCheck.conversion,
     };

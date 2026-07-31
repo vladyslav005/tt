@@ -131,6 +131,18 @@ export class TypeInferenceEngine {
       case "ListType":
         return {...type, elementType: this.applySubstitution(type.elementType, substitution)};
 
+      case "RecursiveType": {
+        // The bound variable shadows any substitution entry of the same
+        // name — capture-avoiding, mirroring TyForall above.
+        if (!substitution.has(type.typeVariable)) {
+          return {...type, type: this.applySubstitution(type.type, substitution)};
+        }
+
+        const inner = new Map(substitution);
+        inner.delete(type.typeVariable);
+        return {...type, type: this.applySubstitution(type.type, inner)};
+      }
+
       default:
         return this.assertNever(type);
     }
@@ -306,6 +318,13 @@ export class TypeInferenceEngine {
 
     if (a.kind === "ListType" && b.kind === "ListType") {
       return this.unify(a.elementType, b.elementType, substitution);
+    }
+
+    if (a.kind === "RecursiveType" && b.kind === "RecursiveType") {
+      if (a.typeVariable !== b.typeVariable) {
+        throw new Error(`Cannot unify ${typeToString(a)} with ${typeToString(b)}`);
+      }
+      return this.unify(a.type, b.type, substitution);
     }
 
     throw new Error(
@@ -496,6 +515,12 @@ export class TypeInferenceEngine {
 
       case "ListType":
         return this.freeTypeVariables(type.elementType);
+
+      case "RecursiveType": {
+        const inner = this.freeTypeVariables(type.type);
+        inner.delete(type.typeVariable);
+        return inner;
+      }
 
       default:
         return this.assertNever(type);

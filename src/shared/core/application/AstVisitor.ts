@@ -8,6 +8,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   FunDecl,
   Head,
   IfCondition,
@@ -25,6 +26,7 @@ import type {
   Type, TypeAbs, TypeAliasDecl, TypeApp,
   TyConstructorAbs, TyConstructorApp,
   TypeConstructorDecl,
+  Unfold,
   Var,
   VarDecl,
   Variant,
@@ -88,6 +90,10 @@ export abstract class AstVisitor<R> {
         return this.visitHead(node)
       case "Tail":
         return this.visitTail(node)
+      case "Fold":
+        return this.visitFold(node)
+      case "Unfold":
+        return this.visitUnfold(node)
 
       /* ===== Declarations ===== */
       case "FunDecl":
@@ -126,6 +132,7 @@ export abstract class AstVisitor<R> {
       case "TyPi":
       case "TyIndexApp":
       case "ListType":
+      case "RecursiveType":
         return this.visitType(node)
 
       /* ===== Kinds ===== */
@@ -187,6 +194,11 @@ export abstract class AstVisitor<R> {
   protected abstract visitHead(node: Head): R
 
   protected abstract visitTail(node: Tail): R
+
+  /* ===== Iso-recursive types (Lecture 06) ===== */
+  protected abstract visitFold(node: Fold): R
+
+  protected abstract visitUnfold(node: Unfold): R
 
   /* ===== Let ===== */
   protected abstract visitLet(node: Let): R

@@ -117,6 +117,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     [Rule.KindApp]: "K-App",
     [Rule.KindPi]: "K-Pi",
     [Rule.KindIndexApp]: "K-IndexApp",
+    [Rule.KindMu]: "K-Mu",
   };
 
   // Renders a kinding derivation (Δ ⊢ T :: K) into the same TexTree shape
@@ -363,6 +364,22 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
   }
 
+  protected visitFold(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Fold",
+      children: this.childrenWithKind(node)
+    }
+  }
+
+  protected visitUnfold(node: ProofTree): TexTree {
+    return {
+      ...this.judgements(node),
+      rule: "T-Unfold",
+      children: this.childrenWithKind(node)
+    }
+  }
+
   // Only reached when Let-polymorphism is disabled — STLCTypeChecker.visitLet
   // rejects the term with Rule.Let (no premises) instead of delegating to
   // LetPolymorphismInferenceVisitor's Rule.CtLet judgment.
@@ -558,6 +575,10 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return [t("\\text{head}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
       case "Tail":
         return [t("\\text{tail}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
+      case "Fold":
+        return [t("\\text{fold}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
+      case "Unfold":
+        return [t("\\text{unfold}["), ...ty(term.type), t("]\\ "), ...rec(term.term)];
     }
   }
 
@@ -639,6 +660,10 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `\\text{head}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
       case "Tail":
         return `\\text{tail}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
+      case "Fold":
+        return `\\text{fold}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
+      case "Unfold":
+        return `\\text{unfold}[${this.typeToTex(term.type)}]\\ ${rec(term.term)}`
     }
   }
 
@@ -697,6 +722,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return `${this.typeToTex(type.func)}[${this.termToTex(type.arg)}]`
       case "ListType":
         return `\\text{List}\\ ${this.typeToTex(type.elementType)}`
+      case "RecursiveType":
+        return `\\mu ${type.typeVariable}.\\, ${this.typeToTex(type.type)}`
     }
   }
 
@@ -769,6 +796,8 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
         return [...rec(type.func), t(`[${this.termToTex(type.arg)}]`)];
       case "ListType":
         return [t("\\text{List}\\ "), ...rec(type.elementType)];
+      case "RecursiveType":
+        return [t(`\\mu ${type.typeVariable}.\\, `), ...rec(type.type)];
     }
   }
 }

@@ -28,7 +28,9 @@ export type Term =
   Cons |
   IsNil |
   Head |
-  Tail
+  Tail |
+  Fold |
+  Unfold
 
 export interface Var extends Node {
   kind: "Var"
@@ -240,6 +242,26 @@ export interface Head extends Node {
 
 export interface Tail extends Node {
   kind: "Tail";
+  type: Type;
+  term: Term;
+}
+
+// =====================================================================
+// =                 ISO-RECURSIVE TYPES (Lecture 06)                  =
+// =====================================================================
+
+// fold_{μX.T} t : μX.T — witnesses [X↦μX.T]T ≅ μX.T going "into" the
+// recursive type. `type` is the whole μX.T annotation (matching how
+// Inl/Nil/Head store their bracket annotation, not just its unfolding).
+export interface Fold extends Node {
+  kind: "Fold";
+  type: Type;
+  term: Term;
+}
+
+// unfold_{μX.T} t : [X↦μX.T]T — the inverse direction of fold.
+export interface Unfold extends Node {
+  kind: "Unfold";
   type: Type;
   term: Term;
 }

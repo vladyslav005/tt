@@ -51,6 +51,8 @@ term
     | ISNIL LBRACK type RBRACK term                                                  # IsNil
     | HEAD LBRACK type RBRACK term                                                   # Head
     | TAIL LBRACK type RBRACK term                                                   # Tail
+    | FOLD LBRACK type RBRACK term                                                   # Fold
+    | UNFOLD LBRACK type RBRACK term                                                 # Unfold
 
     // 7. Atomic / grouped terms
     | LT ID EQ term (COMMA ID EQ term)* MT                                           # Record
@@ -90,6 +92,7 @@ type
     | FORALL typeVariable DOT type                               # ForallType
     | LAMBDA typeVariable COLON kind DOT type                    # TypeConstructorAbstraction
     | PI ID COLON type DOT type                                  # PiType
+    | MU typeVariable DOT type                                   # RecursiveType
 
     // 5. Atomic / grouped types
     | LT type (MUL type)* MT                                     # TupleType
@@ -137,6 +140,10 @@ ISNIL          : 'isnil';
 HEAD           : 'head';
 TAIL           : 'tail';
 LIST           : 'List';
+
+FOLD           : 'fold';
+UNFOLD         : 'unfold';
+MU             : 'μ';
 
 KIND_STAR      : '@'; // to avoid ambiguity with, '@' is used instead of '*' for the kind of types
 

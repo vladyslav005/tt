@@ -93,6 +93,10 @@ export enum Rule {
   Head = "Head",
   Tail = "Tail",
 
+  // Iso-recursive types (Lecture 06).
+  Fold = "Fold",
+  Unfold = "Unfold",
+
   // System F is explicit/syntax-directed (no unification involved), so it
   // gets plain (non-Ct) rule names regardless of whether it appears inside
   // a `let` — TexMapper renders these directly rather than delegating to
@@ -124,6 +128,10 @@ export enum Rule {
   // kinded type constructor to a term index.
   KindPi = "KindPi",
   KindIndexApp = "KindIndexApp",
+  // μX.T is well-kinded (*) whenever T is, with X:* bound for the duration —
+  // mirrors KindForall's shape (TyForall reuses the same binder-kinding
+  // pattern).
+  KindMu = "KindMu",
   // The (Conv) rule made visible — see ProofTree.typeConversion.
   Conv = "Conv",
 
@@ -156,6 +164,8 @@ export enum Rule {
   CtIsNil = "CtIsNil",
   CtHead = "CtHead",
   CtTail = "CtTail",
+  CtFold = "CtFold",
+  CtUnfold = "CtUnfold",
 }
 
 // Sentinel type used as a placeholder when the real type cannot be inferred due to an error.

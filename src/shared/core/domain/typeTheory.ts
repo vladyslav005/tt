@@ -1,4 +1,4 @@
-export type TypeTheoryId = "letPolymorphism" | "typeInference" | "systemF" | "systemFOmega" | "systemLambdaP";
+export type TypeTheoryId = "letPolymorphism" | "typeInference" | "systemF" | "systemFOmega" | "systemLambdaP" | "isoRecursiveTypes";
 
 export interface TypeTheoryConfig {
   letPolymorphism: boolean;
@@ -6,6 +6,7 @@ export interface TypeTheoryConfig {
   systemF: boolean;
   systemFOmega: boolean;
   systemLambdaP: boolean;
+  isoRecursiveTypes: boolean;
 }
 
 export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
@@ -14,6 +15,7 @@ export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
   systemF: false,
   systemFOmega: false,
   systemLambdaP: false,
+  isoRecursiveTypes: false,
 };
 
 export interface TypeTheoryDescriptor {
@@ -37,6 +39,11 @@ export const TYPE_THEORIES: TypeTheoryDescriptor[] = [
     description: "Allow omitting a lambda's parameter type anywhere; it's inferred from how the parameter is used (always allowed inside a let-bound value)",
   },
   {
+    id: "isoRecursiveTypes",
+    label: "Iso-recursive types (μ)",
+    description: "Self-referential types (μX.T) introduced/eliminated explicitly via fold/unfold, isomorphic (not equal) to their one-step unfolding [X↦μX.T]T",
+  },
+  {
     id: "systemF",
     label: "System F",
     description: "Explicit polymorphism via type abstraction (ΛX. t) and type application (t [T])",
@@ -51,4 +58,5 @@ export const TYPE_THEORIES: TypeTheoryDescriptor[] = [
     label: "System λP (dependent types)",
     description: "Types that depend on terms via Π-types (Πx:A.M, of which A→B is the non-dependent special case), and kinds indexed by a type (K ::= * | T→K, e.g. Nat→*)",
   },
+
 ];

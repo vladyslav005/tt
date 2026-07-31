@@ -9,6 +9,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   FunDecl,
   Head,
   IfCondition,
@@ -33,6 +34,7 @@ import type {
   TypeAliasDecl,
   TypeApp,
   TypeConstructorDecl,
+  Unfold,
   Var,
   VarDecl,
   Variant,
@@ -260,6 +262,10 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "ListType":
         this.visitChild(node, "elementType", "elem", node.elementType);
         return;
+
+      case "RecursiveType":
+        this.visitChild(node, "type", "body", node.type);
+        return;
     }
   }
 
@@ -402,6 +408,18 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "type", "type", node.type);
   }
 
+  protected visitFold(node: Fold): void {
+    this.pushNode(node);
+    this.visitChild(node, "term", "term", node.term);
+    this.visitChild(node, "type", "type", node.type);
+  }
+
+  protected visitUnfold(node: Unfold): void {
+    this.pushNode(node);
+    this.visitChild(node, "term", "term", node.term);
+    this.visitChild(node, "type", "type", node.type);
+  }
+
   protected visitTypeAbstraction(node: TypeAbs): void {
     this.pushNode(node);
     this.visitChild(node, "body", "body", node.body);
@@ -529,6 +547,7 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "VariantType":
       case "RecordType":
       case "ListType":
+      case "RecursiveType":
         this.nodes.push({
           id: node.id,
           type: "type",
@@ -598,6 +617,12 @@ export class AstFlowMapper extends AstVisitor<void> {
         return;
       case "Tail":
         this.nodes.push({id: node.id, type: "tailOp", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Fold":
+        this.nodes.push({id: node.id, type: "fold", position: {x: 0, y: 0}, data: {term: node}});
+        return;
+      case "Unfold":
+        this.nodes.push({id: node.id, type: "unfold", position: {x: 0, y: 0}, data: {term: node}});
         return;
       case "TypeAbs":
         this.nodes.push({id: node.id, type: "typeAbs", position: {x: 0, y: 0}, data: {term: node}});

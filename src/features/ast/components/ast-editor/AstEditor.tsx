@@ -74,6 +74,9 @@ import {IsNilFlowNode} from "@/features/ast/components/ast/flow/IsNilFlowNode";
 import {HeadFlowNode} from "@/features/ast/components/ast/flow/HeadFlowNode";
 import {TailFlowNode} from "@/features/ast/components/ast/flow/TailFlowNode";
 import {ListTypeFlowNode} from "@/features/ast/components/ast/flow/ListTypeFlowNode";
+import {FoldFlowNode} from "@/features/ast/components/ast/flow/FoldFlowNode";
+import {UnfoldFlowNode} from "@/features/ast/components/ast/flow/UnfoldFlowNode";
+import {RecursiveTypeFlowNode} from "@/features/ast/components/ast/flow/RecursiveTypeFlowNode";
 import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
@@ -134,6 +137,8 @@ function TypeFlowNodeDispatch(props: any) {
       return <TyIndexAppFlowNode {...props} />;
     case "ListType":
       return <ListTypeFlowNode {...props} />;
+    case "RecursiveType":
+      return <RecursiveTypeFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -176,6 +181,8 @@ export const nodeTypes: NodeTypes = {
   isNil: IsNilFlowNode,
   headOp: HeadFlowNode,
   tailOp: TailFlowNode,
+  fold: FoldFlowNode,
+  unfold: UnfoldFlowNode,
 } as NodeTypes;
 
 type AddOnDropKind = "decl" | "term" | "type";
@@ -188,7 +195,7 @@ type AddOnDropKind = "decl" | "term" | "type";
 // type-context" rule would be wrong for it. It's display-only in this
 // editor for now (see makeDefaultTermNode/graphToAst.ts's reconstruct()
 // fallback for how not-yet-constructible kinds are handled generally).
-const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi", "ListType"]);
+const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi", "ListType", "RecursiveType"]);
 
 // A handful of handle names are reused across both term nodes and type nodes
 // (e.g. "left"/"right" on Application vs. SumType, "el-N" on Tuple vs.
@@ -214,8 +221,9 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "sequencing", "tuple", "dummyAbstraction", "let", "binOp", "fix",
     "typeAbs", "typeApp",
     "nil", "cons", "isNil", "headOp", "tailOp",
+    "fold", "unfold",
   ],
-  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp", "listType"],
+  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp", "listType", "recursiveType"],
 };
 
 // Skeleton (term, xyflow node "type" string) for each newly-added node kind,
@@ -495,6 +503,38 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
         term: {
           id, kind: "ListType",
           elementType: { id: `${id}-elementType`, kind: "TyIdentifier", name: "T" },
+        },
+      };
+    case "recursiveType":
+      return {
+        type: "type",
+        term: {
+          id, kind: "RecursiveType", typeVariable: "X",
+          type: { id: `${id}-type`, kind: "TyIdentifier", name: "X" },
+        },
+      };
+    case "fold":
+      return {
+        type: "fold",
+        term: {
+          id, kind: "Fold",
+          type: {
+            id: `${id}-type`, kind: "RecursiveType", typeVariable: "X",
+            type: { id: `${id}-type-body`, kind: "TyIdentifier", name: "X" },
+          },
+          term: { id: `${id}-term`, kind: "Var", name: "x" },
+        },
+      };
+    case "unfold":
+      return {
+        type: "unfold",
+        term: {
+          id, kind: "Unfold",
+          type: {
+            id: `${id}-type`, kind: "RecursiveType", typeVariable: "X",
+            type: { id: `${id}-type-body`, kind: "TyIdentifier", name: "X" },
+          },
+          term: { id: `${id}-term`, kind: "Var", name: "x" },
         },
       };
     default:
@@ -1408,6 +1448,23 @@ export function AstEditor({
 
         <Separator orientation="vertical" className="h-5" />
 
+        {/* Iso-recursive types (Lecture 06) */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-0.5">Recursive (μ)</span>
+          {([
+            { type: "fold",   label: "fold",   title: "Fold — into μX.T (fold[μX.T] t)" },
+            { type: "unfold", label: "unfold", title: "Unfold — out of μX.T (unfold[μX.T] t)" },
+          ] as const).map(({ type, label, title }) => (
+            <Button key={type} size="sm" variant="outline" title={title}
+              onClick={() => addStandaloneNode(type)}
+              className="h-7 px-2 font-mono font-bold text-xs">
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
         {/* Tuple / record terms */}
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground mr-0.5">Tuples/Records</span>
@@ -1455,6 +1512,7 @@ export function AstEditor({
             { type: "recordType",  label: "{l:}", title: "Record Type (synthesized)" },
             { type: "forallType",  label: "∀", title: "Forall Type (∀X. T)" },
             { type: "listType",    label: "List", title: "List Type (List T)" },
+            { type: "recursiveType", label: "μ", title: "Recursive Type (μX. T)" },
           ] as const).map(({ type, label, title }) => (
             <Button key={type} size="sm" variant="outline" title={title}
               onClick={() => addStandaloneNode(type)}

@@ -172,6 +172,42 @@ twice ((compose identity) identity);`,
     ],
   },
   {
+    title: "Iso-recursive Types (μ)",
+    items: [
+      {
+        label: "Peano zero (μ)",
+        description: "Nat = μX.[zero:Unit, succ:X] — fold/unfold-encoded zero, tested with iszero (lecture's own worked example, enable the Iso-recursive types theory)",
+        code: `typedef PeanoNat = μX.[zero:Unit, succ:X];
+
+zero = fold[PeanoNat] ([zero=unit] as [zero:Unit, succ:PeanoNat]) : PeanoNat;
+
+iszero = λ n : PeanoNat . (case unfold[PeanoNat] n of [zero=x] => true || [succ=y] => false) : PeanoNat -> Bool;
+
+iszero zero;`,
+      },
+      {
+        label: "Peano succ + iszero (μ)",
+        description: "same Peano encoding, iszero on succ zero — pattern-matches the \"succ\" branch via unfold",
+        code: `typedef PeanoNat = μX.[zero:Unit, succ:X];
+
+zero = fold[PeanoNat] ([zero=unit] as [zero:Unit, succ:PeanoNat]) : PeanoNat;
+
+succ = λ n : PeanoNat . fold[PeanoNat] ([succ=n] as [zero:Unit, succ:PeanoNat]) : PeanoNat -> PeanoNat;
+
+iszero = λ n : PeanoNat . (case unfold[PeanoNat] n of [zero=x] => true || [succ=y] => false) : PeanoNat -> Bool;
+
+iszero (succ zero);`,
+      },
+      {
+        label: "fold/unfold cancellation",
+        description: "unfold[T](fold[T] v) → v in a single step (E-unfoldfold) — the isomorphism witnessed directly",
+        code: `typedef PeanoNat = μX.[zero:Unit, succ:X];
+
+unfold[PeanoNat] (fold[PeanoNat] ([zero=unit] as [zero:Unit, succ:PeanoNat]));`,
+      },
+    ],
+  },
+  {
     title: "Recursion (fix)",
     items: [
       {

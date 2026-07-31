@@ -8,6 +8,7 @@ import {
   ConsContext,
   DummyAbstractionContext,
   FixContext,
+  FoldContext,
   HeadContext,
   IfConditionContext,
   InlContext,
@@ -24,6 +25,7 @@ import {
   TailContext,
   TupleContext,
   TupleProjectionContext, TypeAbstractionContext, TypeApplicationContext,
+  UnfoldContext,
   VariableContext,
   VariantCaseContext,
   VariantContext
@@ -38,6 +40,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   Head,
   IfCondition,
   Inl,
@@ -53,6 +56,7 @@ import type {
   Term,
   Tuple,
   TupleProjection, TypeAbs, TypeApp,
+  Unfold,
   Var,
   Variant,
   VariantCase
@@ -362,6 +366,24 @@ export class TermBuilderVisitor
   visitTail = (ctx: TailContext): Tail => {
     return {
       kind: "Tail",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+      term: this.visit(ctx.term()),
+    }
+  }
+
+  visitFold = (ctx: FoldContext): Fold => {
+    return {
+      kind: "Fold",
+      id: crypto.randomUUID(),
+      type: new TypeBuilderVisitor().visit(ctx.type_()),
+      term: this.visit(ctx.term()),
+    }
+  }
+
+  visitUnfold = (ctx: UnfoldContext): Unfold => {
+    return {
+      kind: "Unfold",
       id: crypto.randomUUID(),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),

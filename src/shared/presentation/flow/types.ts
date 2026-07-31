@@ -8,6 +8,7 @@ import type {
   Cons,
   DummyAbstraction,
   Fix,
+  Fold,
   FunDecl,
   Head,
   IfCondition,
@@ -29,6 +30,7 @@ import type {
   TypeAliasDecl,
   TypeApp,
   TypeConstructorDecl,
+  Unfold,
   Var,
   VarDecl,
   Variant,
@@ -110,6 +112,9 @@ export type IsNilNodeData = { term: IsNil; editable?: boolean; onChange?: (patch
 export type HeadNodeData = { term: Head; editable?: boolean; onChange?: (patch: any) => void };
 export type TailNodeData = { term: Tail; editable?: boolean; onChange?: (patch: any) => void };
 
+export type FoldNodeData = { term: Fold; editable?: boolean; onChange?: (patch: any) => void };
+export type UnfoldNodeData = { term: Unfold; editable?: boolean; onChange?: (patch: any) => void };
+
 export type ProgramFlowNode = Node<ProgramNodeData, "program">;
 export type FunDeclFlowNode = Node<FunDeclNodeData, "funDecl">;
 export type VarDeclFlowNode = Node<VarDeclNodeData, "varDecl">;
@@ -145,6 +150,9 @@ export type IsNilFlowNode = Node<IsNilNodeData, "isNil">;
 export type HeadFlowNode = Node<HeadNodeData, "headOp">;
 export type TailFlowNode = Node<TailNodeData, "tailOp">;
 
+export type FoldFlowNode = Node<FoldNodeData, "fold">;
+export type UnfoldFlowNode = Node<UnfoldNodeData, "unfold">;
+
 export type AstFlowNode =
   | ProgramFlowNode
   | FunDeclFlowNode
@@ -178,7 +186,9 @@ export type AstFlowNode =
   | ConsFlowNode
   | IsNilFlowNode
   | HeadFlowNode
-  | TailFlowNode;
+  | TailFlowNode
+  | FoldFlowNode
+  | UnfoldFlowNode;
 
 // Type aliases for component props
 export type ProgramFlowNodeType = ProgramNodeData;
@@ -214,6 +224,8 @@ export type ConsFlowNodeType = ConsNodeData;
 export type IsNilFlowNodeType = IsNilNodeData;
 export type HeadFlowNodeType = HeadNodeData;
 export type TailFlowNodeType = TailNodeData;
+export type FoldFlowNodeType = FoldNodeData;
+export type UnfoldFlowNodeType = UnfoldNodeData;
 
 export type AstFlowGraph = {
   nodes: AstFlowNode[];

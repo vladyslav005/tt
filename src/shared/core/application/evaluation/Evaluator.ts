@@ -98,6 +98,7 @@ export class Evaluator {
       case "Inr":
       case "Ascribe":
       case "RecordProjection":
+      case "Fold":
         return this.findStuckTerm(term.term);
 
       case "TupleProjection":
@@ -185,6 +186,15 @@ export class Evaluator {
         }
         return undefined;
       }
+
+      case "Unfold": {
+        const found = this.findStuckTerm(term.term);
+        if (found) return found;
+        if (term.term.kind !== "Fold") {
+          return {id: term.id, message: "Evaluation stuck: \"unfold\" requires a \"fold\" value, but got a non-fold value"};
+        }
+        return undefined;
+      }
     }
   }
 
@@ -217,6 +227,8 @@ export class Evaluator {
       case "IsNil":
       case "Head":
       case "Tail":
+      case "Fold":
+      case "Unfold":
         return ast;
 
       case "Program": {
@@ -254,6 +266,7 @@ export class Evaluator {
       case "TyPi":
       case "TyIndexApp":
       case "ListType":
+      case "RecursiveType":
         throw new Error(
           `Cannot evaluate type node ${ast.kind}`,
         );

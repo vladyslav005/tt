@@ -51,6 +51,9 @@ import {IsNilFlowNode} from "@/features/ast/components/ast/flow/IsNilFlowNode";
 import {HeadFlowNode} from "@/features/ast/components/ast/flow/HeadFlowNode";
 import {TailFlowNode} from "@/features/ast/components/ast/flow/TailFlowNode";
 import {ListTypeFlowNode} from "@/features/ast/components/ast/flow/ListTypeFlowNode";
+import {FoldFlowNode} from "@/features/ast/components/ast/flow/FoldFlowNode";
+import {UnfoldFlowNode} from "@/features/ast/components/ast/flow/UnfoldFlowNode";
+import {RecursiveTypeFlowNode} from "@/features/ast/components/ast/flow/RecursiveTypeFlowNode";
 
 
 export interface AstProps {
@@ -83,6 +86,8 @@ function TypeFlowNodeDispatch(props: any) {
       return <TyIndexAppFlowNode {...props} />;
     case "ListType":
       return <ListTypeFlowNode {...props} />;
+    case "RecursiveType":
+      return <RecursiveTypeFlowNode {...props} />;
     default:
       return <TyIdentifierFlowNode {...props} />;
   }
@@ -134,6 +139,8 @@ export const nodeTypes: NodeTypes = {
   isNil: IsNilFlowNode,
   headOp: HeadFlowNode,
   tailOp: TailFlowNode,
+  fold: FoldFlowNode,
+  unfold: UnfoldFlowNode,
 } as NodeTypes;
 
 export function Ast({

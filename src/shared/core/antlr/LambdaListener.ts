@@ -9,6 +9,7 @@ import { GlobalVariableDeclarationContext } from "./LambdaParser.js";
 import { GlobalFunctionDeclarationContext } from "./LambdaParser.js";
 import { TypeAliasDeclarationContext } from "./LambdaParser.js";
 import { TypeConstructorDeclarationContext } from "./LambdaParser.js";
+import { FoldContext } from "./LambdaParser.js";
 import { VariableContext } from "./LambdaParser.js";
 import { VariantCaseContext } from "./LambdaParser.js";
 import { InlContext } from "./LambdaParser.js";
@@ -33,23 +34,25 @@ import { TypeApplicationContext } from "./LambdaParser.js";
 import { HeadContext } from "./LambdaParser.js";
 import { LambdaAbstractionUntypedContext } from "./LambdaParser.js";
 import { NilContext } from "./LambdaParser.js";
+import { UnfoldContext } from "./LambdaParser.js";
 import { VariantContext } from "./LambdaParser.js";
 import { ConsContext } from "./LambdaParser.js";
 import { FixContext } from "./LambdaParser.js";
 import { ApplicationContext } from "./LambdaParser.js";
 import { TupleContext } from "./LambdaParser.js";
 import { PiTypeContext } from "./LambdaParser.js";
-import { SumTypeContext } from "./LambdaParser.js";
 import { TypeIdentifierContext } from "./LambdaParser.js";
 import { TypeConstructorAbstractionContext } from "./LambdaParser.js";
-import { TypeConstructorApplicationContext } from "./LambdaParser.js";
-import { ListTypeContext } from "./LambdaParser.js";
 import { VariantTypeContext } from "./LambdaParser.js";
 import { FunctionTypeContext } from "./LambdaParser.js";
+import { ParenTypeContext } from "./LambdaParser.js";
+import { SumTypeContext } from "./LambdaParser.js";
+import { TypeConstructorApplicationContext } from "./LambdaParser.js";
+import { ListTypeContext } from "./LambdaParser.js";
 import { TupleTypeContext } from "./LambdaParser.js";
 import { TypeIndexApplicationContext } from "./LambdaParser.js";
 import { ForallTypeContext } from "./LambdaParser.js";
-import { ParenTypeContext } from "./LambdaParser.js";
+import { RecursiveTypeContext } from "./LambdaParser.js";
 import { TypeVariableContext } from "./LambdaParser.js";
 import { ConstantContext } from "./LambdaParser.js";
 import { DependentKindArrowContext } from "./LambdaParser.js";
@@ -123,6 +126,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitTypeConstructorDeclaration?: (ctx: TypeConstructorDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `Fold`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	enterFold?: (ctx: FoldContext) => void;
+	/**
+	 * Exit a parse tree produced by the `Fold`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	exitFold?: (ctx: FoldContext) => void;
 	/**
 	 * Enter a parse tree produced by the `Variable`
 	 * labeled alternative in `LambdaParser.term`.
@@ -412,6 +427,18 @@ export default class LambdaListener extends ParseTreeListener {
 	 */
 	exitNil?: (ctx: NilContext) => void;
 	/**
+	 * Enter a parse tree produced by the `Unfold`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	enterUnfold?: (ctx: UnfoldContext) => void;
+	/**
+	 * Exit a parse tree produced by the `Unfold`
+	 * labeled alternative in `LambdaParser.term`.
+	 * @param ctx the parse tree
+	 */
+	exitUnfold?: (ctx: UnfoldContext) => void;
+	/**
 	 * Enter a parse tree produced by the `Variant`
 	 * labeled alternative in `LambdaParser.term`.
 	 * @param ctx the parse tree
@@ -484,18 +511,6 @@ export default class LambdaListener extends ParseTreeListener {
 	 */
 	exitPiType?: (ctx: PiTypeContext) => void;
 	/**
-	 * Enter a parse tree produced by the `SumType`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 */
-	enterSumType?: (ctx: SumTypeContext) => void;
-	/**
-	 * Exit a parse tree produced by the `SumType`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 */
-	exitSumType?: (ctx: SumTypeContext) => void;
-	/**
 	 * Enter a parse tree produced by the `TypeIdentifier`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -520,30 +535,6 @@ export default class LambdaListener extends ParseTreeListener {
 	 */
 	exitTypeConstructorAbstraction?: (ctx: TypeConstructorAbstractionContext) => void;
 	/**
-	 * Enter a parse tree produced by the `TypeConstructorApplication`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 */
-	enterTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => void;
-	/**
-	 * Exit a parse tree produced by the `TypeConstructorApplication`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 */
-	exitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => void;
-	/**
-	 * Enter a parse tree produced by the `ListType`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 */
-	enterListType?: (ctx: ListTypeContext) => void;
-	/**
-	 * Exit a parse tree produced by the `ListType`
-	 * labeled alternative in `LambdaParser.type`.
-	 * @param ctx the parse tree
-	 */
-	exitListType?: (ctx: ListTypeContext) => void;
-	/**
 	 * Enter a parse tree produced by the `VariantType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
@@ -567,6 +558,54 @@ export default class LambdaListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitFunctionType?: (ctx: FunctionTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by the `ParenType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterParenType?: (ctx: ParenTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `ParenType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitParenType?: (ctx: ParenTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by the `SumType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterSumType?: (ctx: SumTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `SumType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitSumType?: (ctx: SumTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by the `TypeConstructorApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `TypeConstructorApplication`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeConstructorApplication?: (ctx: TypeConstructorApplicationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `ListType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterListType?: (ctx: ListTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `ListType`
+	 * labeled alternative in `LambdaParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitListType?: (ctx: ListTypeContext) => void;
 	/**
 	 * Enter a parse tree produced by the `TupleType`
 	 * labeled alternative in `LambdaParser.type`.
@@ -604,17 +643,17 @@ export default class LambdaListener extends ParseTreeListener {
 	 */
 	exitForallType?: (ctx: ForallTypeContext) => void;
 	/**
-	 * Enter a parse tree produced by the `ParenType`
+	 * Enter a parse tree produced by the `RecursiveType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
 	 */
-	enterParenType?: (ctx: ParenTypeContext) => void;
+	enterRecursiveType?: (ctx: RecursiveTypeContext) => void;
 	/**
-	 * Exit a parse tree produced by the `ParenType`
+	 * Exit a parse tree produced by the `RecursiveType`
 	 * labeled alternative in `LambdaParser.type`.
 	 * @param ctx the parse tree
 	 */
-	exitParenType?: (ctx: ParenTypeContext) => void;
+	exitRecursiveType?: (ctx: RecursiveTypeContext) => void;
 	/**
 	 * Enter a parse tree produced by `LambdaParser.typeVariable`.
 	 * @param ctx the parse tree
