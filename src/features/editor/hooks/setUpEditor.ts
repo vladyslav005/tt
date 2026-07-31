@@ -5,15 +5,16 @@ export function useSetUpEditor() {
 
     const keywords: string[] = [
       "as", "case", "of", "if", "then", "else", "inl", "inr", "nil",
-      "isnil", "head", "tail", "cons", "typedef", "fix", "let", "in"
+      "isnil", "head", "tail", "cons", "typedef", "fix", "let", "in",
+      "fold", "unfold"
     ];
 
     monaco.languages.setMonarchTokensProvider("lambda", {
       keywords,
       tokenizer: {
         root: [
-          [/Nat|Bool|Unit/, "builtInType"],
-          [/iszero|succ|pred/, "builtInFunction"],
+          [/\b(Nat|Bool|Unit)\b/, "builtInType"],
+          // [/iszero|succ|pred/, "builtInFunction"],
           [/true|false|True|False|Unit|unit/, "constant"],
 
           [/(\b)\w+(\b)/, {
@@ -37,6 +38,7 @@ export function useSetUpEditor() {
 
           [/λ/, "lambda"],
           [/Λ/, "lambda"],
+          [/μ/, "mu"],
           [/@/, "kindStar"],
           [/\*/, "times"],
           [/</, "langle"],
@@ -63,6 +65,7 @@ export function useSetUpEditor() {
       rules: [
         {token: 'keyword', foreground: '#7c3aed', fontStyle: 'bold'}, // purple-600
         {token: 'lambda', foreground: '#dc2626', fontStyle: 'bold'}, // red-600
+        {token: 'mu', foreground: '#dc2626', fontStyle: 'bold'}, // red-600
         {token: 'constant', foreground: '#ea580c', fontStyle: 'regular'}, // orange-600
         {token: 'builtInFunction', foreground: '#0891b2', fontStyle: 'regular'}, // cyan-600
         {token: 'builtInType', foreground: '#d97706', fontStyle: 'regular'}, // amber-600
@@ -123,6 +126,7 @@ export function useSetUpEditor() {
       rules: [
         {token: 'keyword', foreground: '#a78bfa', fontStyle: 'bold'}, // purple-400
         {token: 'lambda', foreground: '#f87171', fontStyle: 'bold'}, // red-400
+        {token: 'mu', foreground: '#f87171', fontStyle: 'bold'}, // red-400
         {token: 'constant', foreground: '#fb923c', fontStyle: 'regular'}, // orange-400
         {token: 'builtInFunction', foreground: '#22d3ee', fontStyle: 'regular'}, // cyan-400
         {token: 'builtInType', foreground: '#fbbf24', fontStyle: 'regular'}, // amber-400
