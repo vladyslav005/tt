@@ -5,7 +5,7 @@ import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {ContextBinding, StudentProofNode} from "@/shared/ui-state/studentProof.ts";
 import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
 import type {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
-import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
+import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {revealPremise, setNodeContext, setNodeType} from "@/shared/ui-state/termSlice.ts";
 import {Popover, PopoverAnchor, PopoverContent} from "@/shared/components/ui/popover.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
@@ -57,6 +57,7 @@ type EditorKind = "type" | "context" | null;
 // so MathJax renders it as a real clickable link.
 export function ConclusionBuilder({studentNode, answerNode, parentGamma, registry, typeSlotUnlocked}: ConclusionBuilderProps) {
   const dispatch = useAppDispatch();
+  const enabledTheories = useAppSelector((state) => state.term.enabledTheories);
   const {isExpanded, toggle} = useTexRefExpansion();
   const [openEditor, setOpenEditor] = useState<EditorKind>(null);
   const [typeDraft, setTypeDraft] = useState<DraftType | null>(null);
@@ -177,7 +178,7 @@ export function ConclusionBuilder({studentNode, answerNode, parentGamma, registr
         {openEditor === "type" && (
           <>
             <p className="text-xs font-medium text-muted-foreground">Build this judgement's type</p>
-            <TypeSlotPicker value={typeDraft} onChange={setTypeDraft} contextTypes={contextTypeOptions(answerNode.gamma)}/>
+            <TypeSlotPicker value={typeDraft} onChange={setTypeDraft} contextTypes={contextTypeOptions(answerNode.gamma)} enabledTheories={enabledTheories}/>
             <Button size="sm" className="w-full" disabled={!typeDraftAsType} onClick={submitType}>Set type</Button>
           </>
         )}
@@ -193,7 +194,7 @@ export function ConclusionBuilder({studentNode, answerNode, parentGamma, registr
                 className="h-7 w-20 text-xs font-mono px-1"
               />
               <span className="text-muted-foreground text-xs">:</span>
-              <TypeSlotPicker value={bindingTypeDraft} onChange={setBindingTypeDraft} contextTypes={contextTypeOptions(parentGamma)}/>
+              <TypeSlotPicker value={bindingTypeDraft} onChange={setBindingTypeDraft} contextTypes={contextTypeOptions(parentGamma)} enabledTheories={enabledTheories}/>
             </div>
             <Button size="sm" className="w-full" disabled={!canSubmitBinding} onClick={submitBinding}>Set binding</Button>
           </>

@@ -25,7 +25,7 @@ export function isArithmeticOperator(operator: BinaryOperator): boolean {
 const META_VAR_ALPHABET = "ABDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export function metaVarName(index: number): string {
-  const letter = META_VAR_ALPHABET[index % META_VAR_ALPHABET.length - 1];
+  const letter = META_VAR_ALPHABET[index % META_VAR_ALPHABET.length];
   const cycle = Math.floor(index / META_VAR_ALPHABET.length);
   return cycle === 0 ? `'${letter}` : `'${letter}_${cycle}`;
 }

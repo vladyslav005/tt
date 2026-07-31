@@ -263,8 +263,8 @@ export class AstFlowMapper extends AstVisitor<void> {
 
   protected visitInl(node: Inl): void {
     this.pushNode(node);
-    this.visitChild(node, "term", "term", node.term);
     this.visitChild(node, "type", "as", node.type);
+    this.visitChild(node, "term", "term", node.term);
   }
 
   protected visitInr(node: Inr): void {

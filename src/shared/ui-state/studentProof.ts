@@ -1,6 +1,6 @@
 import {type ProofTree, Rule, type TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {Type} from "@/shared/core/domain/ast";
-import {typeEquals} from "@/shared/core/application/typecheck/utils.ts";
+import {termIndexEquals} from "@/shared/core/application/typecheck/utils.ts";
 
 export interface ContextBinding {
   name: string;
@@ -52,7 +52,125 @@ export function findStudentNode(root: StudentProofNode, id: string): StudentProo
 
 function bindingsMatch(written: ContextBinding[], expected: ContextBinding[]): boolean {
   if (written.length !== expected.length) return false;
-  return expected.every((e) => written.some((w) => w.name === e.name && typeEquals(w.type, e.type)));
+  return expected.every((e) => written.some((w) => w.name === e.name && flexibleTypeEquals(w.type, e.type)));
+}
+
+// Converts a Let-generalized TypeScheme into a Type a student can actually write: nested ∀'s
+// wrapping the (still metavar-laden) body — flexibleTypeEquals treats every TyMetaVar as a
+// flexible position regardless of name, so no renaming is needed here, only the ∀ structure
+// itself, which forces the student's answer to be recognizably a polymorphic scheme.
+function typeSchemeToDisplayType(scheme: TypeScheme): Type {
+  return scheme.vars.reduceRight(
+    (acc, v): Type => ({kind: "TyForall", id: crypto.randomUUID(), typeVariable: v, type: acc}),
+    scheme.type,
+  );
+}
+
+// Structural type equality that also treats any TyMetaVar — an unresolved/free type variable,
+// e.g. an unannotated lambda's own parameter before an enclosing `let` generalizes it — as a
+// flexible position: the student may write any identifier there, as long as they use the SAME
+// one everywhere the same metavariable recurs (tracked via a pair of consistent rename maps).
+// The exact letter the checker's fresh-variable counter or generalize() happened to pick is an
+// internal implementation detail, never something a student could know or reasonably guess.
+// Degrades to plain structural typeEquals when neither side involves a variable at all.
+function flexibleTypeEquals(
+  written: Type,
+  expected: Type,
+  expToWritten: Map<string, string> = new Map(),
+  writtenToExp: Map<string, string> = new Map(),
+): boolean {
+  if (expected.kind === "TyMetaVar") {
+    if (written.kind !== "TyIdentifier" && written.kind !== "TyMetaVar") return false;
+    const mappedWritten = expToWritten.get(expected.name);
+    const mappedExpected = writtenToExp.get(written.name);
+    if (mappedWritten !== undefined || mappedExpected !== undefined) {
+      return mappedWritten === written.name && mappedExpected === expected.name;
+    }
+    expToWritten.set(expected.name, written.name);
+    writtenToExp.set(written.name, expected.name);
+    return true;
+  }
+
+  if (written.kind !== expected.kind) return false;
+
+  switch (expected.kind) {
+    case "TyIdentifier":
+      return written.kind === "TyIdentifier" && written.name === expected.name;
+
+    case "TyArrow": {
+      const w = written as typeof expected;
+      return flexibleTypeEquals(w.from, expected.from, expToWritten, writtenToExp)
+        && flexibleTypeEquals(w.to, expected.to, expToWritten, writtenToExp);
+    }
+
+    case "TupleType": {
+      const wElements = (written as typeof expected).elements;
+      return wElements.length === expected.elements.length
+        && expected.elements.every((e, i) => flexibleTypeEquals(wElements[i], e, expToWritten, writtenToExp));
+    }
+
+    case "SumType": {
+      const w = written as typeof expected;
+      return flexibleTypeEquals(w.left, expected.left, expToWritten, writtenToExp)
+        && flexibleTypeEquals(w.right, expected.right, expToWritten, writtenToExp);
+    }
+
+    case "VariantType": {
+      const wVariants = (written as typeof expected).variants;
+      if (wVariants.length !== expected.variants.length) return false;
+      return expected.variants.every((v) => {
+        const match = wVariants.find((wv) => wv.label === v.label);
+        return match !== undefined && flexibleTypeEquals(match.type, v.type, expToWritten, writtenToExp);
+      });
+    }
+
+    case "RecordType": {
+      const wFields = (written as typeof expected).fields;
+      if (wFields.length !== expected.fields.length) return false;
+      return expected.fields.every((f) => {
+        const match = wFields.find((wf) => wf.label === f.label);
+        return match !== undefined && flexibleTypeEquals(match.type, f.type, expToWritten, writtenToExp);
+      });
+    }
+
+    case "TyForall": {
+      const w = written as typeof expected;
+      return flexibleTypeEquals(w.type, expected.type, expToWritten, writtenToExp);
+    }
+
+    case "TyConstructorAbs": {
+      const w = written as typeof expected;
+      return w.typeParam === expected.typeParam && flexibleTypeEquals(w.body, expected.body, expToWritten, writtenToExp);
+    }
+
+    case "TyConstructorApp": {
+      const w = written as typeof expected;
+      return flexibleTypeEquals(w.func, expected.func, expToWritten, writtenToExp)
+        && flexibleTypeEquals(w.arg, expected.arg, expToWritten, writtenToExp);
+    }
+
+    case "TyPi": {
+      const w = written as typeof expected;
+      return w.paramVar === expected.paramVar
+        && flexibleTypeEquals(w.paramType, expected.paramType, expToWritten, writtenToExp)
+        && flexibleTypeEquals(w.body, expected.body, expToWritten, writtenToExp);
+    }
+
+    case "TyIndexApp": {
+      const w = written as typeof expected;
+      return flexibleTypeEquals(w.func, expected.func, expToWritten, writtenToExp) && termIndexEquals(w.arg, expected.arg);
+    }
+
+    case "ListType": {
+      const w = written as typeof expected;
+      return flexibleTypeEquals(w.elementType, expected.elementType, expToWritten, writtenToExp);
+    }
+
+    case "RecursiveType": {
+      const w = written as typeof expected;
+      return w.typeVariable === expected.typeVariable && flexibleTypeEquals(w.type, expected.type, expToWritten, writtenToExp);
+    }
+  }
 }
 
 // Maps each constraint-mode (Ct*) rule to its plain equivalent, since the rule picker only offers
@@ -104,15 +222,14 @@ export function diffAgainstAnswer(
     student.ruleCheck = canonicalRule(student.chosenRule) === canonicalRule(answer.rule) ? "valid" : "invalid";
   }
   if (student.chosenRule !== undefined && student.writtenType !== undefined) {
-    student.typeCheck = typeEquals(student.writtenType, answer.type) ? "valid" : "invalid";
+    student.typeCheck = flexibleTypeEquals(student.writtenType, answer.type) ? "valid" : "invalid";
   }
   if (student.requiresContextBuild && student.writtenBindings !== undefined) {
     const expected: ContextBinding[] = Object.keys(answer.gamma)
       .filter((k) => !(k in parentGamma))
       .map((k) => {
         const bound = answer.gamma[k];
-        // Γ entries are TypeScheme-wrapped — unwrap before comparing.
-        const type = bound.kind === "TypeScheme" ? bound.type : bound;
+        const type = bound.kind === "TypeScheme" ? typeSchemeToDisplayType(bound) : bound;
         return {name: k, type};
       });
     student.contextCheck = bindingsMatch(student.writtenBindings, expected) ? "valid" : "invalid";
