@@ -6,6 +6,7 @@ import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
 import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
 import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
+import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensionsBadges.tsx";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
@@ -143,7 +144,8 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       animate="animate"
       variants={fadeInUp}
     >
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="relative shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <ActiveExtensionsBadges />
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

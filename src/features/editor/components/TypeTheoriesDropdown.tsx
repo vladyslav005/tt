@@ -19,14 +19,14 @@ export function TypeTheoriesDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button variant="outline" size="sm" className="gap-1.5">
           <FlaskConical className="h-3.5 w-3.5" />
-          Type Theories
+          Type System Extensions
           <ChevronDown className="h-3.5 w-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>Active type theories</DropdownMenuLabel>
+        <DropdownMenuLabel>Active extensions</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuCheckboxItem
