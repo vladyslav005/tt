@@ -19,9 +19,17 @@ interface BuildModeState {
   studentTree?: StudentProofNode;
 }
 
+export interface ParseErrorMarker {
+  line: number;
+  column: number;
+  length: number;
+  message: string;
+}
+
 interface TermState {
   termText: string | undefined;
   processingErrors?: Error[];
+  parseMarkers: ParseErrorMarker[];
   ast: Program | undefined;
   proof: ProofTree | undefined;
   typeAliases: Record<string, Type>;
@@ -33,6 +41,7 @@ interface TermState {
 const initialState: TermState = {
   termText: undefined,
   processingErrors: undefined,
+  parseMarkers: [],
   ast: undefined,
   proof: undefined,
   typeAliases: {},
@@ -142,8 +151,13 @@ const counterSlice = createSlice({
       state.processingErrors?.push(action.payload);
     },
 
+    setParseMarkers: (state, action: { payload: ParseErrorMarker[] }) => {
+      state.parseMarkers = action.payload;
+    },
+
     clean: (state) => {
       state.processingErrors = [];
+      state.parseMarkers = [];
       state.ast = undefined;
       state.proof = undefined;
       state.typeAliases = {};
@@ -169,6 +183,7 @@ export const {
   resetNode,
   checkProof,
   pushProcessingError,
+  setParseMarkers,
   clean
 } = counterSlice.actions;
 export default counterSlice.reducer;

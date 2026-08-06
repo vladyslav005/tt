@@ -11,9 +11,10 @@ import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
 import {Terminal} from "lucide-react";
-import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
+import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
+import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
 
 export interface TextEditorProps {
   defaultValue?: string;
@@ -52,6 +53,8 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const editorRef = useRef<any>(null);
   const dispatch = useAppDispatch()
+  const { parseAndTypeCheck } = useTermHooks();
+  const parseMarkers = useAppSelector((state) => state.term.parseMarkers);
 
   const monacoTheme = useMemo(() => {
     if (!appTheme) return "lambda-theme";
@@ -88,14 +91,15 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     dispatch(setTermText(defaultValue))
 
     editor.addAction({
-      id: 'my-unique-id',
-      label: 'My Custom Action',
+      id: 'type-check',
+      label: 'Type Check',
       keybindings: [
         monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
         monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter
       ],
       precondition: 'editorTextFocus',
       run: () => {
+        parseAndTypeCheck();
       }
     });
 
@@ -103,6 +107,21 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       onMount(editor, monaco);
     }
   };
+
+  useEffect(() => {
+    if (!monaco || !editorRef.current) return;
+    const model = editorRef.current.getModel();
+    if (!model) return;
+
+    monaco.editor.setModelMarkers(model, "lambda-parse", parseMarkers.map((e) => ({
+      startLineNumber: e.line,
+      startColumn: e.column + 1,
+      endLineNumber: e.line,
+      endColumn: e.column + 1 + e.length,
+      message: e.message,
+      severity: monaco.MarkerSeverity.Error,
+    })));
+  }, [monaco, parseMarkers]);
 
   const editorOptions = useMemo(() => ({
     fontSize: 14,

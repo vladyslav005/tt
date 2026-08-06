@@ -2,8 +2,9 @@ import type {Program} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import {clean, pushProcessingError, setAst, setEvaluation, setProof, setTypeAliases} from "@/shared/ui-state/termSlice.ts";
+import {clean, pushProcessingError, setAst, setEvaluation, setParseMarkers, setProof, setTypeAliases} from "@/shared/ui-state/termSlice.ts";
 import type {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
+import {ParseSyntaxError} from "@/shared/core/adapter/SyntaxErrorListener.ts";
 
 //TODO: retrieve type errors and parsing errors, to be able to display them in different sections of the UI
 
@@ -45,6 +46,9 @@ export function useTermHooks() {
     } catch (error) {
       console.error("Error parsing term:", error);
       dispatch(pushProcessingError(new Error(`${(error as Error).message}`)))
+      if (error instanceof ParseSyntaxError) {
+        dispatch(setParseMarkers(error.errors));
+      }
       dispatch(setAst(undefined))
       dispatch(setProof(undefined))
       return;

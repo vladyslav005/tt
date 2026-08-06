@@ -5,6 +5,7 @@ import LambdaLexer from "@/shared/core/antlr/LambdaLexer.ts";
 import LambdaParser from "@/shared/core/antlr/LambdaParser.ts";
 import {ProgramBuilderVisitor} from "@/shared/core/adapter/ProgramBuilderVisitor.ts";
 import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
+import {CollectingErrorListener, ParseSyntaxError} from "@/shared/core/adapter/SyntaxErrorListener.ts";
 
 export class AntlrParserAdapter implements Parser {
 
@@ -14,7 +15,16 @@ export class AntlrParserAdapter implements Parser {
     const tokens = new CommonTokenStream(lexer)
     const parser = new LambdaParser(tokens)
 
+    const errorListener = new CollectingErrorListener();
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(errorListener);
+    parser.removeErrorListeners();
+    parser.addErrorListener(errorListener);
+
     const tree = parser.expression()
+    if (errorListener.errors.length > 0) {
+      throw new ParseSyntaxError(errorListener.errors);
+    }
     return new ProgramBuilderVisitor().visit(tree)
   }
 }

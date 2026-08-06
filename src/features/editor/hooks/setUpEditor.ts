@@ -191,47 +191,26 @@ export function useSetUpEditor() {
       ],
     });
 
-    monaco.languages.registerCompletionItemProvider("lambda", {
-      provideCompletionItems: (model: any, position: any) => {
-        try {
-          const currentWord = model.getWordUntilPosition(position);
-          if (!currentWord.word) return { suggestions: [] };
-
-          const textUntilPosition = model.getValueInRange({
-            startLineNumber: 1,
-            startColumn: 1,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column,
-          });
-
-          const variableRegex = /\b([a-zA-Z_]\w*)\b/g;
-          const matches = new Set();
-          let match;
-
-          while ((match = variableRegex.exec(textUntilPosition)) !== null) {
-            matches.add(match[1]);
-          }
-
-          const suggestions = Array.from(matches).map(variable => ({
-            label: variable,
-            kind: monaco.languages.CompletionItemKind.Variable,
-            insertText: variable,
-            detail: "Variable auto-completion",
-          }));
-
-          return {suggestions};
-        } catch (error) {
-          console.error("Error in provideCompletionItems:", error);
-          return {suggestions: []};
-        }
-      },
-    });
-
-
+    // Variable names already used in the buffer, plus keyword/construct snippets — merged into one
+    // provider so Monaco only shows a single, deduplicated suggestion list per keystroke.
     monaco.languages.registerCompletionItemProvider("lambda", {
       provideCompletionItems: (model: any, position: any) => {
         const word = model.getWordUntilPosition(position);
         if (!word.word) return { suggestions: [] };
+
+        const textUntilPosition = model.getValueInRange({
+          startLineNumber: 1,
+          startColumn: 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        });
+
+        const variableRegex = /\b([a-zA-Z_]\w*)\b/g;
+        const variables = new Set<string>();
+        let match;
+        while ((match = variableRegex.exec(textUntilPosition)) !== null) {
+          variables.add(match[1]);
+        }
 
         const wordRange = new monaco.Range(
           position.lineNumber,
@@ -239,6 +218,16 @@ export function useSetUpEditor() {
           position.lineNumber,
           word.endColumn
         );
+
+        const variableSuggestions = Array.from(variables)
+          .filter((variable) => variable !== word.word)
+          .map((variable) => ({
+            label: variable,
+            kind: monaco.languages.CompletionItemKind.Variable,
+            insertText: variable,
+            detail: "Variable auto-completion",
+            range: wordRange,
+          }));
 
         const slashRange = new monaco.Range(
           position.lineNumber,
@@ -357,9 +346,8 @@ export function useSetUpEditor() {
             detail: 'DoubleArrow',
             range: slashRange
           },
-
         ];
-        return {suggestions};
+        return {suggestions: [...suggestions, ...variableSuggestions]};
       }
     });
 
