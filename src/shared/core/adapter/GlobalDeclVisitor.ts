@@ -2,6 +2,7 @@ import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
 import {TermBuilderVisitor} from "@/shared/core/adapter/TermBuilderVisitor.ts";
 import {KindBuilderVisitor} from "@/shared/core/adapter/KindBuilderVisitor.ts";
+import {sourcePos} from "@/shared/core/adapter/sourcePos.ts";
 import {
   GlobalFunctionDeclarationContext,
   type GlobalVariableDeclarationContext,
@@ -16,6 +17,7 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
     return {
       kind: "VarDecl",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       name: ctx.ID().getText(),
       value: {} as Term,
       type: new TypeBuilderVisitor().visit(ctx.type_())
@@ -26,6 +28,7 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
     return {
       kind: "FunDecl",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       name: ctx.ID().getText(),
       value: new TermBuilderVisitor().visit(ctx.term()),
       type: new TypeBuilderVisitor().visit(ctx.type_())
@@ -36,6 +39,7 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
     return {
       kind: "TypeAliasDecl",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       name: ctx.ID().getText(),
       type: new TypeBuilderVisitor().visit(ctx.type_())
     }
@@ -45,6 +49,7 @@ export class GlobalDeclVisitor extends LambdaVisitor<GlobalDecl> {
     return {
       kind: "TypeConstructorDecl",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       name: ctx.ID().getText(),
       paramKind: new KindBuilderVisitor().visit(ctx.kind())
     }

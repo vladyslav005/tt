@@ -2,11 +2,10 @@ import type {Program} from "@/shared/core/domain/ast";
 import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import {clean, pushProcessingError, setAst, setEvaluation, setParseMarkers, setProof, setTypeAliases} from "@/shared/ui-state/termSlice.ts";
+import {clean, pushProcessingError, setAst, setErrorMarkers, setEvaluation, setProof, setTypeAliases} from "@/shared/ui-state/termSlice.ts";
 import type {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
 import {ParseSyntaxError} from "@/shared/core/adapter/SyntaxErrorListener.ts";
-
-//TODO: retrieve type errors and parsing errors, to be able to display them in different sections of the UI
+import {TypeCheckError} from "@/shared/core/application/typecheck/TypeCheckError.ts";
 
 export function useTermHooks() {
   const {
@@ -47,7 +46,7 @@ export function useTermHooks() {
       console.error("Error parsing term:", error);
       dispatch(pushProcessingError(new Error(`${(error as Error).message}`)))
       if (error instanceof ParseSyntaxError) {
-        dispatch(setParseMarkers(error.errors));
+        dispatch(setErrorMarkers(error.errors));
       }
       dispatch(setAst(undefined))
       dispatch(setProof(undefined))
@@ -65,7 +64,16 @@ export function useTermHooks() {
       typeCheckerSLTC.setTheories(enabledTheories);
       proof = typeCheckerSLTC.check(ast);
 
-      typeCheckerSLTC.getErrors().forEach(e => dispatch(pushProcessingError(e)));
+      const typeErrors = typeCheckerSLTC.getErrors();
+      typeErrors.forEach(e => dispatch(pushProcessingError(e)));
+
+      const typeMarkers = typeErrors
+        .filter((e): e is TypeCheckError => e instanceof TypeCheckError && e.pos !== undefined)
+        .map((e) => ({...e.pos!, message: e.message}));
+
+      if (typeMarkers.length > 0) {
+        dispatch(setErrorMarkers(typeMarkers));
+      }
 
       dispatch(setProof(proof));
       dispatch(setTypeAliases(typeCheckerSLTC.getTypeAliases()));

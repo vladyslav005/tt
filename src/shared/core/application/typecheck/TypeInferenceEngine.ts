@@ -7,6 +7,7 @@ import {
 import type {Type, TyMetaVar} from "@/shared/core/domain/ast";
 import {Gamma} from "@/shared/core/application/typecheck/Gamma.ts";
 import {kindEquals, metaVarName, normalizeType, termIndexEquals, typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import {TypeCheckError} from "@/shared/core/application/typecheck/TypeCheckError.ts";
 
 export class TypeInferenceEngine {
 
@@ -149,11 +150,16 @@ export class TypeInferenceEngine {
     let substitution: Substitution = new Map();
 
     for (const constraint of constraints) {
-      substitution = this.unify(
-        this.applySubstitution(constraint.left, substitution),
-        this.applySubstitution(constraint.right, substitution),
-        substitution,
-      );
+      try {
+        substitution = this.unify(
+          this.applySubstitution(constraint.left, substitution),
+          this.applySubstitution(constraint.right, substitution),
+          substitution,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new TypeCheckError(message, constraint.pos);
+      }
     }
 
     return substitution;
@@ -434,6 +440,7 @@ export class TypeInferenceEngine {
         (c) => ({
           left: this.applySubstitution(c.left, substitution),
           right: this.applySubstitution(c.right, substitution),
+          pos: c.pos,
         }),
       );
     }

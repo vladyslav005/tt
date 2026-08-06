@@ -1,6 +1,6 @@
 // src/store/counterSlice.ts
 import {createSlice} from "@reduxjs/toolkit";
-import type {Program, Type} from "@/shared/core/domain/ast";
+import type {Program, SourcePosition, Type} from "@/shared/core/domain/ast";
 import type {ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {EvaluationResult} from "@/shared/core/application/evaluation/type.ts";
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig, type TypeTheoryId} from "@/shared/core/domain/typeTheory.ts";
@@ -19,17 +19,14 @@ interface BuildModeState {
   studentTree?: StudentProofNode;
 }
 
-export interface ParseErrorMarker {
-  line: number;
-  column: number;
-  length: number;
+export interface ErrorMarker extends SourcePosition {
   message: string;
 }
 
 interface TermState {
   termText: string | undefined;
   processingErrors?: Error[];
-  parseMarkers: ParseErrorMarker[];
+  errorMarkers: ErrorMarker[];
   ast: Program | undefined;
   proof: ProofTree | undefined;
   typeAliases: Record<string, Type>;
@@ -41,7 +38,7 @@ interface TermState {
 const initialState: TermState = {
   termText: undefined,
   processingErrors: undefined,
-  parseMarkers: [],
+  errorMarkers: [],
   ast: undefined,
   proof: undefined,
   typeAliases: {},
@@ -151,13 +148,13 @@ const counterSlice = createSlice({
       state.processingErrors?.push(action.payload);
     },
 
-    setParseMarkers: (state, action: { payload: ParseErrorMarker[] }) => {
-      state.parseMarkers = action.payload;
+    setErrorMarkers: (state, action: { payload: ErrorMarker[] }) => {
+      state.errorMarkers = action.payload;
     },
 
     clean: (state) => {
       state.processingErrors = [];
-      state.parseMarkers = [];
+      state.errorMarkers = [];
       state.ast = undefined;
       state.proof = undefined;
       state.typeAliases = {};
@@ -183,7 +180,7 @@ export const {
   resetNode,
   checkProof,
   pushProcessingError,
-  setParseMarkers,
+  setErrorMarkers,
   clean
 } = counterSlice.actions;
 export default counterSlice.reducer;

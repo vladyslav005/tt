@@ -88,7 +88,7 @@ export function ProofTreeVisualisation({
                 <TabsTrigger value="automatic">Automatic</TabsTrigger>
                 <TabsTrigger value="build-check">Build &amp; Check</TabsTrigger>
                 {showLogicTab ? (
-                  <TabsTrigger value="logic">Logic</TabsTrigger>
+                  <TabsTrigger value="logic">Curry–Howard correspondence</TabsTrigger>
                 ) : (
                   <TooltipProvider>
                     <Tooltip>

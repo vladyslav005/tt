@@ -54,7 +54,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   const editorRef = useRef<any>(null);
   const dispatch = useAppDispatch()
   const { parseAndTypeCheck } = useTermHooks();
-  const parseMarkers = useAppSelector((state) => state.term.parseMarkers);
+  const errorMarkers = useAppSelector((state) => state.term.errorMarkers);
 
   const monacoTheme = useMemo(() => {
     if (!appTheme) return "lambda-theme";
@@ -113,7 +113,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     const model = editorRef.current.getModel();
     if (!model) return;
 
-    monaco.editor.setModelMarkers(model, "lambda-parse", parseMarkers.map((e) => ({
+    monaco.editor.setModelMarkers(model, "lambda-errors", errorMarkers.map((e) => ({
       startLineNumber: e.line,
       startColumn: e.column + 1,
       endLineNumber: e.line,
@@ -121,7 +121,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       message: e.message,
       severity: monaco.MarkerSeverity.Error,
     })));
-  }, [monaco, parseMarkers]);
+  }, [monaco, errorMarkers]);
 
   const editorOptions = useMemo(() => ({
     fontSize: 14,

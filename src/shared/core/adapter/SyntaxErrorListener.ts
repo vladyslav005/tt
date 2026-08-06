@@ -1,9 +1,7 @@
 import {ErrorListener} from "antlr4";
+import type {SourcePosition} from "@/shared/core/domain/ast";
 
-export interface SyntaxErrorInfo {
-  line: number;
-  column: number;
-  length: number;
+export interface SyntaxErrorInfo extends SourcePosition {
   message: string;
 }
 

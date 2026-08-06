@@ -1,5 +1,6 @@
 import LambdaVisitor from "@/shared/core/antlr/LambdaVisitor.ts";
 import {TypeBuilderVisitor} from "@/shared/core/adapter/TypeBuilderVisitor.ts";
+import {sourcePos} from "@/shared/core/adapter/sourcePos.ts";
 import {
   type ApplicationContext,
   AscribeContext,
@@ -69,6 +70,7 @@ export class TermBuilderVisitor
     return {
       kind: "App",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       func: this.visit(ctx.term(0)),
       arg: this.visit(ctx.term(1))
     }
@@ -78,6 +80,7 @@ export class TermBuilderVisitor
     return {
       kind: "Abs",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       param: ctx.ID().getText(),
       paramType: new TypeBuilderVisitor().visit(ctx.type_()),
       body: this.visit(ctx.term()),
@@ -90,6 +93,7 @@ export class TermBuilderVisitor
     return {
       kind: "Abs",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       param: ctx.ID().getText(),
       body: this.visit(ctx.term()),
     }
@@ -99,6 +103,7 @@ export class TermBuilderVisitor
     return {
       kind: "Var",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
 
       name: ctx.ID().getText()
     }
@@ -112,6 +117,7 @@ export class TermBuilderVisitor
     return {
       kind: "Lit",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       value: ctx.getText()
     }
   }
@@ -132,6 +138,7 @@ export class TermBuilderVisitor
     return {
       kind: "VariantCase",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       variable: this.visit(ctx.term(0)),
       cases: cases
     }
@@ -141,6 +148,7 @@ export class TermBuilderVisitor
     return {
       kind: "Inl",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       term: this.visit(ctx.term()),
       type: new TypeBuilderVisitor().visit(ctx.type_())
     }
@@ -150,6 +158,7 @@ export class TermBuilderVisitor
     return {
       kind: "Inr",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       term: this.visit(ctx.term()),
       type: new TypeBuilderVisitor().visit(ctx.type_())
     }
@@ -163,6 +172,7 @@ export class TermBuilderVisitor
     const node: IfCondition = {
       kind: "IfCondition",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       condition: this.visit(terms[next++]),
       then: this.visit(terms[next++]),
     }
@@ -190,6 +200,7 @@ export class TermBuilderVisitor
     return {
       kind: "Case",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       variable: this.visit(ctx.term(0)),
       inl: {
         variable: ctx.ID(0).getText(),
@@ -206,6 +217,7 @@ export class TermBuilderVisitor
     return {
       kind: "Variant",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       variants: ctx.term_list().map((term, i) => ({
         label: ctx.ID(i).getText(),
@@ -218,6 +230,7 @@ export class TermBuilderVisitor
     return {
       kind: "Ascribe",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       term: this.visit(ctx.term()),
       type: new TypeBuilderVisitor().visit(ctx.type_())
     }
@@ -227,6 +240,7 @@ export class TermBuilderVisitor
     return {
       kind: "TupleProjection",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       tuple: this.visit(ctx.term()),
       index: parseInt(ctx.NATURAL_NUMBER().getText())
     }
@@ -236,6 +250,7 @@ export class TermBuilderVisitor
     return {
       kind: "RecordProjection",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       term: this.visit(ctx.term()),
       label: ctx.ID().getText()
     }
@@ -245,6 +260,7 @@ export class TermBuilderVisitor
     return {
       kind: "Record",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       fields: ctx.term_list().map((term, i) => ({
         label: ctx.ID(i).getText(),
         term: this.visit(term)
@@ -256,6 +272,7 @@ export class TermBuilderVisitor
     return {
       kind: "Sequencing",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       first: this.visit(ctx.term(0)),
       second: this.visit(ctx.term(1))
     }
@@ -265,6 +282,7 @@ export class TermBuilderVisitor
     return {
       kind: "Tuple",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       elements: ctx.term_list().map((term) => this.visit(term))
     }
   }
@@ -273,6 +291,7 @@ export class TermBuilderVisitor
     return {
       kind: "DummyAbstraction",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       paramType: new TypeBuilderVisitor().visit(ctx.type_()),
       body: this.visit(ctx.term()),
     }
@@ -283,6 +302,7 @@ export class TermBuilderVisitor
     return {
       kind: "BinOp",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       operator: ctx._op.text as BinaryOperator,
       left: this.visit(ctx.term(0)),
       right: this.visit(ctx.term(1)),
@@ -293,6 +313,7 @@ export class TermBuilderVisitor
     return {
       kind: "Fix",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       term: this.visit(ctx.term()),
     }
   }
@@ -301,6 +322,7 @@ export class TermBuilderVisitor
     return {
       kind: "Let",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       name: ctx.ID().getText(),
       value: this.visit(ctx.term(0)),
       body: this.visit(ctx.term(1)),
@@ -311,6 +333,7 @@ export class TermBuilderVisitor
     return {
       kind: "TypeAbs",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       typeParam: ctx.typeVariable().getText(),
       body: this.visit(ctx.term()),
     }
@@ -320,6 +343,7 @@ export class TermBuilderVisitor
     return {
       kind: "TypeApp",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       typeArg: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }
@@ -329,6 +353,7 @@ export class TermBuilderVisitor
     return {
       kind: "Nil",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
     }
   }
@@ -337,6 +362,7 @@ export class TermBuilderVisitor
     return {
       kind: "Cons",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       head: this.visit(ctx.term(0)),
       tail: this.visit(ctx.term(1)),
@@ -347,6 +373,7 @@ export class TermBuilderVisitor
     return {
       kind: "IsNil",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }
@@ -356,6 +383,7 @@ export class TermBuilderVisitor
     return {
       kind: "Head",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }
@@ -365,6 +393,7 @@ export class TermBuilderVisitor
     return {
       kind: "Tail",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }
@@ -374,6 +403,7 @@ export class TermBuilderVisitor
     return {
       kind: "Fold",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }
@@ -383,6 +413,7 @@ export class TermBuilderVisitor
     return {
       kind: "Unfold",
       id: crypto.randomUUID(),
+      pos: sourcePos(ctx),
       type: new TypeBuilderVisitor().visit(ctx.type_()),
       term: this.visit(ctx.term()),
     }

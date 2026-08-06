@@ -1,4 +1,4 @@
-import type {Kind, Term, Type, TyIdentifier} from "@/shared/core/domain/ast";
+import type {Kind, SourcePosition, Term, Type, TyIdentifier} from "@/shared/core/domain/ast";
 
 export interface ProofTree {
   rule: Rule
@@ -36,6 +36,7 @@ export interface KindProofTree {
 export interface Constraint {
   left: Type;
   right: Type;
+  pos?: SourcePosition;
 }
 
 export type Substitution = Map<string, Type>;

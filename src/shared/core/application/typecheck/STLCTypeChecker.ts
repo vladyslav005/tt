@@ -66,6 +66,7 @@ import {
   type TypeScheme,
 } from "@/shared/core/application/typecheck/ProofTree.ts";
 import {TypeInferenceEngine} from "@/shared/core/application/typecheck/TypeInferenceEngine.ts";
+import {TypeCheckError} from "@/shared/core/application/typecheck/TypeCheckError.ts";
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@/shared/core/domain/typeTheory.ts";
 
 // Whether a variable was bound by an ordinary binder or by `let` — purely for picking the
@@ -132,8 +133,9 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       const substitution = this.engine.solve(proof.constraints);
       return this.engine.applySubstitutionToProof(proof, substitution);
     } catch (error) {
+      const pos = error instanceof TypeCheckError ? error.pos : undefined;
       const msg = error instanceof Error ? error.message : String(error);
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, pos));
       return {...proof, type: ERROR_TYPE, error: msg};
     }
   }
@@ -141,6 +143,13 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   visit(node: ASTNode): InferProofTree {
     const proof = super.visit(node);
     proof.id = node.id;
+
+    if ("constraints" in proof) {
+      (proof as InferProofTree).constraints = (proof as InferProofTree).constraints.map(
+        (c) => c.pos ? c : {...c, pos: node.pos},
+      );
+    }
+
     return proof;
   }
 
@@ -179,7 +188,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
   // Builds a leaf error proof and records the message — shared by every "not allowed here" gate.
   private reject(term: ASTNode, rule: Rule, msg: string, premises: InferProofTree[] = []): InferProofTree {
-    this.errorBuffer.push(new Error(msg));
+    this.errorBuffer.push(new TypeCheckError(msg, term.pos));
     return {
       rule,
       term: term as never,
@@ -198,8 +207,9 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       const substitution = this.engine.solve(proof.constraints);
       return this.engine.applySubstitutionToProof(proof, substitution);
     } catch (error) {
+      const pos = error instanceof TypeCheckError ? error.pos : undefined;
       const msg = error instanceof Error ? error.message : String(error);
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, pos));
       return {...proof, type: ERROR_TYPE, error: msg};
     }
   }
@@ -439,7 +449,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
     if (!node.term) {
       const msg = "No main expression — write a term after your declarations";
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, node.pos));
       return {
         rule: Rule.Var,
         term: {kind: "Var", id: node.id, name: "(empty)"} as never,
@@ -458,7 +468,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const expanded = this.expandAliases(node.type);
     const kindCheck = this.checkKindAnnotation(expanded);
     if (kindCheck.rejected) {
-      this.errorBuffer.push(new Error(`Declaration "${node.name}": ${kindCheck.message}`));
+      this.errorBuffer.push(new TypeCheckError(`Declaration "${node.name}": ${kindCheck.message}`, node.pos));
     }
     const declaredType = kindCheck.rejected ? expanded : kindCheck.normalized;
 
@@ -470,7 +480,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
     if (!valueProof.error && !typeEquals(valueProof.type, declaredType)) {
       const msg = `Declaration "${node.name}": declared type is ${typeToString(declaredType)}, but the value has type ${typeToString(valueProof.type)}`;
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, node.pos));
       valueProof.error = msg;
     }
 
@@ -481,7 +491,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const expanded = this.expandAliases(node.type);
     const kindCheck = this.checkKindAnnotation(expanded);
     if (kindCheck.rejected) {
-      this.errorBuffer.push(new Error(`Declaration "${node.name}": ${kindCheck.message}`));
+      this.errorBuffer.push(new TypeCheckError(`Declaration "${node.name}": ${kindCheck.message}`, node.pos));
     }
     const declaredType = kindCheck.rejected ? expanded : kindCheck.normalized;
     this.schemeContext.add(node.name, {kind: "TypeScheme", vars: [], type: declaredType});
@@ -498,9 +508,9 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     const usesLambdaP = containsLambdaPConstruct(expanded);
     if (usesFOmega || usesLambdaP) {
       if (usesFOmega && !this.theories.systemFOmega) {
-        this.errorBuffer.push(new Error(`typedef "${node.name}": uses a type constructor (λ-abstraction/application on types) — enable the "System Fω" theory to use it`));
+        this.errorBuffer.push(new TypeCheckError(`typedef "${node.name}": uses a type constructor (λ-abstraction/application on types) — enable the "System Fω" theory to use it`, node.pos));
       } else if (usesLambdaP && !this.theories.systemLambdaP) {
-        this.errorBuffer.push(new Error(`typedef "${node.name}": uses a dependent type (Π-type or term-indexed type application) — enable the "System λP" theory to use it`));
+        this.errorBuffer.push(new TypeCheckError(`typedef "${node.name}": uses a dependent type (Π-type or term-indexed type application) — enable the "System λP" theory to use it`, node.pos));
       } else {
         try {
           this.kindOf(expanded, new Map());
@@ -508,7 +518,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
           normalized = this.normalizeType(expanded);
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
-          this.errorBuffer.push(new Error(`typedef "${node.name}": ${msg}`));
+          this.errorBuffer.push(new TypeCheckError(`typedef "${node.name}": ${msg}`, node.pos));
         }
       }
     }
@@ -520,7 +530,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
   // typedef X : K; — System λP's opaque type constructor. No RHS to kind-check; just registers X's kind.
   protected visitTypeConstructorDecl(node: TypeConstructorDecl): InferProofTree {
     if (!this.theories.systemLambdaP) {
-      this.errorBuffer.push(new Error(`typedef "${node.name}": declaring an opaque type constructor requires enabling the "System λP" theory`));
+      this.errorBuffer.push(new TypeCheckError(`typedef "${node.name}": declaring an opaque type constructor requires enabling the "System λP" theory`, node.pos));
       return {} as InferProofTree;
     }
     this.kindContext.set(node.name, node.paramKind);
@@ -537,6 +547,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
         ? ` (in-scope variables: ${contextKeys.join(", ")})`
         : " (context is empty)";
       const msg = `Variable "${node.name}" is not in scope${contextHint}`;
+      this.errorBuffer.push(new TypeCheckError(msg, node.pos));
 
       return {
         rule,
@@ -889,7 +900,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
     if (errors.length > 0) {
       const msg = errors.join("; ");
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, node.pos));
       proof.error = msg;
     }
 
@@ -939,7 +950,7 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
 
     if (errors.length > 0) {
       const msg = errors.join("; ");
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, node.pos));
       proof.error = msg;
     }
 
@@ -1363,8 +1374,9 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
     try {
       valueSubstitution = this.engine.solve(valueProof.constraints);
     } catch (error) {
+      const pos = error instanceof TypeCheckError ? error.pos : undefined;
       const msg = error instanceof Error ? error.message : String(error);
-      this.errorBuffer.push(new Error(msg));
+      this.errorBuffer.push(new TypeCheckError(msg, pos));
 
       return {
         rule: Rule.CtLet,
