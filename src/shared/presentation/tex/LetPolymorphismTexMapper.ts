@@ -43,17 +43,26 @@ export const CT_RULES: ReadonlySet<Rule> = new Set([
 // "recipe" explaining how it was built, independently clickable via `registry`/`judgementSegments`.
 export class LetPolymorphismTexMapper {
 
-  private readonly registry: Record<string, TexRegistryEntry> = {};
-  private readonly gammaRegistry = new GammaRegistry();
-  private readonly constraintsByRef = new Map<Constraint[], SetRegistration>();
-  private nextConstraintIndex = 1;
+  private readonly registry: Record<string, TexRegistryEntry>;
+  private readonly gammaRegistry: GammaRegistry;
+  private readonly constraintsByRef: Map<Constraint[], SetRegistration>;
   private registryBuilt = false;
 
-  constructor(private readonly typeAliasRegistry: TypeAliasRegistry = new TypeAliasRegistry({})) {}
+  // Shared with the TexMapper delegate so Γ_n/C_n numbering stays continuous across a `let` boundary.
+  constructor(
+    private readonly typeAliasRegistry: TypeAliasRegistry = new TypeAliasRegistry({}),
+    gammaRegistry: GammaRegistry = new GammaRegistry(),
+    registry: Record<string, TexRegistryEntry> = {},
+    constraintsByRef: Map<Constraint[], SetRegistration> = new Map(),
+  ) {
+    this.gammaRegistry = gammaRegistry;
+    this.registry = registry;
+    this.constraintsByRef = constraintsByRef;
+  }
 
   visit(node: ProofTree): TexTree {
     if (!CT_RULES.has(node.rule)) {
-      return new TexMapper(this.typeAliasRegistry).visit(node);
+      return new TexMapper(this.typeAliasRegistry, this.gammaRegistry).visit(node);
     }
 
     if (!this.registryBuilt) {
@@ -78,9 +87,7 @@ export class LetPolymorphismTexMapper {
     }
 
     for (const premise of node.premises) {
-      if (CT_RULES.has(premise.rule)) {
-        this.buildRegistry(premise as InferProofTree, node);
-      }
+      this.buildRegistry(premise as InferProofTree, node);
     }
 
     this.registerConstraints(node);
@@ -130,7 +137,7 @@ export class LetPolymorphismTexMapper {
       parts.push(LetPolymorphismTexMapper.constraintSetLiteral(newOnes));
     }
 
-    const index = this.nextConstraintIndex++;
+    const index = this.constraintsByRef.size + 1;
     const key = `C${index}`;
     const shortTex = `C_{${index}}`;
     const recipe = parts.length > 0 ? parts.join(" \\cup ") : "\\emptyset";

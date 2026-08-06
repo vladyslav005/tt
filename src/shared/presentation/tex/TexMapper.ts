@@ -36,13 +36,15 @@ const BINOP_RULE_NAMES: Record<BinaryOperator, string> = {
 
 export class TexMapper extends ProofTreeVisitor<TexTree> {
 
-  private readonly gammaRegistry = new GammaRegistry();
+  private readonly gammaRegistry: GammaRegistry;
   private registryBuilt = false;
   private typeAliasRegistry: TypeAliasRegistry;
 
-  constructor(typeAliasRegistry: TypeAliasRegistry = new TypeAliasRegistry({})) {
+  // gammaRegistry is shared with LetPolymorphismTexMapper so Γ_n numbering stays continuous across a `let` boundary.
+  constructor(typeAliasRegistry: TypeAliasRegistry = new TypeAliasRegistry({}), gammaRegistry: GammaRegistry = new GammaRegistry()) {
     super();
     this.typeAliasRegistry = typeAliasRegistry;
+    this.gammaRegistry = gammaRegistry;
   }
 
   // Called once before each top-level visit(), since this mapper is a long-lived singleton;
@@ -56,7 +58,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
   visit(node: ProofTree): TexTree {
     // A constraint-typing (CT-*) proof tree belongs to LetPolymorphismTexMapper.
     if (CT_RULES.has(node.rule)) {
-      return new LetPolymorphismTexMapper(this.typeAliasRegistry).visit(node);
+      return new LetPolymorphismTexMapper(this.typeAliasRegistry, this.gammaRegistry).visit(node);
     }
 
     if (!this.registryBuilt) {
@@ -71,8 +73,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     return tex;
   }
 
-  // One pass building Γ_n labels for the whole plain-rule subtree. CT-rule premises (an embedded
-  // let) are skipped — those get their own registry via the LetPolymorphismTexMapper delegation.
+  // Walks the whole derivation, plain and CT-rule nodes alike, so numbering stays consistent across a `let` boundary.
   private buildGammaRegistry(node: ProofTree, parent: ProofTree | null): void {
     this.gammaRegistry.register(node.gamma, parent?.gamma ?? null);
 
@@ -81,9 +82,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     }
 
     for (const premise of node.premises) {
-      if (!CT_RULES.has(premise.rule)) {
-        this.buildGammaRegistry(premise, node);
-      }
+      this.buildGammaRegistry(premise, node);
     }
   }
 
