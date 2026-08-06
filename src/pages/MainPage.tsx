@@ -4,7 +4,6 @@ import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {exitBuildMode, setTermText} from "@/shared/ui-state/termSlice.ts";
 import {AstVisualisation} from "@/features/ast/components/AstVisualisation.tsx";
 import {ErrorOutput} from "@/features/error-output/components/ErrorOutput.tsx";
-import {AstEditorContainer} from "@/features/ast/components/ast-editor/AstEditorContainer.tsx";
 import {useRef} from "react";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
 import {EvaluationVisualisation} from "@/features/evaluation/components/EvaluationVisualisation.tsx";
@@ -50,9 +49,7 @@ export function MainPage() {
 
       <ProofTreeVisualisation className="flex-1 p-4 m-4 "/>
 
-      <AstVisualisation className="flex-1 p-4 m-4 "/>
-
-      <AstEditorContainer className="p-4 m-4" editorRef={editorRef}></AstEditorContainer>
+      <AstVisualisation className="flex-1 p-4 m-4 " editorRef={editorRef}/>
 
     </div>
   )

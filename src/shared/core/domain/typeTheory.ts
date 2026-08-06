@@ -10,7 +10,7 @@ export interface TypeTheoryConfig {
 }
 
 export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
-  letPolymorphism: true,
+  letPolymorphism: false,
   typeInference: false,
   systemF: false,
   systemFOmega: false,
