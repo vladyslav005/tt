@@ -1,6 +1,7 @@
 import {AntlrParserAdapter} from "@/shared/core/adapter/AntlrParserAdapter.ts";
 import {SLTLCTypeChecker} from "@/shared/core/application/typecheck/STLCTypeChecker.ts";
 import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
+import {LogicMapper} from "@/shared/presentation/tex/LogicMapper.ts";
 import {AstFlowMapper} from "@/shared/presentation/flow/FlowMapper.ts";
 import {Evaluator} from "@/shared/core/application/evaluation/Evaluator.ts";
 
@@ -11,6 +12,7 @@ export function makeDependencies() {
     typeCheckerSLTC: new SLTLCTypeChecker(),
     evaluator: new Evaluator(),
     texMapper: new TexMapper(),
+    logicMapper: new LogicMapper(),
     flowMapper: new AstFlowMapper()
   } as const;
 }

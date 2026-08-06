@@ -115,10 +115,6 @@ export function ProofTreeBuilder() {
                 </Button>
               </div>
 
-              <div className="absolute bottom-4 left-4 z-10 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-2 rounded-lg border">
-                <p>💡 Scroll to zoom • Drag to pan • Double-click to zoom in</p>
-              </div>
-
               <TransformComponent
                 wrapperClass="!w-full !h-full"
                 contentClass="!w-full !h-full !flex !items-center !justify-center"

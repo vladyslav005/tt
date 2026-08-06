@@ -13,7 +13,7 @@ export function ProofTreeComponentUsingCss(
     node,
     root = true,
   }: ProofTreeUsingCssProps,) {
-  const isDef = node.rule === "T-Def" || node.rule === "CT-Def";
+  const isDef = node.rule === "T-Def" || node.rule === "CT-Def" || node.rule === "Lemma";
   const [expanded, setExpanded] = useState(false);
 
   const showCollapsedAsVar = isDef && !expanded && node.collapsedChildren !== undefined;

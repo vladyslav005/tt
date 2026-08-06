@@ -18,6 +18,11 @@ export const DEFAULT_TYPE_THEORY_CONFIG: TypeTheoryConfig = {
   isoRecursiveTypes: false,
 };
 
+// No extension on top of plain STLC — the Curry-Howard logic view only has a clean reading for this fragment.
+export function isPlainStlc(theories: TypeTheoryConfig): boolean {
+  return Object.values(theories).every((enabled) => !enabled);
+}
+
 export interface TypeTheoryDescriptor {
   id: TypeTheoryId;
   label: string;
