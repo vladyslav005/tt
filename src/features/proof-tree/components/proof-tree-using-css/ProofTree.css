@@ -35,6 +35,13 @@
     display: inline-flex;
     margin-top: -1px;
     position: relative;
+    opacity: 1;
+    transition: opacity 300ms ease;
+}
+
+.conclusion.step-pending {
+    opacity: 0.08;
+    pointer-events: none;
 }
 
 .conclusion::after {

@@ -18,6 +18,8 @@ import {useFullscreen} from "@/shared/hooks/useFullscreen";
 import {Tabs, TabsList, TabsTrigger} from "@/shared/components/ui/tabs.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
 import {ProofTreeBuilder} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilder.tsx";
+import {Switch} from "@/shared/components/ui/switch.tsx";
+import {Label} from "@/shared/components/ui/label.tsx";
 
 
 interface ProofTreeVisualisationProps {
@@ -36,6 +38,7 @@ export function ProofTreeVisualisation({
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
   // Not Radix's <TabsContent> — mounting TransformWrapper inside it hung the tab.
   const [activeTab, setActiveTab] = useState<ProofTreeTab>("automatic");
+  const [stepByStep, setStepByStep] = useState(false);
 
   const showLogicTab = isPlainStlc(enabledTheories);
   const effectiveTab = activeTab === "logic" && !showLogicTab ? "automatic" : activeTab;
@@ -106,15 +109,25 @@ export function ProofTreeVisualisation({
               </TabsList>
             </Tabs>
 
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={toggle}
-              className="shrink-0 justify-self-end"
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-            </Button>
+            <div className="flex items-center gap-3 justify-self-end">
+              {effectiveTab === "automatic" && hasProof && (
+                <div className="flex items-center gap-2">
+                  <Switch id="step-by-step" checked={stepByStep} onCheckedChange={setStepByStep}/>
+                  <Label htmlFor="step-by-step" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Step by step
+                  </Label>
+                </div>
+              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={toggle}
+                className="shrink-0"
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden flex flex-col">
@@ -149,7 +162,13 @@ export function ProofTreeVisualisation({
             )
           ) : (
             <div className="w-full h-full  flex flex-col space-y-4">
-              {texTree && <ProofTreeCanvas texTree={texTree} treeKey={proof?.id ?? "none"}/>}
+              {texTree && (
+                <ProofTreeCanvas
+                  texTree={texTree}
+                  treeKey={proof?.id ?? "none"}
+                  stepByStep={stepByStep}
+                />
+              )}
               <details className="group">
                 <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                   <span className="inline-flex items-center gap-2">

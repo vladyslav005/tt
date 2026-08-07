@@ -1,6 +1,8 @@
 import {Fragment, useState} from "react";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {Conclusion} from "@/features/proof-tree/components/proof-tree-using-css/Conclusion.tsx";
+import {useStepBuild} from "@/features/proof-tree/components/proof-tree-using-css/StepBuildContext.tsx";
+import {cn} from "@/shared/lib/utils.ts";
 import "./ProofTree.css"
 
 interface ProofTreeUsingCssProps {
@@ -15,6 +17,8 @@ export function ProofTreeComponentUsingCss(
   }: ProofTreeUsingCssProps,) {
   const isDef = node.rule === "T-Def" || node.rule === "CT-Def" || node.rule === "Lemma";
   const [expanded, setExpanded] = useState(false);
+  const {isRevealed} = useStepBuild();
+  const revealed = isRevealed(node);
 
   const showCollapsedAsVar = isDef && !expanded && node.collapsedChildren !== undefined;
   const displayRule = showCollapsedAsVar ? (node.collapsedRule ?? node.rule) : node.rule;
@@ -41,7 +45,7 @@ export function ProofTreeComponentUsingCss(
           ))}
         </div>
       )}
-      <div className={`conclusion ${isItRoot} ${isItLeaf}`}>
+      <div className={cn(`conclusion ${isItRoot} ${isItLeaf}`, !revealed && "step-pending")}>
         <div className="conclusion-left">
         </div>
 
