@@ -10,7 +10,6 @@ import {
   Scale,
   Shapes,
   Sparkles,
-  Terminal,
   GitBranch,
 } from "lucide-react";
 import {Button} from "@/shared/components/ui/button";
@@ -72,7 +71,7 @@ export function AboutPage() {
 
       {/* Project Overview Section */}
       <motion.section
-        className="container mx-auto px-4 py-8 max-w-6xl"
+        className="container mx-auto px-4 py-8 pb-20 max-w-6xl"
         initial={{opacity: 0}}
         animate={{opacity: 1}}
         transition={{delay: 0.2, duration: 0.5}}
@@ -176,58 +175,6 @@ export function AboutPage() {
             </motion.div>
           </CardContent>
         </Card>
-      </motion.section>
-
-      {/* Architecture Section */}
-      <motion.section
-        className="container mx-auto px-4 py-12 pb-20 max-w-6xl"
-        initial={{opacity: 0, y: 20}}
-        animate={{opacity: 1, y: 0}}
-        transition={{delay: 0.4, duration: 0.5}}
-      >
-        <h2 className="text-3xl font-bold mb-8 text-center">Architecture</h2>
-        <div className="max-w-xl mx-auto">
-          <Card className="shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader>
-              <CardTitle className="text-xl">Processing Pipeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                {[
-                  {icon: Terminal, step: "Parser", desc: "ANTLR-based lexer & parser"},
-                  {icon: Layers, step: "AST", desc: "Syntax tree construction, inspection & editing"},
-                  {
-                    icon: CheckCircle2,
-                    step: "Type Checker",
-                    desc: "STLC rules, HM inference & extended type theories",
-                  },
-                  {icon: Network, step: "Proof Tree", desc: "Derivation generation & Curry–Howard view"},
-                  {icon: Play, step: "Evaluation", desc: "Step-by-step reduction under multiple strategies"},
-                  {
-                    icon: ClipboardCheck,
-                    step: "Practice & Export",
-                    desc: "Build & Check exercises and LaTeX/ebproof export",
-                  },
-                ].map((item, idx, arr) => (
-                  <div key={idx} className="relative flex gap-3 pb-6 last:pb-0 group cursor-default">
-                    {idx !== arr.length - 1 && (
-                      <div className="absolute left-4 top-9 bottom-0 w-px bg-border" />
-                    )}
-                    <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform duration-300 group-hover:scale-110">
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <div className="pt-0.5">
-                      <p className="font-semibold text-sm">{item.step}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </motion.section>
 
       {/* Technology Stack Section */}
