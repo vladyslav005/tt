@@ -162,21 +162,25 @@ export function useSetUpEditor() {
         {token: 'property', foreground: '#22d3ee', fontStyle: 'bold'},
       ],
       colors: {
+        // Matched to the app's actual shadcn dark tokens (neutral gray, zero
+        // chroma) instead of an unrelated slate-blue palette — --card is
+        // oklch(0.205 0 0) = #171717, --secondary/--muted/--accent are
+        // oklch(0.269 0 0) = #262626.
         "editor.foreground": "#e2e8f0", // slate-200
-        "editor.background": "#020817", // slate-950 (matches shadcn dark bg)
+        "editor.background": "#171717", // matches --card
         "editorCursor.foreground": "#e2e8f0",
-        "editor.lineHighlightBackground": "#1e293b", // slate-800
-        "editorLineNumber.foreground": "#64748b", // slate-500
-        "editorLineNumber.activeForeground": "#94a3b8", // slate-400
-        "editor.selectionBackground": "#312e81", // indigo-900
-        "editor.selectionHighlightBackground": "#312e8180",
-        "editor.wordHighlightBackground": "#1e293b", // slate-800
-        "editor.wordHighlightStrongBackground": "#334155", // slate-700
-        "editorWidget.background": "#0f172a", // slate-900
-        "editorWidget.border": "#334155",
-        "editorSuggestWidget.background": "#0f172a",
-        "editorSuggestWidget.border": "#334155",
-        "editorSuggestWidget.selectedBackground": "#1e293b",
+        "editor.lineHighlightBackground": "#262626", // matches --secondary/--muted/--accent
+        "editorLineNumber.foreground": "#525252", // neutral-600
+        "editorLineNumber.activeForeground": "#a1a1a1", // matches --muted-foreground
+        "editor.selectionBackground": "#4c1d95", // purple-900, ties to the app's purple accent
+        "editor.selectionHighlightBackground": "#4c1d9580",
+        "editor.wordHighlightBackground": "#262626",
+        "editor.wordHighlightStrongBackground": "#404040", // neutral-700
+        "editorWidget.background": "#262626",
+        "editorWidget.border": "#404040",
+        "editorSuggestWidget.background": "#262626",
+        "editorSuggestWidget.border": "#404040",
+        "editorSuggestWidget.selectedBackground": "#404040",
       },
     });
 

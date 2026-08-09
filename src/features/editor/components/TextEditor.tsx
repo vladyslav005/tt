@@ -10,7 +10,8 @@ import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensi
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
-import {Terminal} from "lucide-react";
+import {Button} from "@/shared/components/ui/button.tsx";
+import {Maximize2, Minimize2, Terminal} from "lucide-react";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
@@ -51,6 +52,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   const { setUpMonacoLanguage } = useSetUpEditor();
   const { theme: appTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const editorRef = useRef<any>(null);
   const dispatch = useAppDispatch()
   const { parseAndTypeCheck } = useTermHooks();
@@ -109,6 +111,23 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   };
 
   useEffect(() => {
+    if (!isFullscreen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
     if (!monaco || !editorRef.current) return;
     const model = editorRef.current.getModel();
     if (!model) return;
@@ -163,7 +182,12 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       animate="animate"
       variants={fadeInUp}
     >
-      <Card className="relative shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card
+        className={cn(
+          "relative shadow-lg hover:shadow-xl transition-shadow duration-300",
+          isFullscreen && "fixed inset-0 z-50 m-0 flex flex-col rounded-none border-0 shadow-none max-h-none",
+        )}
+      >
         <ActiveExtensionsBadges />
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -187,13 +211,25 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
               <TypeTheoriesDropdown />
               <TypeCheckButton />
               <EvaluateButton />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsFullscreen((v) => !v)}
+                title={isFullscreen ? "Exit full screen" : "Full screen"}
+                aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="relative rounded-xl overflow-hidden border">
+        <CardContent className={cn("p-0", isFullscreen && "flex-1 min-h-0")}>
+          <div className={cn(
+            "relative rounded-xl overflow-hidden border",
+            isFullscreen && "h-full rounded-none border-0",
+          )}>
             <Editor
-              height={height}
+              height={isFullscreen ? "100%" : height}
               theme={monacoTheme}
               defaultValue={defaultValue}
               value={value}
