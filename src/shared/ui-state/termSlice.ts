@@ -2,7 +2,7 @@
 import {createSlice} from "@reduxjs/toolkit";
 import type {Program, SourcePosition, Type} from "@/shared/core/domain/ast";
 import type {ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {EvaluationResult} from "@/shared/core/application/evaluation/type.ts";
+import {EvaluationStrategy, type EvaluationResult} from "@/shared/core/application/evaluation/type.ts";
 import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig, type TypeTheoryId} from "@/shared/core/domain/typeTheory.ts";
 import {
   buildStudentNode,
@@ -23,7 +23,7 @@ export interface ErrorMarker extends SourcePosition {
   message: string;
 }
 
-interface TermState {
+export interface TermState {
   termText: string | undefined;
   processingErrors?: Error[];
   errorMarkers: ErrorMarker[];
@@ -32,10 +32,11 @@ interface TermState {
   typeAliases: Record<string, Type>;
   evaluation: EvaluationResult | undefined;
   enabledTheories: TypeTheoryConfig;
+  evaluationStrategy: EvaluationStrategy;
   buildMode: BuildModeState;
 }
 
-const initialState: TermState = {
+export const initialTermState: TermState = {
   termText: undefined,
   processingErrors: undefined,
   errorMarkers: [],
@@ -44,15 +45,20 @@ const initialState: TermState = {
   typeAliases: {},
   evaluation: undefined,
   enabledTheories: DEFAULT_TYPE_THEORY_CONFIG,
+  evaluationStrategy: EvaluationStrategy.CALL_BY_VALUE,
   buildMode: {active: false},
 };
 
 const counterSlice = createSlice({
   name: "counter",
-  initialState,
+  initialState: initialTermState,
   reducers: {
     setTermText: (state, action: { payload: string | undefined }) => {
       state.termText = action.payload;
+    },
+
+    setEvaluationStrategy: (state, action: { payload: EvaluationStrategy }) => {
+      state.evaluationStrategy = action.payload;
     },
 
     setProof: (state, action: { payload: ProofTree | undefined }) => {
@@ -167,6 +173,7 @@ const counterSlice = createSlice({
 export const {
   setEvaluation,
   setTermText,
+  setEvaluationStrategy,
   setProof,
   setTypeAliases,
   setAst,

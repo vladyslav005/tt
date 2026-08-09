@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger
 } from "@/shared/components/ui/dropdown-menu.tsx";
 import {ButtonGroup} from "@/shared/components/ui/button-group.tsx";
-import {useState} from "react";
 import {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
-import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
+import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
+import {setEvaluationStrategy} from "@/shared/ui-state/termSlice.ts";
 
 export interface EvaluateButtonProps {
   onClick?: () => void;
@@ -43,11 +43,13 @@ export function EvaluateButton({
                                   className
                                 }: EvaluateButtonProps) {
   const { evaluateTerm } = useTermHooks()
+  const dispatch = useAppDispatch();
 
   const proofTree = useAppSelector((state) => state.term.proof)
   const disabled = proofTree === undefined;
 
-  const [strategy, setStrategy] = useState(EvaluationStrategy.CALL_BY_VALUE)
+  const strategy = useAppSelector((state) => state.term.evaluationStrategy)
+  const setStrategy = (value: EvaluationStrategy) => dispatch(setEvaluationStrategy(value));
 
   const selectedStrategy = evaluationStrategies.find(
     (item) => item.value === strategy

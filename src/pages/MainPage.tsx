@@ -33,7 +33,7 @@ export function MainPage() {
       <TextEditor
         ref={editorRef}
         className="flex-2 p-4 m-4"
-        defaultValue="a : T; (λ x : T . (x) ) a;"
+        defaultValue={termText ?? "a : T; (λ x : T . (x) ) a;"}
         height="400px"
         language="lambda"
         readOnly={buildModeActive}
