@@ -53,6 +53,7 @@ export class Evaluator {
           steps: [...this.evaluationSteps],
           reachedStepLimit: false,
           strategy,
+          globals: Object.fromEntries(globals),
           ...(errors.length > 0 && { errors }),
         };
       }
@@ -66,6 +67,7 @@ export class Evaluator {
       steps: [...this.evaluationSteps],
       reachedStepLimit: true,
       strategy,
+      globals: Object.fromEntries(globals),
     };
   }
 

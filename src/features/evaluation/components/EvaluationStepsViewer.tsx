@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import type { Term, Type } from "@/shared/core/domain/ast";
 import type { EvaluationResult, ReductionStep } from "@/shared/core/application/evaluation/type";
+import { accumulateBindings, type BoundEntry } from "@/shared/core/application/evaluation/accumulatedBindings.ts";
 import { Button } from "@/shared/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
@@ -490,7 +491,65 @@ function TermBox({
   );
 }
 
-function ViewToggle({
+function GammaPanel({
+  bindings,
+  globals,
+}: {
+  bindings: BoundEntry[];
+  globals: Record<string, Term>;
+}) {
+  const globalEntries = Object.entries(globals);
+  const hasAny = bindings.length > 0 || globalEntries.length > 0;
+
+  return (
+    <div className="w-72 shrink-0 rounded-xl border bg-muted/30 p-4">
+      <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+        Γ — context so far
+      </div>
+
+      {!hasAny && (
+        <p className="text-xs text-muted-foreground">No bindings established yet.</p>
+      )}
+
+      {bindings.length > 0 && (
+        <div className="flex flex-col gap-2 mb-4">
+          {bindings.map((entry) => (
+            <div
+              key={entry.name}
+              className="rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 font-mono text-xs overflow-x-auto"
+            >
+              <span className="text-orange-600 dark:text-orange-400 font-semibold">{entry.name}</span>
+              <span className="text-muted-foreground"> = </span>
+              <TermView term={entry.value} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {globalEntries.length > 0 && (
+        <div>
+          <div className="text-[11px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+            Globals
+          </div>
+          <div className="flex flex-col gap-2">
+            {globalEntries.map(([name, def]) => (
+              <div
+                key={name}
+                className="rounded-lg border bg-background/50 px-2.5 py-1.5 font-mono text-xs overflow-x-auto"
+              >
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">{name}</span>
+                <span className="text-muted-foreground"> = </span>
+                <TermView term={def} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ViewToggle({
   mode,
   onChange,
 }: {
@@ -580,24 +639,43 @@ function StepRow({ step, index, isError: isErrorStep, stuckTermId, onClick }: St
 interface EvaluationStepsViewerProps {
   evaluation: EvaluationResult;
   typeAliases?: Record<string, Type>;
+  viewMode: "single" | "all";
+  onViewModeChange: (m: "single" | "all") => void;
+  showGamma: boolean;
 }
 
 // Wraps EvaluationStepsViewerInner so its early returns don't each need the provider individually.
-export function EvaluationStepsViewer({ evaluation, typeAliases = {} }: EvaluationStepsViewerProps) {
+export function EvaluationStepsViewer({ evaluation, typeAliases = {}, viewMode, onViewModeChange, showGamma }: EvaluationStepsViewerProps) {
   return (
     <TypeAliasesContext.Provider value={typeAliases}>
-      <EvaluationStepsViewerInner evaluation={evaluation} />
+      <EvaluationStepsViewerInner
+        evaluation={evaluation}
+        viewMode={viewMode}
+        onViewModeChange={onViewModeChange}
+        showGamma={showGamma}
+      />
     </TypeAliasesContext.Provider>
   );
 }
 
-function EvaluationStepsViewerInner({ evaluation }: { evaluation: EvaluationResult }) {
+interface EvaluationStepsViewerInnerProps {
+  evaluation: EvaluationResult;
+  viewMode: "single" | "all";
+  onViewModeChange: (m: "single" | "all") => void;
+  showGamma: boolean;
+}
+
+function EvaluationStepsViewerInner({ evaluation, viewMode, onViewModeChange, showGamma }: EvaluationStepsViewerInnerProps) {
   const [stepIndex, setStepIndex] = useState(0);
-  const [viewMode, setViewMode] = useState<"single" | "all">("single");
-  const { steps, result, reachedStepLimit, errors } = evaluation;
+  const { steps, result, reachedStepLimit, errors, globals } = evaluation;
 
   const hasErrors = errors && errors.length > 0;
   const stuckTermId = errors?.[0]?.stuckTermId;
+
+  const bindingsAtCurrentStep = useMemo(
+    () => accumulateBindings(steps, stepIndex),
+    [steps, stepIndex],
+  );
 
   if (steps.length === 0) {
     return (
@@ -630,7 +708,6 @@ function EvaluationStepsViewerInner({ evaluation }: { evaluation: EvaluationResu
       <div className="flex flex-col gap-4 h-full overflow-y-auto">
         <div className="flex items-center justify-between sticky top-0 backdrop-blur-sm py-1 z-10">
           <span className="text-sm font-medium">{steps.length} step{steps.length !== 1 ? "s" : ""}</span>
-          <ViewToggle mode={viewMode} onChange={setViewMode} />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -645,7 +722,7 @@ function EvaluationStepsViewerInner({ evaluation }: { evaluation: EvaluationResu
                 isLast={isLast}
                 isError={isStepError}
                 stuckTermId={stuckTermId}
-                onClick={() => { setStepIndex(i); setViewMode("single"); }}
+                onClick={() => { setStepIndex(i); onViewModeChange("single"); }}
               />
             );
           })}
@@ -725,60 +802,63 @@ function EvaluationStepsViewerInner({ evaluation }: { evaluation: EvaluationResu
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <ViewToggle mode={viewMode} onChange={setViewMode} />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setStepIndex((i) => Math.min(steps.length - 1, i + 1))}
-            disabled={isLastStep}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setStepIndex((i) => Math.min(steps.length - 1, i + 1))}
+          disabled={isLastStep}
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Step display */}
-      <TermBox
-        term={currentStep.before}
-        selectedId={currentStep.selectedId}
-        label="Before"
-      />
+      <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
+          <TermBox
+            term={currentStep.before}
+            selectedId={currentStep.selectedId}
+            label="Before"
+          />
 
-      <div className="flex items-center gap-2 text-muted-foreground px-2">
-        <ArrowDown className={cn("h-4 w-4 shrink-0", isErrorStep && "text-destructive")} />
-        <span className="text-xs">{isErrorStep ? "stuck — no reduction possible" : "β-reduction"}</span>
+          <div className="flex items-center gap-2 text-muted-foreground px-2">
+            <ArrowDown className={cn("h-4 w-4 shrink-0", isErrorStep && "text-destructive")} />
+            <span className="text-xs">{isErrorStep ? "stuck — no reduction possible" : "β-reduction"}</span>
+          </div>
+
+          <TermBox
+            term={currentStep.after}
+            label="After"
+            resultId={!isErrorStep ? currentStep.resultId : undefined}
+            errorId={isErrorStep ? stuckTermId : undefined}
+            hasError={isErrorStep}
+          />
+
+          {isErrorStep && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-sm">
+              <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{errors![0].message}</span>
+            </div>
+          )}
+
+          {isLastStep && !hasErrors && (
+            <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-500" />
+                <span className="text-xs font-medium text-orange-600 dark:text-orange-500 uppercase tracking-wide">
+                  Final result
+                </span>
+              </div>
+              <div className="font-mono text-sm overflow-x-auto">
+                <TermView term={result} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {showGamma && <GammaPanel bindings={bindingsAtCurrentStep} globals={globals} />}
       </div>
-
-      <TermBox
-        term={currentStep.after}
-        label="After"
-        resultId={!isErrorStep ? currentStep.resultId : undefined}
-        errorId={isErrorStep ? stuckTermId : undefined}
-        hasError={isErrorStep}
-      />
-
-      {isErrorStep && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-sm">
-          <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>{errors![0].message}</span>
-        </div>
-      )}
-
-      {isLastStep && !hasErrors && (
-        <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-500" />
-            <span className="text-xs font-medium text-orange-600 dark:text-orange-500 uppercase tracking-wide">
-              Final result
-            </span>
-          </div>
-          <div className="font-mono text-sm overflow-x-auto">
-            <TermView term={result} />
-          </div>
-        </div>
-      )}
 
       {reachedStepLimit && (
         <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-yellow-700 dark:text-yellow-500 text-sm">

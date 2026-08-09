@@ -141,6 +141,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         },
         selectedId: bodyStep.selectedId,
         resultId: bodyStep.resultId,
+        binding: bodyStep.binding,
       };
     } finally {
       this.removeBound(node.param);
@@ -171,6 +172,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         },
         selectedId: functionStep.selectedId,
         resultId: functionStep.resultId,
+        binding: functionStep.binding,
       };
     }
 
@@ -194,6 +196,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         },
         selectedId: argumentStep.selectedId,
         resultId: argumentStep.resultId,
+        binding: argumentStep.binding,
       };
     }
 
@@ -217,6 +220,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         },
         selectedId: argumentStep.selectedId,
         resultId: argumentStep.resultId,
+        binding: argumentStep.binding,
       };
     }
 
@@ -257,6 +261,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after,
       selectedId: node.id,
       resultId: after.id,
+      binding: {name: node.func.param, value: node.arg},
     };
   }
 
@@ -268,6 +273,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -279,6 +285,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -315,18 +322,31 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, condition: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
   protected override visitCase(node: Case): ReductionStep | null {
     if (node.variable.kind === "Inl" && this.isValue(node.variable)) {
       const after = this.substitute(node.inl.term, node.inl.variable, node.variable.term);
-      return {before: node, after, selectedId: node.id, resultId: after.id};
+      return {
+        before: node,
+        after,
+        selectedId: node.id,
+        resultId: after.id,
+        binding: {name: node.inl.variable, value: node.variable.term},
+      };
     }
 
     if (node.variable.kind === "Inr" && this.isValue(node.variable)) {
       const after = this.substitute(node.inr.term, node.inr.variable, node.variable.term);
-      return {before: node, after, selectedId: node.id, resultId: after.id};
+      return {
+        before: node,
+        after,
+        selectedId: node.id,
+        resultId: after.id,
+        binding: {name: node.inr.variable, value: node.variable.term},
+      };
     }
 
     const step = this.visit(node.variable);
@@ -336,6 +356,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, variable: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -347,7 +368,13 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         const field = variantValue.variants.find((v) => v.label === c.label);
         if (field) {
           const after = this.substitute(c.body, c.variable, field.term);
-          return {before: node, after, selectedId: node.id, resultId: after.id};
+          return {
+            before: node,
+            after,
+            selectedId: node.id,
+            resultId: after.id,
+            binding: {name: c.variable, value: field.term},
+          };
         }
       }
 
@@ -362,16 +389,16 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, variable: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
   protected override visitVariant(node: Variant): ReductionStep | null {
     for (let i = 0; i < node.variants.length; i++) {
       const entry = node.variants[i];
-      if (this.isValue(entry.term)) continue;
-
-      const step = this.visit(entry.term);
-      if (!step) return null;
+      const {step, stuck} = this.stepOperand(entry.term);
+      if (stuck) return null;
+      if (!step) continue;
 
       const variants = [...node.variants];
       variants[i] = {...entry, term: step.after};
@@ -380,6 +407,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         after: {...node, variants},
         selectedId: step.selectedId,
         resultId: step.resultId,
+        binding: step.binding,
       };
     }
 
@@ -399,16 +427,16 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
   protected override visitTuple(node: Tuple): ReductionStep | null {
     for (let i = 0; i < node.elements.length; i++) {
       const element = node.elements[i];
-      if (this.isValue(element)) continue;
-
-      const step = this.visit(element);
-      if (!step) return null;
+      const {step, stuck} = this.stepOperand(element);
+      if (stuck) return null;
+      if (!step) continue;
 
       const elements = [...node.elements];
       elements[i] = step.after;
@@ -417,6 +445,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         after: {...node, elements},
         selectedId: step.selectedId,
         resultId: step.resultId,
+        binding: step.binding,
       };
     }
 
@@ -439,16 +468,16 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, tuple: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
   protected override visitRecord(node: Record): ReductionStep | null {
     for (let i = 0; i < node.fields.length; i++) {
       const field = node.fields[i];
-      if (this.isValue(field.term)) continue;
-
-      const step = this.visit(field.term);
-      if (!step) return null;
+      const {step, stuck} = this.stepOperand(field.term);
+      if (stuck) return null;
+      if (!step) continue;
 
       const fields = [...node.fields];
       fields[i] = {...field, term: step.after};
@@ -457,6 +486,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         after: {...node, fields},
         selectedId: step.selectedId,
         resultId: step.resultId,
+        binding: step.binding,
       };
     }
 
@@ -479,6 +509,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -495,6 +526,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, first: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -507,27 +539,29 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
   }
 
   protected override visitBinOp(node: BinOp): ReductionStep | null {
-    if (!this.isValue(node.left)) {
-      const step = this.visit(node.left);
-      if (!step) return null;
+    const left = this.stepOperand(node.left);
+    if (left.step) {
       return {
         before: node,
-        after: {...node, left: step.after},
-        selectedId: step.selectedId,
-        resultId: step.resultId,
+        after: {...node, left: left.step.after},
+        selectedId: left.step.selectedId,
+        resultId: left.step.resultId,
+        binding: left.step.binding,
       };
     }
+    if (left.stuck) return null;
 
-    if (!this.isValue(node.right)) {
-      const step = this.visit(node.right);
-      if (!step) return null;
+    const right = this.stepOperand(node.right);
+    if (right.step) {
       return {
         before: node,
-        after: {...node, right: step.after},
-        selectedId: step.selectedId,
-        resultId: step.resultId,
+        after: {...node, right: right.step.after},
+        selectedId: right.step.selectedId,
+        resultId: right.step.resultId,
+        binding: right.step.binding,
       };
     }
+    if (right.stuck) return null;
 
     if (!isNatLiteral(node.left) || !isNatLiteral(node.right)) {
       // Stuck: both sides are values, but at least one isn't a Nat literal.
@@ -559,6 +593,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -569,27 +604,29 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
 
   // E-cons1 / E-cons2: reduce head first, then tail once head is a value.
   protected override visitCons(node: Cons): ReductionStep | null {
-    if (!this.isValue(node.head)) {
-      const step = this.visit(node.head);
-      if (!step) return null;
+    const head = this.stepOperand(node.head);
+    if (head.step) {
       return {
         before: node,
-        after: {...node, head: step.after},
-        selectedId: step.selectedId,
-        resultId: step.resultId,
+        after: {...node, head: head.step.after},
+        selectedId: head.step.selectedId,
+        resultId: head.step.resultId,
+        binding: head.step.binding,
       };
     }
+    if (head.stuck) return null;
 
-    if (!this.isValue(node.tail)) {
-      const step = this.visit(node.tail);
-      if (!step) return null;
+    const tail = this.stepOperand(node.tail);
+    if (tail.step) {
       return {
         before: node,
-        after: {...node, tail: step.after},
-        selectedId: step.selectedId,
-        resultId: step.resultId,
+        after: {...node, tail: tail.step.after},
+        selectedId: tail.step.selectedId,
+        resultId: tail.step.resultId,
+        binding: tail.step.binding,
       };
     }
+    if (tail.stuck) return null;
 
     return null;
   }
@@ -615,6 +652,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -633,6 +671,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -651,19 +690,20 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
   // E-fold: reduce the wrapped term; fold_{μX.T} v is itself already a value.
   protected override visitFold(node: Fold): ReductionStep | null {
-    if (this.isValue(node.term)) return null;
-    const step = this.visit(node.term);
-    if (!step) return null;
+    const {step, stuck} = this.stepOperand(node.term);
+    if (stuck || !step) return null;
     return {
       before: node,
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -682,6 +722,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, term: step.after},
       selectedId: step.selectedId,
       resultId: step.resultId,
+      binding: step.binding,
     };
   }
 
@@ -703,6 +744,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after: {...node, body: bodyStep.after},
       selectedId: bodyStep.selectedId,
       resultId: bodyStep.resultId,
+      binding: bodyStep.binding,
     };
   }
 
@@ -728,6 +770,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       },
       selectedId: termStep.selectedId,
       resultId: termStep.resultId,
+      binding: termStep.binding,
     };
   }
 
@@ -938,6 +981,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
         },
         selectedId: valueStep.selectedId,
         resultId: valueStep.resultId,
+        binding: valueStep.binding,
       };
     }
 
@@ -952,6 +996,7 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
       after,
       selectedId: node.id,
       resultId: after.id,
+      binding: {name: node.name, value: node.value},
     };
   }
 
@@ -1194,6 +1239,18 @@ export class ReductionVisitor extends AstVisitor<ReductionStep | null> {
     }
 
     return {name: boundName, body: this.substitute(body, variable, replacement)};
+  }
+
+  // isValue() calls a bare Var a value (a bound/free variable can't reduce
+  // further), but a Var can also name a global that still needs dereferencing
+  // via visitVar. This tries that dereference first; `stuck` is only true for
+  // a genuinely non-value term that failed to produce a step.
+  private stepOperand(term: Term): {step: ReductionStep | null; stuck: boolean} {
+    if (term.kind !== "Var" && this.isValue(term)) {
+      return {step: null, stuck: false};
+    }
+    const step = this.visit(term);
+    return step ? {step, stuck: false} : {step: null, stuck: !this.isValue(term)};
   }
 
   private isValue(term: Term): boolean {

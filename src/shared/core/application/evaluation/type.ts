@@ -11,6 +11,9 @@ export interface ReductionStep {
   after: Term;
   selectedId: string;
   resultId?: string;
+  // Set when this step substitutes a concrete term for a variable (β-reduction,
+  // `let`, or a case/variant-case match) — the binding it conceptually adds to Γ.
+  binding?: {name: string; value: Term};
 }
 
 export interface EvaluationError {
@@ -24,5 +27,8 @@ export interface EvaluationResult {
   reachedStepLimit: boolean;
   strategy: EvaluationStrategy;
   errors?: EvaluationError[];
+  // Top-level let/fun declarations available for free-variable lookup during
+  // reduction — the global half of a step's Γ (see scopeAt.ts for the local half).
+  globals: Record<string, Term>;
 }
 
