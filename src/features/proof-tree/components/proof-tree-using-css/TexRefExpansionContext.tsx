@@ -3,6 +3,9 @@ import {createContext, useCallback, useContext, useMemo, useState, type ReactNod
 interface TexRefExpansionValue {
   isExpanded: (key: string) => boolean;
   toggle: (key: string) => void;
+  // Snapshot of every currently-expanded key — read by the LaTeX export so
+  // it can reproduce exactly what's expanded on screen right now.
+  expandedKeys: ReadonlySet<string>;
 }
 
 const TexRefExpansionContext = createContext<TexRefExpansionValue | null>(null);
@@ -26,7 +29,7 @@ export function TexRefExpansionProvider({children}: { children: ReactNode }) {
 
   const isExpanded = useCallback((key: string) => expanded.has(key), [expanded]);
 
-  const value = useMemo(() => ({isExpanded, toggle}), [isExpanded, toggle]);
+  const value = useMemo(() => ({isExpanded, toggle, expandedKeys: expanded}), [isExpanded, toggle, expanded]);
 
   return (
     <TexRefExpansionContext.Provider value={value}>

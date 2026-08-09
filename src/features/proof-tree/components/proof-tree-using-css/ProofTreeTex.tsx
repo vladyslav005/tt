@@ -1,7 +1,8 @@
-import {Fragment, useState} from "react";
+import {Fragment} from "react";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {Conclusion} from "@/features/proof-tree/components/proof-tree-using-css/Conclusion.tsx";
 import {useStepBuild} from "@/features/proof-tree/components/proof-tree-using-css/StepBuildContext.tsx";
+import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 import {cn} from "@/shared/lib/utils.ts";
 import "./ProofTree.css"
 
@@ -16,7 +17,11 @@ export function ProofTreeComponentUsingCss(
     root = true,
   }: ProofTreeUsingCssProps,) {
   const isDef = node.rule === "T-Def" || node.rule === "CT-Def" || node.rule === "Lemma";
-  const [expanded, setExpanded] = useState(false);
+  // Shared (not local) so the LaTeX export can snapshot which T-Def/CT-Def/Lemma
+  // nodes are currently expanded — see TexRefExpansionContext.
+  const {isExpanded, toggle} = useTexRefExpansion();
+  const defKey = `def:${node.id ?? ""}`;
+  const expanded = isExpanded(defKey);
   const {isRevealed} = useStepBuild();
   const revealed = isRevealed(node);
 
@@ -55,7 +60,7 @@ export function ProofTreeComponentUsingCss(
           isItLeaf={isItLeaf}
           isDef={isDef}
           isExpanded={expanded}
-          onToggle={() => setExpanded(e => !e)}
+          onToggle={() => toggle(defKey)}
         />
 
         <div className="conclusion-right">

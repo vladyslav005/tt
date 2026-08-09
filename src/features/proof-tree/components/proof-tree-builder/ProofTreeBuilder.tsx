@@ -4,8 +4,10 @@ import {checkProof, enterBuildMode, exitBuildMode} from "@/shared/ui-state/termS
 import {countProofErrors, summarizeStudentTree} from "@/shared/ui-state/studentProof.ts";
 import {ProofTreeBuilderNode} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilderNode.tsx";
 import {buildGammaRegistry} from "@/features/proof-tree/components/proof-tree-builder/buildGammaRegistry.ts";
+import {studentNodeToExportTree} from "@/features/proof-tree/components/proof-tree-builder/studentProofToTex.ts";
 import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
 import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
+import {ExportLatexButtons} from "@/features/proof-tree/components/ExportLatexButtons.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
@@ -84,8 +86,18 @@ export function ProofTreeBuilder() {
           limitToBounds={false}
         >
           {({zoomIn, zoomOut, centerView}) => (
-            <>
+            <TexRefExpansionProvider key={answerKey.id ?? "none"}>
               <div className="absolute top-4 right-4 z-10 flex gap-2">
+                <ExportLatexButtons
+                  buildTree={(expandedKeys) => studentNodeToExportTree(
+                    studentTree,
+                    answerKey,
+                    answerKey.gamma,
+                    registry,
+                    {expandedKeys, highlightMistakes},
+                  )}
+                  filename="proof-tree-builder.tex"
+                />
                 <Button
                   size="icon"
                   variant="secondary"
@@ -121,18 +133,16 @@ export function ProofTreeBuilder() {
                 wrapperStyle={{width: "100%", height: "100%", overflow: "hidden", minHeight: "600px"}}
               >
                 <div className="flex items-center justify-center p-6">
-                  <TexRefExpansionProvider key={answerKey.id ?? "none"}>
-                    <ProofTreeBuilderNode
-                      studentNode={studentTree}
-                      answerNode={answerKey}
-                      parentGamma={answerKey.gamma}
-                      registry={registry}
-                      highlightMistakes={highlightMistakes}
-                    />
-                  </TexRefExpansionProvider>
+                  <ProofTreeBuilderNode
+                    studentNode={studentTree}
+                    answerNode={answerKey}
+                    parentGamma={answerKey.gamma}
+                    registry={registry}
+                    highlightMistakes={highlightMistakes}
+                  />
                 </div>
               </TransformComponent>
-            </>
+            </TexRefExpansionProvider>
           )}
         </TransformWrapper>
       </div>

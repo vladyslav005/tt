@@ -5,16 +5,18 @@ import {ProofTreeComponentUsingCss} from "@/features/proof-tree/components/proof
 import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 import {StepBuildProvider} from "@/features/proof-tree/components/proof-tree-using-css/StepBuildContext.tsx";
 import {useStepBuild} from "@/features/proof-tree/hooks/useStepBuild.ts";
+import {ExportLatexButtons} from "@/features/proof-tree/components/ExportLatexButtons.tsx";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 
 interface ProofTreeCanvasProps {
   texTree: TexTree;
   treeKey: string;
   stepByStep?: boolean;
+  exportFilename?: string;
 }
 
 // The pan/zoom viewport shared by every read-only proof tree tab (type-theory, logic, ...).
-export function ProofTreeCanvas({texTree, treeKey, stepByStep = false}: ProofTreeCanvasProps) {
+export function ProofTreeCanvas({texTree, treeKey, stepByStep = false, exportFilename = "proof-tree.tex"}: ProofTreeCanvasProps) {
   const {isRevealed, step, total, canGoNext, canGoPrev, goNext, goPrev, reset} =
     useStepBuild(texTree, treeKey, stepByStep);
 
@@ -31,8 +33,9 @@ export function ProofTreeCanvas({texTree, treeKey, stepByStep = false}: ProofTre
         limitToBounds={false}
       >
         {({zoomIn, zoomOut, centerView}) => (
-          <>
+          <TexRefExpansionProvider key={treeKey}>
             <div className="absolute top-4 right-4 z-10 flex gap-2">
+              <ExportLatexButtons buildTree={() => texTree} filename={exportFilename}/>
               <Button
                 size="icon"
                 variant="secondary"
@@ -106,14 +109,12 @@ export function ProofTreeCanvas({texTree, treeKey, stepByStep = false}: ProofTre
               wrapperStyle={{width: '100%', height: '100%', overflow: 'hidden', minHeight: '600px'}}
             >
               <div className="flex items-center justify-center p-6">
-                <TexRefExpansionProvider key={treeKey}>
-                  <StepBuildProvider value={{enabled: stepByStep, isRevealed}}>
-                    <ProofTreeComponentUsingCss node={texTree}/>
-                  </StepBuildProvider>
-                </TexRefExpansionProvider>
+                <StepBuildProvider value={{enabled: stepByStep, isRevealed}}>
+                  <ProofTreeComponentUsingCss node={texTree}/>
+                </StepBuildProvider>
               </div>
             </TransformComponent>
-          </>
+          </TexRefExpansionProvider>
         )}
       </TransformWrapper>
     </div>

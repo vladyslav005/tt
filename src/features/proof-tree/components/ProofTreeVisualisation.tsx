@@ -145,7 +145,7 @@ export function ProofTreeVisualisation({
           ) : effectiveTab === "logic" ? (
             logicTree && (
               <div className="w-full h-full flex flex-col space-y-4">
-                <ProofTreeCanvas texTree={logicTree} treeKey={`logic-${proof?.id ?? "none"}`}/>
+                <ProofTreeCanvas texTree={logicTree} treeKey={`logic-${proof?.id ?? "none"}`} exportFilename="logic-tree.tex"/>
                 <details className="group">
                   <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                     <span className="inline-flex items-center gap-2">
@@ -167,6 +167,7 @@ export function ProofTreeVisualisation({
                   texTree={texTree}
                   treeKey={proof?.id ?? "none"}
                   stepByStep={stepByStep}
+                  exportFilename="proof-tree.tex"
                 />
               )}
               <details className="group">
