@@ -1,15 +1,17 @@
 import {motion} from "framer-motion";
 import {
   CheckCircle2,
+  ClipboardCheck,
   FileCode,
+  FileDown,
   Layers,
   Network,
   Play,
+  Scale,
+  Shapes,
   Sparkles,
   Terminal,
   GitBranch,
-  Workflow,
-  Braces,
 } from "lucide-react";
 import {Button} from "@/shared/components/ui/button";
 import {
@@ -34,6 +36,9 @@ const staggerContainer = {
   },
 };
 
+// Flip to true to bring the Technology Stack section back.
+const SHOW_TECH_STACK = false;
+
 export function AboutPage() {
   return (
     <div className="pt-16 min-h-screen bg-gradient-to-b from-background to-muted/40">
@@ -50,26 +55,17 @@ export function AboutPage() {
         <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
           An interactive environment for experimenting with typed lambda calculus.
           It supports parsing, AST inspection/editing, type checking and inference,
-          and proof tree visualization.
+          proof tree visualization, and building your own derivations by hand.
         </p>
         <p className="text-sm md:text-base text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
           Built as a Master Thesis project, the goal is to make the underlying
           theory explorable: you can see the syntax tree, derived types, and the
           proof steps that justify them.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+        <div className="flex items-center justify-center">
           <Button size="lg" className="rounded-2xl shadow-lg" disabled>
             <FileCode className="mr-2 h-5 w-5" />
-            Documentation (soon)
-          </Button>
-          <Button
-            size="lg"
-            variant="secondary"
-            className="rounded-2xl shadow-lg"
-            onClick={() => window.open("https://tt-woad.vercel.app/", "_blank")}
-          >
-            <Workflow className="mr-2 h-5 w-5" />
-            Live demo
+            Read the Thesis (coming soon)
           </Button>
         </div>
       </motion.section>
@@ -112,7 +108,7 @@ export function AboutPage() {
                   icon: Play,
                   title: "Evaluation",
                   description:
-                    "Reduces lambda terms and helps you study operational behavior alongside typing.",
+                    "Reduces lambda terms under normal-order, call-by-value, or call-by-name strategies, with a step-by-step viewer and Γ bindings panel.",
                 },
                 {
                   icon: Network,
@@ -131,6 +127,30 @@ export function AboutPage() {
                   title: "Multiple synchronized representations",
                   description:
                     "Text/AST/proof views are designed to represent the same underlying term.",
+                },
+                {
+                  icon: ClipboardCheck,
+                  title: "Build & Check exercises",
+                  description:
+                    "Construct a typing derivation yourself, rule by rule, and check it against the real answer with mistake highlighting.",
+                },
+                {
+                  icon: Shapes,
+                  title: "Extended type theories",
+                  description:
+                    "Toggle let-polymorphism, iso-recursive types, System F, System Fω, and dependent types (λP) on top of base STLC.",
+                },
+                {
+                  icon: Scale,
+                  title: "Curry–Howard / logic view",
+                  description:
+                    "Re-renders an STLC typing derivation as a natural-deduction proof, with implication, conjunction, and disjunction rules.",
+                },
+                {
+                  icon: FileDown,
+                  title: "LaTeX / ebproof export",
+                  description:
+                    "Preview, copy, or download any proof tree as a ready-to-compile ebproof LaTeX document, matching what's on screen.",
                 },
               ].map((feature, idx) => (
                 <motion.div
@@ -160,38 +180,43 @@ export function AboutPage() {
 
       {/* Architecture Section */}
       <motion.section
-        className="container mx-auto px-4 py-12 max-w-6xl"
+        className="container mx-auto px-4 py-12 pb-20 max-w-6xl"
         initial={{opacity: 0, y: 20}}
         animate={{opacity: 1, y: 0}}
         transition={{delay: 0.4, duration: 0.5}}
       >
         <h2 className="text-3xl font-bold mb-8 text-center">Architecture</h2>
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="max-w-xl mx-auto">
           <Card className="shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader>
               <CardTitle className="text-xl">Processing Pipeline</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div>
                 {[
-                  {step: "Parser", desc: "ANTLR-based lexer & parser"},
-                  {step: "AST", desc: "Abstract syntax tree construction"},
+                  {icon: Terminal, step: "Parser", desc: "ANTLR-based lexer & parser"},
+                  {icon: Layers, step: "AST", desc: "Syntax tree construction, inspection & editing"},
                   {
+                    icon: CheckCircle2,
                     step: "Type Checker",
-                    desc: "STLC rules & inference engine",
+                    desc: "STLC rules, HM inference & extended type theories",
                   },
-                  {step: "Proof Tree", desc: "Derivation tree generation"},
-                  {step: "UI", desc: "Interactive visualization layer"},
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 group cursor-default"
-                  >
-                    <div
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
-                      {idx + 1}
+                  {icon: Network, step: "Proof Tree", desc: "Derivation generation & Curry–Howard view"},
+                  {icon: Play, step: "Evaluation", desc: "Step-by-step reduction under multiple strategies"},
+                  {
+                    icon: ClipboardCheck,
+                    step: "Practice & Export",
+                    desc: "Build & Check exercises and LaTeX/ebproof export",
+                  },
+                ].map((item, idx, arr) => (
+                  <div key={idx} className="relative flex gap-3 pb-6 last:pb-0 group cursor-default">
+                    {idx !== arr.length - 1 && (
+                      <div className="absolute left-4 top-9 bottom-0 w-px bg-border" />
+                    )}
+                    <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform duration-300 group-hover:scale-110">
+                      <item.icon className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="pt-0.5">
                       <p className="font-semibold text-sm">{item.step}</p>
                       <p className="text-xs text-muted-foreground">
                         {item.desc}
@@ -202,36 +227,11 @@ export function AboutPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="shadow-lg bg-muted/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Terminal className="h-5 w-5"/>
-                Code Preview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-background/60 backdrop-blur rounded-xl p-4 border font-mono text-sm space-y-2">
-                <div className="text-muted-foreground">
-                  <span className="text-primary">λx</span>.{" "}
-                  <span className="text-primary">λy</span>.{" "}
-                  <span className="text-foreground">x y</span>
-                </div>
-                <div className="text-xs text-muted-foreground pt-2 border-t">
-                  → Type: (α → β) → α → β
-                </div>
-                <div className="text-xs text-muted-foreground pt-2 mt-3 border-t space-y-1">
-                  <div>✓ Parse successful</div>
-                  <div>✓ Type check passed</div>
-                  <div>✓ Proof tree generated</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </motion.section>
 
       {/* Technology Stack Section */}
+      {SHOW_TECH_STACK && (
       <motion.section
         className="container mx-auto px-4 py-12 pb-20 max-w-6xl"
         initial={{opacity: 0, y: 20}}
@@ -316,33 +316,21 @@ export function AboutPage() {
             },
             {
               icon: "🔍",
-              title: "Math & zoom tooling",
+              title: "MathJax",
               description:
-                "Math rendering and pan/zoom utilities for proof tree exploration.",
+                "Renders judgements and typing rules as real math in the browser.",
+            },
+            {
+              icon: "🖐️",
+              title: "react-zoom-pan-pinch",
+              description:
+                "Pan/zoom for exploring large proof trees and AST graphs.",
             },
             {
               icon: "🧱",
               title: "ESLint",
               description:
                 "Static analysis and consistency checks during development.",
-            },
-            {
-              icon: "{}",
-              title: "Domain-driven core",
-              description:
-                "A shared core layer for AST/domain types, visitors, and presentation mappers.",
-            },
-            {
-              icon: "🧬",
-              title: "Typed trees",
-              description:
-                "Visitors and mappers for AST → Flow nodes, proof trees, and pretty-printing.",
-            },
-            {
-              icon: "🔣",
-              title: "LaTeX-like proof rendering",
-              description:
-                "Proof trees can be rendered as structured layouts suitable for academic output.",
             },
           ].map((tech, idx) => (
             <motion.div
@@ -356,9 +344,6 @@ export function AboutPage() {
                   <div className="text-4xl mb-2">{tech.icon}</div>
                   <CardTitle className="text-lg flex items-center gap-2">
                     {tech.title}
-                    {tech.title === "Domain-driven core" && (
-                      <Braces className="h-4 w-4 text-muted-foreground" />
-                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -369,6 +354,7 @@ export function AboutPage() {
           ))}
         </div>
       </motion.section>
+      )}
     </div>
   );
 }
