@@ -1,12 +1,14 @@
 import {configureStore} from "@reduxjs/toolkit";
 import termReducer, {initialTermState} from "@/shared/ui-state/termSlice";
 import {loadPersistedTermState, persistTermState} from "@/shared/ui-state/persistTermState.ts";
+import workspaceLayoutReducer from "@/shared/ui-state/workspaceLayoutSlice.ts";
 
 const persisted = loadPersistedTermState();
 
 export const store = configureStore({
   reducer: {
-    term: termReducer
+    term: termReducer,
+    workspaceLayoutUi: workspaceLayoutReducer,
   },
   preloadedState: persisted
     ? {term: {...initialTermState, ...persisted}}

@@ -6,6 +6,7 @@ import {NavLink} from "react-router-dom";
 import {useTheme} from "next-themes";
 import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
 import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensionsBadges.tsx";
+import {LayoutPresetsDropdown} from "@/features/workspace/components/LayoutPresetsDropdown.tsx";
 
 type NavItem = {
   label: string;
@@ -75,6 +76,11 @@ export function Topbar() {
             {/* Type System Extensions */}
             <div className="hidden md:block">
               <TypeTheoriesDropdown />
+            </div>
+
+            {/* Layout presets */}
+            <div className="hidden md:block">
+              <LayoutPresetsDropdown />
             </div>
 
             {/* Dark Mode Toggle */}
@@ -147,6 +153,7 @@ export function Topbar() {
           {/* Mobile Type System Extensions */}
           <div className="flex flex-col items-start gap-2 pb-2">
             <TypeTheoriesDropdown />
+            <LayoutPresetsDropdown />
             <ActiveExtensionsBadges />
           </div>
 

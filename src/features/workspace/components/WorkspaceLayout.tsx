@@ -1,11 +1,13 @@
-import {useRef} from "react";
+import {useEffect, useRef} from "react";
 import {
   DockviewDefaultTab,
   DockviewReact,
   themeDark,
   themeLight,
+  type DockviewApi,
   type DockviewReadyEvent,
   type IDockviewPanelHeaderProps,
+  type SerializedDockview,
 } from "dockview-react";
 import {useTheme} from "next-themes";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
@@ -17,6 +19,14 @@ import {
   EvaluationPanel,
   ProofTreePanel,
 } from "@/features/workspace/components/panels.tsx";
+import {applyLayoutPreset} from "@/features/workspace/components/layoutPresets.ts";
+import {
+  clearPersistedWorkspaceLayout,
+  loadPersistedWorkspaceLayout,
+  persistWorkspaceLayout,
+} from "@/shared/ui-state/persistWorkspaceLayout.ts";
+import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
+import {clearPendingLayoutPreset} from "@/shared/ui-state/workspaceLayoutSlice.ts";
 
 const components = {
   editor: EditorPanel,
@@ -25,6 +35,12 @@ const components = {
   proofTree: ProofTreePanel,
   ast: AstPanel,
 };
+
+const PANEL_IDS = ["editor", "errorOutput", "evaluation", "proofTree", "ast"];
+
+function isRestorableLayout(data: SerializedDockview | undefined): data is SerializedDockview {
+  return !!data?.panels && PANEL_IDS.every((id) => id in data.panels);
+}
 
 // No panel-add UI exists yet, so a closed panel would be unrecoverable — hide the close button until one does.
 function WorkspaceTab(props: IDockviewPanelHeaderProps) {
@@ -37,43 +53,57 @@ export interface WorkspaceLayoutProps {
 
 export function WorkspaceLayout({className}: WorkspaceLayoutProps) {
   const editorRef = useRef<TextEditorHandle>(null);
+  const apiRef = useRef<DockviewApi | null>(null);
   const {resolvedTheme} = useTheme();
+  const dispatch = useAppDispatch();
+  const pendingPreset = useAppSelector((state) => state.workspaceLayoutUi.pendingPreset);
+
+  // A restored/serialized panel's `params` can't carry a live React ref through JSON, so the
+  // editor/AST panels need it re-injected after every build (fresh mount, restore, or preset switch).
+  const rewireEditorRef = (api: DockviewApi) => {
+    const editorParams: EditorPanelParams = {editorRef};
+    api.getPanel("editor")?.api.updateParameters(editorParams);
+    api.getPanel("ast")?.api.updateParameters(editorParams);
+  };
 
   const handleReady = (event: DockviewReadyEvent) => {
     const api = event.api;
+    apiRef.current = api;
     const editorParams: EditorPanelParams = {editorRef};
 
-    api.addPanel({id: "editor", component: "editor", title: "Editor", params: editorParams});
-    api.addPanel({
-      id: "errorOutput",
-      component: "errorOutput",
-      title: "Errors",
-      position: {referencePanel: "editor", direction: "right"},
-    });
-    // Tabs, not stacked splits — each result panel gets the full pane height when selected
-    // instead of a quarter-height sliver, and the right side only shows one header bar.
-    api.addPanel({
-      id: "evaluation",
-      component: "evaluation",
-      title: "Evaluation",
-      position: {referencePanel: "errorOutput", direction: "within"},
-    });
-    api.addPanel({
-      id: "proofTree",
-      component: "proofTree",
-      title: "Proof Tree",
-      position: {referencePanel: "errorOutput", direction: "within"},
-    });
-    api.addPanel({
-      id: "ast",
-      component: "ast",
-      title: "AST",
-      params: editorParams,
-      position: {referencePanel: "errorOutput", direction: "within"},
-    });
+    const saved = loadPersistedWorkspaceLayout();
+    let restored = false;
+    if (isRestorableLayout(saved)) {
+      try {
+        api.fromJSON(saved);
+        restored = true;
+      } catch (error) {
+        console.warn("Failed to restore saved workspace layout, falling back to default", error);
+        clearPersistedWorkspaceLayout();
+      }
+    }
 
-    api.getPanel("errorOutput")?.api.setActive();
+    if (!restored) {
+      applyLayoutPreset(api, "editorFocus", editorParams);
+    }
+    rewireEditorRef(api);
+
+    let persistTimeout: ReturnType<typeof setTimeout> | undefined;
+    api.onDidLayoutChange(() => {
+      clearTimeout(persistTimeout);
+      persistTimeout = setTimeout(() => persistWorkspaceLayout(api.toJSON()), 300);
+    });
   };
+
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!pendingPreset || !api) return;
+
+    applyLayoutPreset(api, pendingPreset, {editorRef});
+    rewireEditorRef(api);
+    persistWorkspaceLayout(api.toJSON());
+    dispatch(clearPendingLayoutPreset());
+  }, [pendingPreset, dispatch]);
 
   return (
     <div className={className}>
