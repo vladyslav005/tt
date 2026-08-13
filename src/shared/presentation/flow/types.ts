@@ -15,6 +15,7 @@ import type {
   Inl,
   Inr,
   IsNil,
+  Kind,
   Let,
   Lit,
   Nil,
@@ -85,6 +86,12 @@ export type TypeNodeData = {
   onChange?: (patch: any) => void;
 };
 
+export type KindNodeData = {
+  term: Kind;
+  editable?: boolean;
+  onChange?: (patch: any) => void;
+};
+
 export type InlNodeData = { term: Inl; editable?: boolean; onChange?: (patch: any) => void };
 export type InrNodeData = { term: Inr; editable?: boolean; onChange?: (patch: any) => void };
 export type IfConditionNodeData = { term: IfCondition; editable?: boolean; onChange?: (patch: any) => void };
@@ -123,6 +130,7 @@ export type AbstractionFlowNode = Node<AbstractionNodeData, "abstraction">;
 export type ApplicationFlowNode = Node<ApplicationNodeData, "application">;
 export type LiteralFlowNode = Node<LiteralNodeData, "literal">;
 export type TypeFlowNode = Node<TypeNodeData, "type">;
+export type KindFlowNode = Node<KindNodeData, "kind">;
 export type InlFlowNode = Node<InlNodeData, "inl">;
 export type InrFlowNode = Node<InrNodeData, "inr">;
 export type IfConditionFlowNode = Node<IfConditionNodeData, "ifCondition">;
@@ -162,6 +170,7 @@ export type AstFlowNode =
   | ApplicationFlowNode
   | LiteralFlowNode
   | TypeFlowNode
+  | KindFlowNode
   | InlFlowNode
   | InrFlowNode
   | IfConditionFlowNode
@@ -198,6 +207,7 @@ export type AbstractionFlowNodeType = AbstractionNodeData;
 export type ApplicationFlowNodeType = ApplicationNodeData;
 export type LiteralFlowNodeType = LiteralNodeData;
 export type TypeFlowNodeType = TypeNodeData;
+export type KindFlowNodeType = KindNodeData;
 export type InlFlowNodeType = InlNodeData;
 export type InrFlowNodeType = InrNodeData;
 export type IfConditionFlowNodeType = IfConditionNodeData;

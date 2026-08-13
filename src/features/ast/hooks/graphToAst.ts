@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Program, RecursiveType, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, Type, TypeAliasDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Kind, KindArrow, Program, RecursiveType, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, TyIndexApp, TyPi, Type, TypeAliasDecl, TypeConstructorDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;
@@ -49,7 +49,56 @@ function defaultVar(id: string, name = "x"): Var {
   return { id, kind: "Var", name };
 }
 
-const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "ListType", "RecursiveType"]);
+function defaultKind(id: string): Kind {
+  return { id, kind: "StarKind" };
+}
+
+const RECONSTRUCTIBLE_TYPE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleType", "VariantType", "RecordType", "TyForall", "TyConstructorAbs", "TyConstructorApp", "TyPi", "TyIndexApp", "ListType", "RecursiveType"]);
+const RECONSTRUCTIBLE_KIND_KINDS = new Set(["StarKind", "KindArrow"]);
+
+function reconstructKind(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Kind {
+  if (visiting.has(node.id)) {
+    const raw = node.data.term as any;
+    return (raw && RECONSTRUCTIBLE_KIND_KINDS.has(raw.kind)) ? (raw as Kind) : defaultKind(node.id);
+  }
+  visiting.add(node.id);
+
+  const raw = node.data.term as any;
+  const byHandle = groupOutgoingByHandle(edges, node.id);
+
+  if (raw.kind === "StarKind") {
+    visiting.delete(node.id);
+    return { id: raw.id ?? node.id, kind: "StarKind" };
+  }
+
+  if (raw.kind === "KindArrow") {
+    const fromNode = firstTargetNode(byHandle, "from", nodeMap);
+    const toNode = firstTargetNode(byHandle, "to", nodeMap);
+
+    // `from` is Kind | Type — System λP's dependent kind (e.g. "Nat -> @") connects an ordinary
+    // Type node there instead of a Kind node, so which reconstructor to use is decided by the
+    // *connected* node's own kind, not by anything recorded on this node.
+    let from: Kind | Type = defaultKind(`${node.id}-from`);
+    if (fromNode) {
+      const fromRaw = fromNode.data.term as any;
+      from = RECONSTRUCTIBLE_KIND_KINDS.has(fromRaw?.kind)
+        ? reconstructKind(fromNode, nodeMap, edges, visiting)
+        : reconstructType(fromNode, nodeMap, edges, visiting);
+    }
+
+    const ka: KindArrow = {
+      id: raw.id ?? node.id,
+      kind: "KindArrow",
+      from,
+      to: toNode ? reconstructKind(toNode, nodeMap, edges, visiting) : defaultKind(`${node.id}-to`),
+    };
+    visiting.delete(node.id);
+    return ka;
+  }
+
+  visiting.delete(node.id);
+  return (raw as Kind) ?? defaultKind(node.id);
+}
 
 function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visiting: Set<string>): Type {
   if (visiting.has(node.id)) {
@@ -131,12 +180,13 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
   }
 
   if (raw.kind === "TyConstructorAbs") {
+    const paramKindNode = firstTargetNode(byHandle, "paramKind", nodeMap);
     const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
     const ty: TyConstructorAbs = {
       id: raw.id ?? node.id,
       kind: "TyConstructorAbs",
       typeParam: raw.typeParam ?? "X",
-      paramKind: raw.paramKind ?? { id: `${node.id}-kind`, kind: "StarKind" },
+      paramKind: paramKindNode ? reconstructKind(paramKindNode, nodeMap, edges, visiting) : defaultKind(`${node.id}-kind`),
       body: bodyNode ? reconstructType(bodyNode, nodeMap, edges, visiting) : defaultType(`${node.id}-body`),
     };
     visiting.delete(node.id);
@@ -151,6 +201,33 @@ function reconstructType(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], vis
       kind: "TyConstructorApp",
       func: funcNode ? reconstructType(funcNode, nodeMap, edges, visiting) : defaultType(`${node.id}-func`),
       arg: argNode ? reconstructType(argNode, nodeMap, edges, visiting) : defaultType(`${node.id}-arg`),
+    };
+    visiting.delete(node.id);
+    return ty;
+  }
+
+  if (raw.kind === "TyPi") {
+    const paramTypeNode = firstTargetNode(byHandle, "paramType", nodeMap);
+    const bodyNode = firstTargetNode(byHandle, "body", nodeMap);
+    const ty: TyPi = {
+      id: raw.id ?? node.id,
+      kind: "TyPi",
+      paramVar: raw.paramVar ?? "x",
+      paramType: paramTypeNode ? reconstructType(paramTypeNode, nodeMap, edges, visiting) : defaultType(`${node.id}-paramType`),
+      body: bodyNode ? reconstructType(bodyNode, nodeMap, edges, visiting) : defaultType(`${node.id}-body`),
+    };
+    visiting.delete(node.id);
+    return ty;
+  }
+
+  if (raw.kind === "TyIndexApp") {
+    const funcNode = firstTargetNode(byHandle, "func", nodeMap);
+    const argNode = firstTargetNode(byHandle, "arg", nodeMap);
+    const ty: TyIndexApp = {
+      id: raw.id ?? node.id,
+      kind: "TyIndexApp",
+      func: funcNode ? reconstructType(funcNode, nodeMap, edges, visiting) : defaultType(`${node.id}-func`),
+      arg: argNode ? (reconstruct(argNode, nodeMap, edges, visiting) as Term) : defaultVar(`${node.id}-arg`),
     };
     visiting.delete(node.id);
     return ty;
@@ -200,6 +277,8 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
     case "TyForall":
     case "TyConstructorAbs":
     case "TyConstructorApp":
+    case "TyPi":
+    case "TyIndexApp":
     case "ListType":
     case "RecursiveType": {
       visiting.delete(node.id);
@@ -276,6 +355,18 @@ function reconstruct(node: AstFlowNode, nodeMap: NodeMap, edges: Edge[], visitin
 
       visiting.delete(node.id);
       return ta;
+    }
+
+    case "TypeConstructorDecl": {
+      const paramKindNode = firstTargetNode(byHandle, "paramKind", nodeMap);
+      const tcd: TypeConstructorDecl = {
+        id: raw.id ?? node.id,
+        kind: "TypeConstructorDecl",
+        name: raw.name ?? "MyType",
+        paramKind: paramKindNode ? reconstructKind(paramKindNode, nodeMap, edges, visiting) : defaultKind(`${node.id}-kind`),
+      };
+      visiting.delete(node.id);
+      return tcd;
     }
 
     case "FunDecl": {

@@ -6,6 +6,12 @@ export enum EvaluationStrategy {
   CALL_BY_NAME = "CALL_BY_NAME",
 }
 
+export const EVALUATION_STRATEGY_LABELS: Record<EvaluationStrategy, string> = {
+  [EvaluationStrategy.NORMAL]: "Normal Order",
+  [EvaluationStrategy.CALL_BY_NAME]: "Call by name",
+  [EvaluationStrategy.CALL_BY_VALUE]: "Call by value",
+};
+
 export interface ReductionStep {
   before: Term;
   after: Term;

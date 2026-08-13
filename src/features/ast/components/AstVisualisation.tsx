@@ -4,10 +4,12 @@ import {cn} from "@/shared/lib/utils.ts";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
-import {Maximize2, Minimize2, Copy, ClipboardPaste} from "lucide-react";
+import {Maximize2, Minimize2, Copy, ClipboardPaste, Download} from "lucide-react";
 import {Ast} from "@/features/ast/components/ast/Ast.tsx";
-import {AstEditor} from "@/features/ast/components/ast-editor/AstEditor.tsx";
+import {AstEditor, type AstEditorHandle} from "@/features/ast/components/ast-editor/AstEditor.tsx";
+import {AstNodePaletteDropdowns} from "@/features/ast/components/ast-editor/AstNodePaletteDropdowns.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {ButtonGroup, ButtonGroupSeparator} from "@/shared/components/ui/button-group.tsx";
 import {Tabs, TabsList, TabsTrigger} from "@/shared/components/ui/tabs.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
@@ -35,6 +37,7 @@ export function AstVisualisation({
   const viewerAst = useAppSelector((state) => state.term.ast);
   const hasViewerAst = viewerAst !== null && viewerAst !== undefined;
   const containerRef = useRef<HTMLDivElement>(null);
+  const astEditorRef = useRef<AstEditorHandle>(null);
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
   const [activeTab, setActiveTab] = useState<AstTab>("viewer");
 
@@ -98,26 +101,34 @@ export function AstVisualisation({
 
               {activeTab === "editor" && (
                 <TooltipProvider>
-                  <div className="flex items-center gap-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={copyAstText}>
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy text
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Copy the edited AST as lambda calculus source text</TooltipContent>
-                    </Tooltip>
+                  <div className="flex items-center gap-3">
+                    <ButtonGroup>
+                      <AstNodePaletteDropdowns onInsert={(type) => astEditorRef.current?.addStandaloneNode(type)}/>
+                    </ButtonGroup>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={copyFromViewer} disabled={!viewerAst}>
-                          <ClipboardPaste className="h-3.5 w-3.5" />
-                          Copy from viewer
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Load the Viewer tab's current AST in here for editing</TooltipContent>
-                    </Tooltip>
+                    <ButtonGroupSeparator className="h-6" />
+
+                    <ButtonGroup>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5" onClick={copyAstText}>
+                            <Copy className="h-3.5 w-3.5" />
+                            Copy text
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Copy the edited AST as lambda calculus source text</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5" onClick={copyFromViewer} disabled={!viewerAst}>
+                            <Download className="h-3.5 w-3.5" />
+                            Copy from viewer
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Load the Viewer tab's current AST in here for editing</TooltipContent>
+                      </Tooltip>
+                    </ButtonGroup>
 
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -177,7 +188,7 @@ export function AstVisualisation({
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
                 <ReactFlowProvider>
-                  <AstEditor graph={graph} setGraph={setGraph} AST={editorAst} setAST={setEditorAst} fullScreen={isFullscreen}/>
+                  <AstEditor ref={astEditorRef} graph={graph} setGraph={setGraph} AST={editorAst} setAST={setEditorAst}/>
                 </ReactFlowProvider>
               </div>
               {env.VITE_SHOW_DEBUG_DATA && (

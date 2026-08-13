@@ -1,5 +1,5 @@
 import type {Program} from "@/shared/core/domain/ast";
-import {useCallback, useState, useEffect, useRef} from "react";
+import {useCallback, useState, useEffect, useRef, forwardRef, useImperativeHandle} from "react";
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -8,6 +8,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  Panel,
   type NodeTypes,
   type Connection,
   type Node,
@@ -17,6 +18,7 @@ import {
   type OnConnectEnd,
 } from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
+import {useTheme} from "next-themes";
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
 import {VariableFlowNode} from "@/features/ast/components/ast/flow/VariableFlowNode.tsx";
@@ -27,7 +29,6 @@ import {VarDeclFlowNode} from "@/features/ast/components/ast/flow/VarDeclFlowNod
 import {TypeAliasDeclFlowNode} from "@/features/ast/components/ast/flow/TypeAliasDeclFlowNode.tsx";
 import {LiteralFlowNode} from "@/features/ast/components/ast/flow/LiteralFlowNode.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {Separator} from "@/shared/components/ui/separator.tsx";
 import {
   Select,
   SelectContent,
@@ -77,7 +78,9 @@ import {ListTypeFlowNode} from "@/features/ast/components/ast/flow/ListTypeFlowN
 import {FoldFlowNode} from "@/features/ast/components/ast/flow/FoldFlowNode";
 import {UnfoldFlowNode} from "@/features/ast/components/ast/flow/UnfoldFlowNode";
 import {RecursiveTypeFlowNode} from "@/features/ast/components/ast/flow/RecursiveTypeFlowNode";
-import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2} from "lucide-react";
+import {KindStarFlowNode} from "@/features/ast/components/ast/flow/KindStarFlowNode.tsx";
+import {KindArrowFlowNode} from "@/features/ast/components/ast/flow/KindArrowFlowNode.tsx";
+import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2, Eraser, Map} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
   "global-decl": "decl",
@@ -106,10 +109,13 @@ const HANDLE_LABELS: Record<string, string> = {
 
 export interface AstProps {
   AST: Program,
-  fullScreen?: boolean,
   setAST: (ast: Program) => void,
   graph: AstFlowGraph,
   setGraph:  React.Dispatch<React.SetStateAction<AstFlowGraph>>,
+}
+
+export interface AstEditorHandle {
+  addStandaloneNode: (nodeType: string) => void;
 }
 
 function TypeFlowNodeDispatch(props: any) {
@@ -144,6 +150,16 @@ function TypeFlowNodeDispatch(props: any) {
   }
 }
 
+function KindFlowNodeDispatch(props: any) {
+  const kind = (props.data?.term as any)?.kind;
+  switch (kind) {
+    case "KindArrow":
+      return <KindArrowFlowNode {...props} />;
+    default:
+      return <KindStarFlowNode {...props} />;
+  }
+}
+
 export const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
@@ -155,6 +171,7 @@ export const nodeTypes: NodeTypes = {
   application: ApplicationFlowNode,
   literal: LiteralFlowNode,
   type: TypeFlowNodeDispatch,
+  kind: KindFlowNodeDispatch,
   inl: InlFlowNode,
   inr: InrFlowNode,
   ifCondition: IfConditionFlowNode,
@@ -182,7 +199,7 @@ export const nodeTypes: NodeTypes = {
   unfold: UnfoldFlowNode,
 } as NodeTypes;
 
-type AddOnDropKind = "decl" | "term" | "type";
+type AddOnDropKind = "decl" | "term" | "type" | "kind" | "kindOrType";
 
 // Node kinds whose handles always point at further types. TyIndexApp is
 // excluded — its "arg" handle is a term index, not a type.
@@ -193,6 +210,12 @@ const TYPE_SOURCE_KINDS = new Set(["TyIdentifier", "TyArrow", "SumType", "TupleT
 function expectedChildKind(sourceKind: string | undefined, handleId: string | undefined): AddOnDropKind | null {
   if (!handleId) return null;
   if (handleId === "global-decl") return "decl";
+  // paramKind (TyConstructorAbs / TypeConstructorDecl) always points at a Kind node.
+  if (handleId === "paramKind") return "kind";
+  // KindArrow.to is always another Kind, but .from is Kind | Type — System λP's dependent
+  // kind (e.g. "Nat -> @") connects an ordinary Type node there instead of a Kind node.
+  if (sourceKind === "KindArrow" && handleId === "to") return "kind";
+  if (sourceKind === "KindArrow" && handleId === "from") return "kindOrType";
   if (sourceKind && TYPE_SOURCE_KINDS.has(sourceKind)) return "type";
   if (handleId === "type" || handleId === "paramType" || handleId === "typeArg") return "type";
   return "term";
@@ -209,7 +232,12 @@ const VALID_NODE_TYPES_BY_KIND: Record<AddOnDropKind, string[]> = {
     "nil", "cons", "isNil", "headOp", "tailOp",
     "fold", "unfold",
   ],
-  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp", "listType", "recursiveType"],
+  type: ["typeVar", "typeArrow", "sumType", "tupleType", "variantType", "recordType", "forallType", "typeConstructorAbs", "typeConstructorApp", "typePi", "typeIndexApp", "listType", "recursiveType"],
+  kind: ["kindStar", "kindArrow"],
+  // What "from" on a KindArrow can create fresh: any Kind, or (for the System λP dependent
+  // case) a plain type name — the full Type palette is overkill for something that's almost
+  // always just a base type like "Nat".
+  kindOrType: ["kindStar", "kindArrow", "typeVar"],
 };
 
 // Skeleton for each newly-added node kind; null for the original 8 kinds.
@@ -481,6 +509,38 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
           term: { id: `${id}-term`, kind: "Var", name: "xs" },
         },
       };
+    case "typePi":
+      return {
+        type: "type",
+        term: {
+          id, kind: "TyPi", paramVar: "x",
+          paramType: { id: `${id}-paramType`, kind: "TyIdentifier", name: "A" },
+          body: { id: `${id}-body`, kind: "TyIdentifier", name: "B" },
+        },
+      };
+    case "typeIndexApp":
+      return {
+        type: "type",
+        term: {
+          id, kind: "TyIndexApp",
+          func: { id: `${id}-func`, kind: "TyIdentifier", name: "F" },
+          arg: { id: `${id}-arg`, kind: "Var", name: "n" },
+        },
+      };
+    case "kindStar":
+      return {
+        type: "kind",
+        term: { id, kind: "StarKind" },
+      };
+    case "kindArrow":
+      return {
+        type: "kind",
+        term: {
+          id, kind: "KindArrow",
+          from: { id: `${id}-from`, kind: "StarKind" },
+          to: { id: `${id}-to`, kind: "StarKind" },
+        },
+      };
     case "listType":
       return {
         type: "type",
@@ -527,17 +587,18 @@ function makeDefaultTermNode(nodeType: string, id: string): { type: string; term
 }
 
 // Must run under ReactFlowProvider (required for useReactFlow).
-export function AstEditor({
-  fullScreen = false,
+export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEditor({
   setAST,
   graph,
   setGraph,
-}: AstProps) {
+}, ref) {
   const rf = useReactFlow();
+  const {resolvedTheme} = useTheme();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const [newNodeType_] = useState<string>("variable");
   const pendingAstRef = useRef<Program | null>(null);
+  const [showMiniMap, setShowMiniMap] = useState(false);
 
   const [connectDraft, setConnectDraft] = useState<null | {
     source: string;
@@ -618,14 +679,17 @@ export function AstEditor({
 
     const isDecl = (k?: string) => k === "VarDecl" || k === "FunDecl";
     const isType = (k?: string) => !!k && TYPE_SOURCE_KINDS.has(k);
+    const isKindNode = (k?: string) => k === "StarKind" || k === "KindArrow";
     const isTerm = (k?: string) =>
-      !!k && !isDecl(k) && !isType(k) && k !== "Program";
+      !!k && !isDecl(k) && !isType(k) && !isKindNode(k) && k !== "Program";
 
     const expected = expectedChildKind(sourceKind, params.sourceHandle);
     if (!expected) return false;
 
     if (expected === "decl") return isDecl(targetKind);
     if (expected === "type") return isType(targetKind);
+    if (expected === "kind") return isKindNode(targetKind);
+    if (expected === "kindOrType") return isKindNode(targetKind) || isType(targetKind);
     return isTerm(targetKind);
   }, []);
 
@@ -842,6 +906,8 @@ export function AstEditor({
       nodes: [...prevGraph.nodes, makeNode() as AstFlowGraph["nodes"][number]],
     }));
   }, [graph, newNodeType_, setGraph, snapshotHistory, updateNodeTerm]);
+
+  useImperativeHandle(ref, () => ({addStandaloneNode}), [addStandaloneNode]);
 
   const autoLayout = useCallback(() => {
     snapshotHistory(graph);
@@ -1275,7 +1341,7 @@ export function AstEditor({
   return (
     <div
       ref={wrapperRef}
-      style={{ width: '100%', height: fullScreen ? '80vh' : '600px' }}
+      style={{ width: '100%', height: '100%' }}
       className="relative"
       onKeyDown={onEditorKeyDown}
     >
@@ -1343,250 +1409,6 @@ export function AstEditor({
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b bg-background/60 flex-wrap">
-        {/* Term nodes */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Terms</span>
-          {([
-            { type: "abstraction", label: "λ", title: "Abstraction (λx.e)" },
-            { type: "application", label: "@", title: "Application (f x)" },
-            { type: "variable",    label: "x", title: "Variable" },
-            { type: "literal",     label: "#", title: "Literal (0, true, unit)" },
-            { type: "dummyAbstraction", label: "λ_", title: "Dummy Abstraction (λ_:T.t)" },
-            { type: "sequencing",  label: ";", title: "Sequencing (t1;t2)" },
-            { type: "ascribe",     label: "as", title: "Ascription (t as T)" },
-            { type: "let",         label: "let", title: "Let (let x = t1 in t2, with let-polymorphism)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 w-7 p-0 font-mono font-bold text-sm">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Arithmetic / comparison */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Math</span>
-          {([
-            { type: "binOp", label: "+/<", title: "Arithmetic or comparison (t1 op t2)" },
-            { type: "fix",   label: "fix", title: "Fixpoint operator (fix t, t : T -> T)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Sum / variant terms */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Sums</span>
-          {([
-            { type: "inl",         label: "inl", title: "Left injection (inl t as T1+T2)" },
-            { type: "inr",         label: "inr", title: "Right injection (inr t as T1+T2)" },
-            { type: "case",        label: "case", title: "Case analysis on a sum type" },
-            { type: "variant",     label: "[l=]", title: "Variant literal ([l=t] as VariantType)" },
-            { type: "variantCase", label: "vcase", title: "Case analysis on a variant type" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* List terms (Lecture 06) */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Lists</span>
-          {([
-            { type: "nil",    label: "nil",   title: "Empty list (nil[T])" },
-            { type: "cons",   label: "cons",  title: "Cons — prepend an element (cons[T] t1 t2)" },
-            { type: "isNil",  label: "isnil", title: "Is the list empty? (isnil[T] t)" },
-            { type: "headOp", label: "head",  title: "First element (head[T] t)" },
-            { type: "tailOp", label: "tail",  title: "Remaining elements (tail[T] t)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Iso-recursive types (Lecture 06) */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Recursive (μ)</span>
-          {([
-            { type: "fold",   label: "fold",   title: "Fold — into μX.T (fold[μX.T] t)" },
-            { type: "unfold", label: "unfold", title: "Unfold — out of μX.T (unfold[μX.T] t)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Tuple / record terms */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Tuples/Records</span>
-          {([
-            { type: "tuple",            label: "⟨,⟩", title: "Tuple literal" },
-            { type: "tupleProjection",  label: ".i", title: "Tuple projection (t.i)" },
-            { type: "record",           label: "⟨l=⟩", title: "Record literal" },
-            { type: "recordProjection", label: ".l", title: "Record projection (t.l)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Control flow */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Control</span>
-          {([
-            { type: "ifCondition", label: "if", title: "Conditional (if/then/elseif/else)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Type nodes */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Types</span>
-          {([
-            { type: "typeVar",     label: "T", title: "Type Variable" },
-            { type: "typeArrow",   label: "→", title: "Arrow Type (A→B)" },
-            { type: "sumType",     label: "+", title: "Sum Type (A+B)" },
-            { type: "tupleType",   label: "⟨*⟩", title: "Tuple Type (A*B)" },
-            { type: "variantType", label: "[l:]", title: "Variant Type ([l:T,...])" },
-            { type: "recordType",  label: "{l:}", title: "Record Type (synthesized)" },
-            { type: "forallType",  label: "∀", title: "Forall Type (∀X. T)" },
-            { type: "listType",    label: "List", title: "List Type (List T)" },
-            { type: "recursiveType", label: "μ", title: "Recursive Type (μX. T)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* System F */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">System F</span>
-          {([
-            { type: "typeAbs", label: "Λ",   title: "Type Abstraction (ΛX. t)" },
-            { type: "typeApp", label: "[T]", title: "Type Application (t [T])" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* System Fω — type constructors */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">System Fω</span>
-          {([
-            { type: "typeConstructorAbs", label: "λX:@", title: "Type Constructor Abstraction (λX:K. T)" },
-            { type: "typeConstructorApp", label: "F T",  title: "Type Constructor Application (F T)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        {/* Decl nodes */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5">Decls</span>
-          {([
-            { type: "funDecl", label: "ƒ",   title: "Function Declaration" },
-            { type: "varDecl", label: "let", title: "Variable Declaration" },
-            { type: "typeAliasDecl", label: "typedef", title: "Type Alias (typedef X = T)" },
-          ] as const).map(({ type, label, title }) => (
-            <Button key={type} size="sm" variant="outline" title={title}
-              onClick={() => addStandaloneNode(type)}
-              className="h-7 px-2 font-mono font-bold text-xs">
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="ml-auto flex items-center gap-1">
-          <Button size="sm" variant="ghost" onClick={undo} title="Undo (Ctrl+Z)"
-            className="h-7 w-7 p-0">
-            <Undo2 className="h-3.5 w-3.5" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={redo} title="Redo (Ctrl+Y)"
-            className="h-7 w-7 p-0">
-            <Redo2 className="h-3.5 w-3.5" />
-          </Button>
-
-          <Separator orientation="vertical" className="h-5 mx-1" />
-
-          <Button size="sm" variant="ghost" onClick={autoLayout} title="Auto Layout"
-            className="h-7 w-7 p-0">
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => rf.fitView()} title="Center View"
-            className="h-7 w-7 p-0">
-            <Crosshair className="h-3.5 w-3.5" />
-          </Button>
-
-          <Separator orientation="vertical" className="h-5 mx-1" />
-
-          <Button size="sm" variant="ghost" onClick={deleteSelection}
-            disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}
-            title="Delete selection (Del)" className="h-7 w-7 p-0">
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={clearAll}
-            title="Clear all nodes and edges"
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive">
-            Clear
-          </Button>
-        </div>
-      </div>
-
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
@@ -1606,6 +1428,7 @@ export function AstEditor({
         nodesConnectable={true}
         deleteKeyCode={null}
         panActivationKeyCode={null}
+        colorMode={resolvedTheme === "dark" ? "dark" : "light"}
         defaultEdgeOptions={{
           labelStyle: { fontSize: 10 },
           labelBgPadding: [3, 4] as [number, number],
@@ -1614,11 +1437,44 @@ export function AstEditor({
         }}
         fitView
       >
+        <Panel position="top-right">
+          <div className="flex gap-2">
+            <Button size="icon" variant="secondary" onClick={undo} title="Undo (Ctrl+Z)"
+              className="shadow-lg hover:shadow-xl transition-shadow">
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="secondary" onClick={redo} title="Redo (Ctrl+Y)"
+              className="shadow-lg hover:shadow-xl transition-shadow">
+              <Redo2 className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="secondary" onClick={autoLayout} title="Auto Layout"
+              className="shadow-lg hover:shadow-xl transition-shadow">
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="secondary" onClick={() => rf.fitView()} title="Center View"
+              className="shadow-lg hover:shadow-xl transition-shadow">
+              <Crosshair className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="secondary" onClick={deleteSelection}
+              disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}
+              title="Delete selection (Del)" className="shadow-lg hover:shadow-xl transition-shadow">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="secondary" onClick={clearAll}
+              title="Clear all nodes and edges"
+              className="shadow-lg hover:shadow-xl transition-shadow hover:text-destructive">
+              <Eraser className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant={showMiniMap ? "secondary" : "outline"}
+              onClick={() => setShowMiniMap((prev) => !prev)}
+              title={showMiniMap ? "Hide Minimap" : "Show Minimap"}
+              className="shadow-lg hover:shadow-xl transition-shadow">
+              <Map className="h-4 w-4" />
+            </Button>
+          </div>
+        </Panel>
         <Background />
-        <Controls
-          className="bg-background! border-border! [&_button]:bg-card! [&_button]:border-border! [&_button]:text-foreground! [&_button:hover]:bg-accent!"
-        />
-        <MiniMap
+        {showMiniMap && <MiniMap
           className="bg-background! border-border!"
           nodeColor={(node) => {
             if (node.type === 'program') return 'hsl(var(--primary))';
@@ -1647,8 +1503,8 @@ export function AstEditor({
             if (node.type === 'typeAliasDecl') return 'hsl(48, 96%, 53%)';
             return 'hsl(var(--muted))';
           }}
-        />
+        />}
       </ReactFlow>
     </div>
   );
-}
+});

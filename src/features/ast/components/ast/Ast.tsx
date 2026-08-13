@@ -2,7 +2,8 @@ import type {Program} from "@/shared/core/domain/ast";
 import {useCallback, useState, useEffect} from "react";
 import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, Controls, MiniMap, Panel, useReactFlow, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
-import {Crosshair} from "lucide-react";
+import {useTheme} from "next-themes";
+import {Crosshair, Map} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
@@ -54,6 +55,8 @@ import {ListTypeFlowNode} from "@/features/ast/components/ast/flow/ListTypeFlowN
 import {FoldFlowNode} from "@/features/ast/components/ast/flow/FoldFlowNode";
 import {UnfoldFlowNode} from "@/features/ast/components/ast/flow/UnfoldFlowNode";
 import {RecursiveTypeFlowNode} from "@/features/ast/components/ast/flow/RecursiveTypeFlowNode";
+import {KindStarFlowNode} from "@/features/ast/components/ast/flow/KindStarFlowNode.tsx";
+import {KindArrowFlowNode} from "@/features/ast/components/ast/flow/KindArrowFlowNode.tsx";
 
 
 export interface AstProps {
@@ -92,6 +95,16 @@ function TypeFlowNodeDispatch(props: any) {
   }
 }
 
+function KindFlowNodeDispatch(props: any) {
+  const kind = (props.data?.term as any)?.kind;
+  switch (kind) {
+    case "KindArrow":
+      return <KindArrowFlowNode {...props} />;
+    default:
+      return <KindStarFlowNode {...props} />;
+  }
+}
+
 // Needs the ReactFlow context from its parent <Panel>.
 function CenterViewButton() {
   const rf = useReactFlow();
@@ -108,6 +121,20 @@ function CenterViewButton() {
   );
 }
 
+function MiniMapToggleButton({showMiniMap, setShowMiniMap}: {showMiniMap: boolean; setShowMiniMap: (v: (prev: boolean) => boolean) => void}) {
+  return (
+    <Button
+      size="icon"
+      variant={showMiniMap ? "secondary" : "outline"}
+      onClick={() => setShowMiniMap((prev) => !prev)}
+      title={showMiniMap ? "Hide Minimap" : "Show Minimap"}
+      className="shadow-lg hover:shadow-xl transition-shadow"
+    >
+      <Map className="h-4 w-4" />
+    </Button>
+  );
+}
+
 export const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
@@ -117,6 +144,7 @@ export const nodeTypes: NodeTypes = {
   application: ApplicationFlowNode,
   literal: LiteralFlowNode,
   type: TypeFlowNodeDispatch,
+  kind: KindFlowNodeDispatch,
   inl: InlFlowNode,
   inr: InrFlowNode,
   ifCondition: IfConditionFlowNode,
@@ -150,7 +178,9 @@ export function Ast({
   AST,
 } : AstProps) {
   const { mapAstToFlow } = useMapAstToFlow()
+  const { resolvedTheme } = useTheme();
   const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [], edges: [] });
+  const [showMiniMap, setShowMiniMap] = useState(false);
 
   useEffect(() => {
     const newGraph = mapAstToFlow();
@@ -190,13 +220,17 @@ export function Ast({
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         nodesConnectable={false}
+        colorMode={resolvedTheme === "dark" ? "dark" : "light"}
         fitView
       >
         <Panel position="top-right">
-          <CenterViewButton />
+          <div className="flex gap-2">
+            <MiniMapToggleButton showMiniMap={showMiniMap} setShowMiniMap={setShowMiniMap} />
+            <CenterViewButton />
+          </div>
         </Panel>
         <Background />
-        <MiniMap
+        {showMiniMap && <MiniMap
           className="bg-background! border-border!"
           nodeColor={(node) => {
             if (node.type === 'program') return 'hsl(var(--primary))';
@@ -225,7 +259,7 @@ export function Ast({
             if (node.type === 'typeAliasDecl') return 'hsl(48, 96%, 53%)';
             return 'hsl(var(--muted))';
           }}
-        />
+        />}
       </ReactFlow>
     </div>
   );

@@ -188,9 +188,9 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "type", "type", node.type);
   }
 
-  // paramKind is inline data, not a wired-up child node.
   protected visitTypeConstructorDecl(node: TypeConstructorDecl): void {
     this.pushNode(node);
+    this.visitChild(node, "paramKind", "kind", node.paramKind);
   }
 
   protected visitType(node: Type): void {
@@ -242,13 +242,13 @@ export class AstFlowMapper extends AstVisitor<void> {
         return;
 
       case "TyPi":
-        this.visitChild(node, "paramType", "paramType", node.paramType);
         this.visitChild(node, "body", "body", node.body);
+        this.visitChild(node, "paramType", "paramType", node.paramType);
         return;
 
       case "TyIndexApp":
-        this.visitChild(node, "func", "func", node.func);
         this.visitChild(node, "arg", "arg", node.arg);
+        this.visitChild(node, "func", "func", node.func);
         return;
 
       case "ListType":
@@ -423,9 +423,9 @@ export class AstFlowMapper extends AstVisitor<void> {
     this.visitChild(node, "term", "term", node.term);
   }
 
-  // paramKind is inline data, not a wired-up child node.
   protected visitTypeConstructorAbstraction(node: TyConstructorAbs): void {
     this.pushNode(node);
+    this.visitChild(node, "paramKind", "kind", node.paramKind);
     this.visitChild(node, "body", "body", node.body);
   }
 
@@ -437,6 +437,12 @@ export class AstFlowMapper extends AstVisitor<void> {
 
   protected visitKind(node: Kind): void {
     this.pushNode(node);
+    if (node.kind === "KindArrow") {
+      // System λP: `from` may be a Type (T→K) rather than another Kind (K→K) — either way it's
+      // a normal ASTNode, so the generic double-dispatch in `visit` routes it correctly.
+      this.visitChild(node, "to", "to", node.to);
+      this.visitChild(node, "from", "from", node.from);
+    }
   }
 
   private visitChild(parent: ASTNode, handle: string, label: string, child: ASTNode): void {
@@ -625,6 +631,10 @@ export class AstFlowMapper extends AstVisitor<void> {
       case "TyPi":
       case "TyIndexApp":
         this.nodes.push({id: node.id, type: "type", position: {x: 0, y: 0}, data: {term: node as any}} as any);
+        return;
+      case "StarKind":
+      case "KindArrow":
+        this.nodes.push({id: node.id, type: "kind", position: {x: 0, y: 0}, data: {term: node as any}} as any);
         return;
     }
   }

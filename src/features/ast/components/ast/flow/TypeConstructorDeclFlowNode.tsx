@@ -3,6 +3,7 @@ import type {TypeConstructorDeclNodeData} from "@/shared/presentation/flow/types
 import {kindToString} from "@/shared/core/application/typecheck/utils.ts";
 import {Input} from "@/shared/components/ui/input";
 import {cn} from "@/shared/lib/utils";
+import {LimitedHandle} from "./LimitedHandle.tsx";
 
 export function TypeConstructorDeclFlowNode({data, selected}: { data: TypeConstructorDeclNodeData; selected?: boolean }) {
   return (
@@ -36,11 +37,12 @@ export function TypeConstructorDeclFlowNode({data, selected}: { data: TypeConstr
           </div>
         </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">: Kind</label>
-          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-background px-3 py-2">
-            <code className="text-xs font-mono text-foreground/80">{kindToString(data.term.paramKind)}</code>
-          </div>
+        <div className="relative flex flex-col items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800 bg-background/50 px-3 py-3">
+          <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+            {data.editable ? "kind" : kindToString(data.term.paramKind)}
+          </span>
+          <LimitedHandle type="source" position={Position.Bottom} id="paramKind" maxConnections={1}
+            className="!w-3 !h-3 !bg-amber-500 !border-2 !border-background"/>
         </div>
       </div>
     </div>

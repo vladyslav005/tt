@@ -11,6 +11,7 @@ import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {EvaluationStepsViewer, ViewToggle} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
 import {env} from "@/shared/lib/env.ts";
+import {EVALUATION_STRATEGY_LABELS} from "@/shared/core/application/evaluation/type.ts";
 
 interface EvaluationVisualisationProps {
   className?: string;
@@ -44,6 +45,11 @@ export function EvaluationVisualisation({
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3 flex-nowrap overflow-x-auto min-w-0 flex-1">
+              {hasEvaluation && (
+                <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none border-border bg-muted text-muted-foreground whitespace-nowrap">
+                  {EVALUATION_STRATEGY_LABELS[evaluation.strategy]}
+                </span>
+              )}
               {hasSteps && (
                 <>
                   <div className="flex items-center gap-1.5">
