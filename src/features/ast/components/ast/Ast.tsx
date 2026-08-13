@@ -97,9 +97,14 @@ function TypeFlowNodeDispatch(props: any) {
 function CenterViewButton() {
   const rf = useReactFlow();
   return (
-    <Button size="sm" variant="ghost" onClick={() => rf.fitView()} title="Center View"
-      className="h-7 w-7 p-0 bg-background border border-border shadow-sm">
-      <Crosshair className="h-3.5 w-3.5" />
+    <Button
+      size="icon"
+      variant="secondary"
+      onClick={() => rf.fitView()}
+      title="Center View"
+      className="shadow-lg hover:shadow-xl transition-shadow"
+    >
+      <Crosshair className="h-4 w-4" />
     </Button>
   );
 }

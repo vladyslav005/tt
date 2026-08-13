@@ -186,29 +186,31 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
           isFullscreen && "fixed inset-0 z-50 m-0 rounded-none border-0 shadow-none max-h-none",
         )}
       >
-        <CardHeader className="relative">
-          <div className="flex items-center gap-2 flex-wrap pr-10">
-            <ExamplesDropdown onSelect={(code) => {
-              editorRef.current?.setValue(code);
-              dispatch(setTermText(code));
-            }} />
-            <TypeCheckButton />
-            <EvaluateButton />
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-nowrap overflow-x-auto min-w-0 flex-1">
+              <ExamplesDropdown onSelect={(code) => {
+                editorRef.current?.setValue(code);
+                dispatch(setTermText(code));
+              }} />
+              <TypeCheckButton />
+              <EvaluateButton />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullscreen((v) => !v)}
+              title={isFullscreen ? "Exit full screen" : "Full screen"}
+              aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+              className="shrink-0"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsFullscreen((v) => !v)}
-            title={isFullscreen ? "Exit full screen" : "Full screen"}
-            aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
-            className="absolute top-3 right-3"
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
         </CardHeader>
         <CardContent className={cn("p-0 flex-1 min-h-0")}>
           <div className={cn(
-            "relative h-full rounded-xl overflow-hidden border",
+            "relative h-full  rounded-b-md overflow-hidden border",
             isFullscreen && "rounded-none border-0",
           )}>
             <Editor

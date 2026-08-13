@@ -85,61 +85,63 @@ export function AstVisualisation({
       variants={fadeInUp}
     >
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-        <CardHeader className="relative">
-          <div className="flex items-center gap-2 flex-wrap pr-10">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AstTab)}>
-              <TabsList className="shrink-0">
-                <TabsTrigger value="viewer">Viewer</TabsTrigger>
-                <TabsTrigger value="editor">Editor</TabsTrigger>
-              </TabsList>
-            </Tabs>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-nowrap overflow-x-auto min-w-0 flex-1">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AstTab)}>
+                <TabsList className="shrink-0">
+                  <TabsTrigger value="viewer">Viewer</TabsTrigger>
+                  <TabsTrigger value="editor">Editor</TabsTrigger>
+                </TabsList>
+              </Tabs>
 
-            {activeTab === "editor" && (
-              <TooltipProvider>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={copyAstText}>
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy text
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Copy the edited AST as lambda calculus source text</TooltipContent>
-                  </Tooltip>
+              {activeTab === "editor" && (
+                <TooltipProvider>
+                  <div className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={copyAstText}>
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy text
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Copy the edited AST as lambda calculus source text</TooltipContent>
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={copyFromViewer} disabled={!viewerAst}>
-                        <ClipboardPaste className="h-3.5 w-3.5" />
-                        Copy from viewer
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Load the Viewer tab's current AST in here for editing</TooltipContent>
-                  </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={copyFromViewer} disabled={!viewerAst}>
+                          <ClipboardPaste className="h-3.5 w-3.5" />
+                          Copy from viewer
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Load the Viewer tab's current AST in here for editing</TooltipContent>
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="sm" className="gap-1.5" onClick={pasteAstToEditor} disabled={!editorRef}>
-                        <ClipboardPaste className="h-3.5 w-3.5" />
-                        Paste to text editor
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Write the edited AST's source text into the text editor above</TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
-            )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" className="gap-1.5" onClick={pasteAstToEditor} disabled={!editorRef}>
+                          <ClipboardPaste className="h-3.5 w-3.5" />
+                          Paste to text editor
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Write the edited AST's source text into the text editor above</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              )}
+            </div>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggle}
+              className="shrink-0"
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+            </Button>
           </div>
-
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={toggle}
-            className="absolute top-3 right-3 shrink-0"
-            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-          >
-            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-          </Button>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
           {activeTab === "viewer" ? (
