@@ -27,6 +27,7 @@ export function ProofTreeVisualisation({
                                          className
                                        }: ProofTreeVisualisationProps) {
   const proof = useAppSelector((state) => state.term.proof);
+  const proofTheories = useAppSelector((state) => state.term.proofTheories);
   const enabledTheories = useAppSelector((state) => state.term.enabledTheories);
   const {toTexTree, toLogicTree} = useProofHooks()
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,12 +36,17 @@ export function ProofTreeVisualisation({
   const [activeTab, setActiveTab] = useState<ProofTreeTab>("automatic");
   const [stepByStep, setStepByStep] = useState(false);
 
-  const showLogicTab = isPlainStlc(enabledTheories);
+  const hasProof = proof !== null && proof !== undefined;
+  // Gate on the theories the *proof* was derived under, not the live toggle state — otherwise
+  // disabling an extension after checking a term built with it leaves a stale non-STLC proof
+  // that the Logic tab would misrender as if it were a valid Curry-Howard object.
+  const showLogicTab = hasProof
+    ? proofTheories !== undefined && isPlainStlc(proofTheories)
+    : isPlainStlc(enabledTheories);
   const effectiveTab = activeTab === "logic" && !showLogicTab ? "automatic" : activeTab;
 
   const texTree = proof ? toTexTree(proof) : null;
   const logicTree = proof && showLogicTab ? toLogicTree(proof) : null;
-  const hasProof = proof !== null && proof !== undefined;
 
   return (
     <motion.div
@@ -113,7 +119,7 @@ export function ProofTreeVisualisation({
               </p>
             </div>
           ) : effectiveTab === "logic" ? (
-            logicTree && (
+            logicTree ? (
               <div className="w-full h-full flex flex-col space-y-4">
                 <ProofTreeCanvas texTree={logicTree} treeKey={`logic-${proof?.id ?? "none"}`} exportFilename="logic-tree.tex"/>
                 <details className="group">
@@ -128,6 +134,12 @@ export function ProofTreeVisualisation({
                     </pre>
                   </div>
                 </details>
+              </div>
+            ) : (
+              <div className="p-6 text-center rounded-xl bg-muted/30 border">
+                <p className="text-sm text-muted-foreground">
+                  This proof uses rules outside plain STLC, so it has no clean Curry-Howard reading.
+                </p>
               </div>
             )
           ) : (

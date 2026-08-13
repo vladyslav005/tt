@@ -49,7 +49,7 @@ export function useTermHooks() {
         dispatch(setErrorMarkers(error.errors));
       }
       dispatch(setAst(undefined))
-      dispatch(setProof(undefined))
+      dispatch(setProof({proof: undefined}))
       return;
     }
 
@@ -75,13 +75,13 @@ export function useTermHooks() {
         dispatch(setErrorMarkers(typeMarkers));
       }
 
-      dispatch(setProof(proof));
+      dispatch(setProof({proof, theories: enabledTheories}));
       dispatch(setTypeAliases(typeCheckerSLTC.getTypeAliases()));
 
     } catch (error) {
       console.error("Error typechecking term:", error);
       dispatch(pushProcessingError(new Error(`${(error as Error).message}`)));
-      dispatch(setProof(undefined));
+      dispatch(setProof({proof: undefined}));
     }
   }
 

@@ -2,6 +2,7 @@ import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
 import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
+import {NonStlcProofError} from "@/shared/presentation/tex/LogicMapper.ts";
 
 
 export function useProofHooks() {
@@ -13,9 +14,15 @@ export function useProofHooks() {
     return texMapper.visit(proof);
   }
 
-  function toLogicTree(proof: ProofTree): TexTree {
+  // Returns null (rather than a mismatched tree) when `proof` uses rules outside plain STLC.
+  function toLogicTree(proof: ProofTree): TexTree | null {
     logicMapper.setTypeAliases(typeAliases);
-    return logicMapper.visit(proof);
+    try {
+      return logicMapper.visit(proof);
+    } catch (error) {
+      if (error instanceof NonStlcProofError) return null;
+      throw error;
+    }
   }
 
   return {toTexTree, toLogicTree}

@@ -10,6 +10,39 @@ const CONNECTIVE_RULES: ReadonlySet<Rule> = new Set([
   Rule.Var, Rule.Abs, Rule.App, Rule.Tuple, Rule.TupleProjection, Rule.Inl, Rule.Inr, Rule.Case,
 ]);
 
+// Every rule tag that only a type-theory extension can produce: Fold/Unfold (iso-recursive),
+// TypeAbs/TypeApp (System F), TyConstructorAbs/App (System Fω), TPiApp (System λP), and the whole
+// Ct-prefixed family (constraint-based checking, emitted once type inference or let-polymorphism
+// is generalizing/inferring). A tree containing any of these has no clean Curry-Howard reading.
+const NON_STLC_RULES: ReadonlySet<Rule> = new Set([
+  Rule.Fold, Rule.Unfold,
+  Rule.TypeAbs, Rule.TypeApp,
+  Rule.TyConstructorAbs, Rule.TyConstructorApp,
+  Rule.TPiApp,
+  Rule.CtVarLet, Rule.CtVar, Rule.CtAbs, Rule.CtAbsInf, Rule.CtApp, Rule.CtLit, Rule.CtIf,
+  Rule.CtInl, Rule.CtInr, Rule.CtCase, Rule.CtVariantCase, Rule.CtVariant, Rule.CtAscribe,
+  Rule.CtTuple, Rule.CtTupleProjection, Rule.CtRecord, Rule.CtRecordProjection,
+  Rule.CtSequencing, Rule.CtDummyAbs, Rule.CtLet, Rule.CtBinOp, Rule.CtFix,
+  Rule.CtNil, Rule.CtCons, Rule.CtIsNil, Rule.CtHead, Rule.CtTail, Rule.CtFold, Rule.CtUnfold,
+]);
+
+// A kindPremise (Δ ⊢ T :: K) only ever gets attached once a type mentions a λω̲ constructor or a
+// Π-type, i.e. only under System Fω / System λP — so its mere presence marks the proof impure too.
+export function isPlainStlcProof(node: ProofTree): boolean {
+  if (NON_STLC_RULES.has(node.rule)) return false;
+  if (node.kindPremise) return false;
+  return node.premises.every(isPlainStlcProof);
+}
+
+// Thrown by LogicMapper when asked to map a proof that isn't plain STLC — callers should treat
+// this the same as "no logic tree available" rather than let a mismatched theory render through.
+export class NonStlcProofError extends Error {
+  constructor() {
+    super("Cannot render a Curry-Howard logic tree for a proof that uses non-STLC type rules.");
+    this.name = "NonStlcProofError";
+  }
+}
+
 function isUnitLit(node: ProofTree): boolean {
   const value = (node.term as any).value;
   return node.rule === Rule.Lit && (value === "unit" || value === "Unit");
@@ -60,6 +93,7 @@ export class LogicMapper {
 
   visit(node: ProofTree): TexTree {
     if (!this.registryBuilt) {
+      if (!isPlainStlcProof(node)) throw new NonStlcProofError();
       this.buildGammaRegistry(node, null);
       this.registryBuilt = true;
     }
