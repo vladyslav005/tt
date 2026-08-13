@@ -1,10 +1,10 @@
 import {useRef, useState} from "react";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {cn} from "@/shared/lib/utils.ts";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
+import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
-import {Layers, Maximize2, Minimize2, Copy, ClipboardPaste} from "lucide-react";
+import {Maximize2, Minimize2, Copy, ClipboardPaste} from "lucide-react";
 import {Ast} from "@/features/ast/components/ast/Ast.tsx";
 import {AstEditor} from "@/features/ast/components/ast-editor/AstEditor.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
@@ -85,22 +85,8 @@ export function AstVisualisation({
       variants={fadeInUp}
     >
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-        <CardHeader>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-500">
-                <Layers className="h-5 w-5"/>
-              </div>
-              <div>
-                <CardTitle className="text-2xl">Abstract Syntax Tree</CardTitle>
-                <CardDescription>
-                  {activeTab === "viewer"
-                    ? (hasViewerAst ? "Interactive visualization of the program structure" : "No AST available")
-                    : "Build a program by editing the AST directly"}
-                </CardDescription>
-              </div>
-            </div>
-
+        <CardHeader className="relative">
+          <div className="flex items-center gap-2 flex-wrap pr-10">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AstTab)}>
               <TabsList className="shrink-0">
                 <TabsTrigger value="viewer">Viewer</TabsTrigger>
@@ -108,48 +94,9 @@ export function AstVisualisation({
               </TabsList>
             </Tabs>
 
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={toggle}
-              className="shrink-0 justify-self-end"
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
-          {activeTab === "viewer" ? (
-            hasViewerAst ? (
-              <div className="space-y-4 h-full flex flex-col">
-                <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
-                  <Ast AST={viewerAst} fullScreen={isFullscreen}/>
-                </div>
-                <details className="group">
-                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
-                    <span className="inline-flex items-center gap-2">
-                      View Raw AST Data (DEBUG)
-                    </span>
-                  </summary>
-                  <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
-                    <pre className="text-xs overflow-x-auto text-foreground/80">
-                      {JSON.stringify(viewerAst, null, 2)}
-                    </pre>
-                  </div>
-                </details>
-              </div>
-            ) : (
-              <div className="p-6 text-center rounded-xl bg-muted/30 border">
-                <p className="text-sm text-muted-foreground">
-                  Type a valid expression to generate an AST.
-                </p>
-              </div>
-            )
-          ) : (
-            <div className="space-y-4 h-full flex flex-col">
+            {activeTab === "editor" && (
               <TooltipProvider>
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5" onClick={copyAstText}>
@@ -181,6 +128,48 @@ export function AstVisualisation({
                   </Tooltip>
                 </div>
               </TooltipProvider>
+            )}
+          </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggle}
+            className="absolute top-3 right-3 shrink-0"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </Button>
+        </CardHeader>
+        <CardContent className="flex-1 overflow-hidden">
+          {activeTab === "viewer" ? (
+            hasViewerAst ? (
+              <div className="space-y-4 h-full flex flex-col">
+                <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
+                  <Ast AST={viewerAst} fullScreen={isFullscreen}/>
+                </div>
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+                    <span className="inline-flex items-center gap-2">
+                      View Raw AST Data (DEBUG)
+                    </span>
+                  </summary>
+                  <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+                    <pre className="text-xs overflow-x-auto text-foreground/80">
+                      {JSON.stringify(viewerAst, null, 2)}
+                    </pre>
+                  </div>
+                </details>
+              </div>
+            ) : (
+              <div className="p-6 text-center rounded-xl bg-muted/30 border">
+                <p className="text-sm text-muted-foreground">
+                  Type a valid expression to generate an AST.
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="space-y-4 h-full flex flex-col">
               <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
                 <ReactFlowProvider>
                   <AstEditor graph={graph} setGraph={setGraph} AST={editorAst} setAST={setEditorAst} fullScreen={isFullscreen}/>

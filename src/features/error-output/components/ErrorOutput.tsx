@@ -1,8 +1,7 @@
 import {cn} from "@/shared/lib/utils.ts";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
+import {Card, CardContent} from "@/shared/components/ui/card.tsx";
 import {motion} from "framer-motion";
-import {AlertCircle, CheckCircle2} from "lucide-react";
 
 export interface ErrorOutputProps {
   className?: string;
@@ -28,34 +27,8 @@ export function ErrorOutput({
       animate="animate"
       variants={fadeInUp}
     >
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "p-2 rounded-xl",
-              hasErrors
-                ? "bg-destructive/10 text-destructive"
-                : "bg-green-500/10 text-green-600 dark:text-green-500"
-            )}>
-              {hasErrors ? (
-                <AlertCircle className="h-5 w-5" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5" />
-              )}
-            </div>
-            <div>
-              <CardTitle className="text-2xl">
-                {hasErrors ? "Errors" : "Status"}
-              </CardTitle>
-              <CardDescription>
-                {hasErrors
-                  ? `Found ${errors.length} error${errors.length !== 1 ? 's' : ''}`
-                  : "No errors detected"}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
+        <CardContent className="pt-6 flex-1 overflow-auto">
           {hasErrors ? (
             <div className="space-y-3">
               {errors.map((error, index) => (

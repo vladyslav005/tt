@@ -7,9 +7,9 @@ import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx"
 import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
+import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {Maximize2, Minimize2, Terminal} from "lucide-react";
+import {Maximize2, Minimize2} from "lucide-react";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
@@ -182,47 +182,34 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     >
       <Card
         className={cn(
-          "relative shadow-lg hover:shadow-xl transition-shadow duration-300",
-          isFullscreen && "fixed inset-0 z-50 m-0 flex flex-col rounded-none border-0 shadow-none max-h-none",
+          "relative shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col",
+          isFullscreen && "fixed inset-0 z-50 m-0 rounded-none border-0 shadow-none max-h-none",
         )}
       >
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-500">
-                <Terminal className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">Lambda Expression Editor</CardTitle>
-                <CardDescription>
-                  Write and test your lambda calculus expressions
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <ExamplesDropdown onSelect={(code) => {
-                editorRef.current?.setValue(code);
-                dispatch(setTermText(code));
-              }} />
-              <TypeCheckButton />
-              <EvaluateButton />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsFullscreen((v) => !v)}
-                title={isFullscreen ? "Exit full screen" : "Full screen"}
-                aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
-              >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-            </div>
+        <CardHeader className="relative">
+          <div className="flex items-center gap-2 flex-wrap pr-10">
+            <ExamplesDropdown onSelect={(code) => {
+              editorRef.current?.setValue(code);
+              dispatch(setTermText(code));
+            }} />
+            <TypeCheckButton />
+            <EvaluateButton />
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullscreen((v) => !v)}
+            title={isFullscreen ? "Exit full screen" : "Full screen"}
+            aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+            className="absolute top-3 right-3"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
         </CardHeader>
-        <CardContent className={cn("p-0", isFullscreen && "flex-1 min-h-0")}>
+        <CardContent className={cn("p-0 flex-1 min-h-0")}>
           <div className={cn(
-            "relative rounded-xl overflow-hidden border",
-            isFullscreen && "h-full rounded-none border-0",
+            "relative h-full rounded-xl overflow-hidden border",
+            isFullscreen && "rounded-none border-0",
           )}>
             <Editor
               height={isFullscreen ? "100%" : height}

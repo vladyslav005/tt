@@ -3,15 +3,10 @@ import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {useProofHooks} from "@/shared/hooks/processProofHooks.ts";
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
-import {Network, Maximize2, Minimize2, AlertTriangle} from "lucide-react";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
+import {Maximize2, Minimize2} from "lucide-react";
 import {isPlainStlc} from "@/shared/core/domain/typeTheory.ts";
 import {ProofTreeCanvas} from "@/features/proof-tree/components/ProofTreeCanvas.tsx";
-
-function countTreeErrors(node: TexTree): number {
-  return (node.error ? 1 : 0) + (node.children ?? []).reduce((n, c) => n + countTreeErrors(c), 0);
-}
 import {Button} from "@/shared/components/ui/button.tsx";
 import {useRef, useState} from "react";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
@@ -46,46 +41,22 @@ export function ProofTreeVisualisation({
   const texTree = proof ? toTexTree(proof) : null;
   const logicTree = proof && showLogicTab ? toLogicTree(proof) : null;
   const hasProof = proof !== null && proof !== undefined;
-  const treeErrorCount = texTree ? countTreeErrors(texTree) : 0;
 
   return (
     <motion.div
       ref={containerRef}
       className={cn(
         className,
-        "h-full max-w-full overflow-hidden",
+        "h-full",
         isPseudoFullscreen && "fixed inset-0 z-50 m-0 h-[100dvh] w-[100dvw] overflow-auto bg-background",
       )}
       initial="initial"
       animate="animate"
       variants={fadeInUp}
     >
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col overflow-hidden">
-        <CardHeader>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "p-2 rounded-xl",
-                treeErrorCount > 0 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
-              )}>
-                {treeErrorCount > 0
-                  ? <AlertTriangle className="h-5 w-5" />
-                  : <Network className="h-5 w-5" />
-                }
-              </div>
-              <div>
-                <CardTitle className="text-2xl">Proof Tree</CardTitle>
-                <CardDescription>
-                  {!hasProof
-                    ? "No proof tree available"
-                    : treeErrorCount > 0
-                      ? `Type derivation contains ${treeErrorCount} error${treeErrorCount !== 1 ? "s" : ""} — hover nodes for details`
-                      : "Type derivation tree visualization"
-                  }
-                </CardDescription>
-              </div>
-            </div>
-
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
+        <CardHeader className="relative">
+          <div className="flex items-center gap-3 flex-wrap pr-10">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProofTreeTab)}>
               <TabsList className="shrink-0">
                 <TabsTrigger value="automatic">Automatic</TabsTrigger>
@@ -109,26 +80,25 @@ export function ProofTreeVisualisation({
               </TabsList>
             </Tabs>
 
-            <div className="flex items-center gap-3 justify-self-end">
-              {effectiveTab === "automatic" && hasProof && (
-                <div className="flex items-center gap-2">
-                  <Switch id="step-by-step" checked={stepByStep} onCheckedChange={setStepByStep}/>
-                  <Label htmlFor="step-by-step" className="text-sm text-muted-foreground whitespace-nowrap">
-                    Step by step
-                  </Label>
-                </div>
-              )}
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggle}
-                className="shrink-0"
-                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-              </Button>
-            </div>
+            {effectiveTab === "automatic" && hasProof && (
+              <div className="flex items-center gap-2">
+                <Switch id="step-by-step" checked={stepByStep} onCheckedChange={setStepByStep}/>
+                <Label htmlFor="step-by-step" className="text-sm text-muted-foreground whitespace-nowrap">
+                  Step by step
+                </Label>
+              </div>
+            )}
           </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggle}
+            className="absolute top-3 right-3 shrink-0"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </Button>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden flex flex-col">
           <div className="flex-1 min-h-0 overflow-hidden">

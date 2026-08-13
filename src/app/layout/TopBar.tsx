@@ -118,7 +118,7 @@ export function Topbar() {
           </div>
         </div>
 
-        {/* Active extensions badges, pinned straddling the topbar's bottom edge */}
+         {/*Active extensions badges, pinned straddling the topbar's bottom edge */}
         <div className="hidden md:flex absolute -bottom-2.5 left-4 sm:left-6 lg:left-8 max-w-[60%] flex-wrap justify-start gap-1">
           <ActiveExtensionsBadges />
         </div>

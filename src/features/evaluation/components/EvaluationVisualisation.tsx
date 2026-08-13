@@ -4,19 +4,12 @@ import {useFullscreen} from "@/shared/hooks/useFullscreen.ts";
 import {motion} from "framer-motion";
 import {cn} from "@/shared/lib/utils.ts";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
-import {Calculator, Maximize2, Minimize2} from "lucide-react";
+import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
+import {Maximize2, Minimize2} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {EvaluationStepsViewer, ViewToggle} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
-import {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
-
-const strategyLabel: Record<EvaluationStrategy, string> = {
-  [EvaluationStrategy.NORMAL]: "Normal Order",
-  [EvaluationStrategy.CALL_BY_VALUE]: "Call by Value",
-  [EvaluationStrategy.CALL_BY_NAME]: "Call by Name",
-};
 
 interface EvaluationVisualisationProps {
   className?: string;
@@ -47,51 +40,30 @@ export function EvaluationVisualisation({
       variants={fadeInUp}
     >
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-        <CardHeader>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-500">
-                <Calculator className="h-5 w-5"/>
-              </div>
-              <div>
-                <CardTitle className="text-2xl">Evaluation</CardTitle>
-                <CardDescription>
-                  {hasEvaluation ? (
-                    <span className="flex items-center gap-2 flex-wrap">
-                      <span>Step-by-step reduction</span>
-                      <span className="inline-flex items-center rounded-md border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-600 dark:text-orange-400">
-                        {strategyLabel[evaluation.strategy]}
-                      </span>
-                    </span>
-                  ) : "No evaluation available"}
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {hasSteps && (
-                <>
-                  <div className="flex items-center gap-1.5">
-                    <Switch id="show-gamma" checked={showGamma} onCheckedChange={setShowGamma}/>
-                    <Label htmlFor="show-gamma" className="text-sm text-muted-foreground whitespace-nowrap">
-                      Γ context
-                    </Label>
-                  </div>
-                  <ViewToggle mode={viewMode} onChange={setViewMode}/>
-                </>
-              )}
-            </div>
-
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={toggle}
-              className="shrink-0 justify-self-end"
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-            </Button>
+        <CardHeader className="relative">
+          <div className="flex items-center gap-3 flex-wrap pr-10">
+            {hasSteps && (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <Switch id="show-gamma" checked={showGamma} onCheckedChange={setShowGamma}/>
+                  <Label htmlFor="show-gamma" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Γ context
+                  </Label>
+                </div>
+                <ViewToggle mode={viewMode} onChange={setViewMode}/>
+              </>
+            )}
           </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggle}
+            className="absolute top-3 right-3 shrink-0"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </Button>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
           {hasEvaluation ? (
