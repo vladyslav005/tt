@@ -71,6 +71,10 @@ function applyGrid(api: DockviewApi, editorParams: EditorPanelParams): void {
     params: editorParams,
     position: {referencePanel: "proofTree", direction: "below"},
   });
+
+  if (api.width > 0) {
+    api.getPanel("editor")?.api.setSize({width: Math.round(api.width * 0.35)});
+  }
 }
 
 function addResultTabs(api: DockviewApi, editorParams: EditorPanelParams): void {

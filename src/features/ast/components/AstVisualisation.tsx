@@ -149,7 +149,7 @@ export function AstVisualisation({
             hasViewerAst ? (
               <div className="space-y-4 h-full flex flex-col">
                 <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
-                  <Ast AST={viewerAst} fullScreen={isFullscreen}/>
+                  <Ast AST={viewerAst}/>
                 </div>
                 {env.VITE_SHOW_DEBUG_DATA && (
                   <details className="group">

@@ -31,3 +31,4 @@ src/shared/core/main.ts
 generate_parser.sh
 
 desc.md
+/.env

@@ -58,7 +58,6 @@ import {RecursiveTypeFlowNode} from "@/features/ast/components/ast/flow/Recursiv
 
 export interface AstProps {
   AST: Program,
-  fullScreen?: boolean,
 }
 
 function TypeFlowNodeDispatch(props: any) {
@@ -149,7 +148,6 @@ export const nodeTypes: NodeTypes = {
 
 export function Ast({
   AST,
-  fullScreen = false,
 } : AstProps) {
   const { mapAstToFlow } = useMapAstToFlow()
   const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [], edges: [] });
@@ -183,7 +181,7 @@ export function Ast({
   );
 
   return (
-    <div style={{ width: '100%', height: fullScreen ? '80vh' :'600px' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
@@ -198,9 +196,6 @@ export function Ast({
           <CenterViewButton />
         </Panel>
         <Background />
-        <Controls
-          className="bg-background! border-border! [&_button]:bg-card! [&_button]:border-border! [&_button]:text-foreground! [&_button:hover]:bg-accent!"
-        />
         <MiniMap
           className="bg-background! border-border!"
           nodeColor={(node) => {
