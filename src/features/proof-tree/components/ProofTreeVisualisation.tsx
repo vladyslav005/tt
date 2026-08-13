@@ -4,7 +4,8 @@ import {useProofHooks} from "@/shared/hooks/processProofHooks.ts";
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
-import {Maximize2, Minimize2} from "lucide-react";
+import {Maximize2, Minimize2, ListTree, Info} from "lucide-react";
+import {EmptyState} from "@/shared/components/EmptyState.tsx";
 import {isPlainStlc} from "@/shared/core/domain/typeTheory.ts";
 import {ProofTreeCanvas} from "@/features/proof-tree/components/ProofTreeCanvas.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
@@ -109,24 +110,22 @@ export function ProofTreeVisualisation({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-hidden flex flex-col">
+        <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
           <div className="flex-1 min-h-0 overflow-hidden">
           {effectiveTab === "build-check" ? (
             <div className="h-full overflow-auto">
               <ProofTreeBuilder/>
             </div>
           ) : !hasProof ? (
-            <div className="p-6 text-center rounded-xl bg-muted/30 border">
-              <p className="text-sm text-muted-foreground">
-                Type a valid expression to generate a proof tree.
-              </p>
+            <div className="h-full p-6">
+              <EmptyState icon={ListTree} message="Type a valid expression to generate a proof tree." />
             </div>
           ) : effectiveTab === "logic" ? (
             logicTree ? (
-              <div className="w-full h-full flex flex-col space-y-4">
+              <div className="w-full h-full flex flex-col">
                 <ProofTreeCanvas texTree={logicTree} treeKey={`logic-${proof?.id ?? "none"}`} exportFilename="logic-tree.tex"/>
                 {env.VITE_SHOW_DEBUG_DATA && (
-                  <details className="group">
+                  <details className="group mx-6 mb-6 mt-4">
                     <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                       <span className="inline-flex items-center gap-2">
                         View Raw Logic Tree Data (DEBUG)
@@ -141,14 +140,12 @@ export function ProofTreeVisualisation({
                 )}
               </div>
             ) : (
-              <div className="p-6 text-center rounded-xl bg-muted/30 border">
-                <p className="text-sm text-muted-foreground">
-                  This proof uses rules outside plain STLC, so it has no clean Curry-Howard reading.
-                </p>
+              <div className="h-full p-6">
+                <EmptyState icon={Info} message="This proof uses rules outside plain STLC, so it has no clean Curry-Howard reading." />
               </div>
             )
           ) : (
-            <div className="w-full h-full  flex flex-col space-y-4">
+            <div className="w-full h-full flex flex-col">
               {texTree && (
                 <ProofTreeCanvas
                   texTree={texTree}
@@ -158,7 +155,7 @@ export function ProofTreeVisualisation({
                 />
               )}
               {env.VITE_SHOW_DEBUG_DATA && (
-                <details className="group">
+                <details className="group mx-6 mb-6 mt-4">
                   <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                     <span className="inline-flex items-center gap-2">
                       View Raw Proof Data (DEBUG)

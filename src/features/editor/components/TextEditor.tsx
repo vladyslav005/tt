@@ -4,7 +4,6 @@ import {useSetUpEditor} from "@/features/editor/hooks/setUpEditor.ts";
 import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
-import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
@@ -189,10 +188,6 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
         <CardHeader>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 flex-nowrap overflow-x-auto min-w-0 flex-1">
-              <ExamplesDropdown onSelect={(code) => {
-                editorRef.current?.setValue(code);
-                dispatch(setTermText(code));
-              }} />
               <TypeCheckButton />
               <EvaluateButton />
             </div>

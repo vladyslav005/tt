@@ -5,8 +5,10 @@ import {motion} from "framer-motion";
 import {cn} from "@/shared/lib/utils.ts";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
-import {Maximize2, Minimize2} from "lucide-react";
+import {Maximize2, Minimize2, Play} from "lucide-react";
+import {EmptyState} from "@/shared/components/EmptyState.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
+import {Separator} from "@/shared/components/ui/separator.tsx";
 import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {EvaluationStepsViewer, ViewToggle} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
@@ -46,13 +48,14 @@ export function EvaluationVisualisation({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3 flex-nowrap overflow-x-auto min-w-0 flex-1">
               {hasEvaluation && (
-                <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none border-border bg-muted text-muted-foreground whitespace-nowrap">
+                <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none border-border bg-muted text-muted-foreground whitespace-nowrap shrink-0">
                   {EVALUATION_STRATEGY_LABELS[evaluation.strategy]}
                 </span>
               )}
               {hasSteps && (
                 <>
-                  <div className="flex items-center gap-1.5">
+                  {hasEvaluation && <Separator orientation="vertical" className="shrink-0 data-[orientation=vertical]:h-6" />}
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <Switch id="show-gamma" checked={showGamma} onCheckedChange={setShowGamma}/>
                     <Label htmlFor="show-gamma" className="text-sm text-muted-foreground whitespace-nowrap">
                       Γ context
@@ -74,10 +77,10 @@ export function EvaluationVisualisation({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
+        <CardContent className="flex-1 overflow-hidden p-0">
           {hasEvaluation ? (
-            <div className="space-y-4 h-full flex flex-col">
-              <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30 p-4">
+            <div className="h-full flex flex-col">
+              <div className="flex-1 rounded-b-xl border overflow-hidden bg-muted/30 p-4">
                 <EvaluationStepsViewer
                   key={evaluation.result.id}
                   evaluation={evaluation}
@@ -88,7 +91,7 @@ export function EvaluationVisualisation({
                 />
               </div>
               {env.VITE_SHOW_DEBUG_DATA && (
-                <details className="group">
+                <details className="group mx-6 mb-6 mt-4">
                   <summary
                     className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                     <span className="inline-flex items-center gap-2">
@@ -104,10 +107,8 @@ export function EvaluationVisualisation({
               )}
             </div>
           ) : (
-            <div className="p-6 text-center rounded-xl bg-muted/30 border">
-              <p className="text-sm text-muted-foreground">
-                Type a valid expression to generate an AST.
-              </p>
+            <div className="h-full p-6">
+              <EmptyState icon={Play} message="Evaluate an expression to see its reduction steps." />
             </div>
           )}
         </CardContent>

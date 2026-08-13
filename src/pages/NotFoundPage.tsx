@@ -27,7 +27,7 @@ export function NotFoundPage() {
 
         {/* Description */}
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
-          Looks like this page is not correctly typed.
+          {"Γ ⊢ t : ? - Looks like this page is not correctly typed."}
         </p>
 
         {/* Help Message */}
@@ -36,8 +36,8 @@ export function NotFoundPage() {
             <AlertCircle className="w-4 h-4"/>
             <span>
               Need help? Contact{' '}
-              <a href="mailto:support@aquaphage.com" className="text-primary hover:underline">
-                support@aquaphage.com
+              <a href="mailto:idkwho@idkwhere.com" className="text-primary hover:underline">
+                idkwho@idkwhere.com
               </a>
             </span>
           </div>

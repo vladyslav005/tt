@@ -1,4 +1,6 @@
-import {useEffect, useRef} from "react";
+import {useCallback, useEffect, useRef} from "react";
+import {useOutletContext} from "react-router-dom";
+import type {AppOutletContext} from "@/app/layout/AppLayout.tsx";
 import {
   DockviewDefaultTab,
   DockviewReact,
@@ -10,7 +12,6 @@ import {
   type SerializedDockview,
 } from "dockview-react";
 import {useTheme} from "next-themes";
-import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
 import {
   AstPanel,
   EditorPanel,
@@ -52,7 +53,7 @@ export interface WorkspaceLayoutProps {
 }
 
 export function WorkspaceLayout({className}: WorkspaceLayoutProps) {
-  const editorRef = useRef<TextEditorHandle>(null);
+  const {editorRef} = useOutletContext<AppOutletContext>();
   const apiRef = useRef<DockviewApi | null>(null);
   const {resolvedTheme} = useTheme();
   const dispatch = useAppDispatch();
@@ -60,11 +61,11 @@ export function WorkspaceLayout({className}: WorkspaceLayoutProps) {
 
   // A restored/serialized panel's `params` can't carry a live React ref through JSON, so the
   // editor/AST panels need it re-injected after every build (fresh mount, restore, or preset switch).
-  const rewireEditorRef = (api: DockviewApi) => {
+  const rewireEditorRef = useCallback((api: DockviewApi) => {
     const editorParams: EditorPanelParams = {editorRef};
     api.getPanel("editor")?.api.updateParameters(editorParams);
     api.getPanel("ast")?.api.updateParameters(editorParams);
-  };
+  }, [editorRef]);
 
   const handleReady = (event: DockviewReadyEvent) => {
     const api = event.api;
@@ -103,7 +104,7 @@ export function WorkspaceLayout({className}: WorkspaceLayoutProps) {
     rewireEditorRef(api);
     persistWorkspaceLayout(api.toJSON());
     dispatch(clearPendingLayoutPreset());
-  }, [pendingPreset, dispatch]);
+  }, [pendingPreset, dispatch, editorRef, rewireEditorRef]);
 
   return (
     <div className={className}>

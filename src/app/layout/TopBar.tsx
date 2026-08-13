@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import type {RefObject} from 'react';
 import {BookType, Github, Menu, Moon, Search, Sun, X} from 'lucide-react';
 import {Button} from '@/shared/components/ui/button';
 import {Input} from '@/shared/components/ui/input';
@@ -7,6 +8,10 @@ import {useTheme} from "next-themes";
 import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
 import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensionsBadges.tsx";
 import {LayoutPresetsDropdown} from "@/features/workspace/components/LayoutPresetsDropdown.tsx";
+import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
+import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
+import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
+import {setTermText} from "@/shared/ui-state/termSlice.ts";
 
 type NavItem = {
   label: string;
@@ -19,12 +24,22 @@ const navItems: NavItem[] = [
   {label: 'About', href: '/about'},
 ];
 
-export function Topbar() {
+export interface TopbarProps {
+  editorRef: RefObject<TextEditorHandle | null>;
+}
+
+export function Topbar({editorRef}: TopbarProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const {setTheme} = useTheme()
+  const dispatch = useAppDispatch();
+
+  const onSelectExample = (code: string) => {
+    editorRef.current?.setValue(code);
+    dispatch(setTermText(code));
+  };
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -72,8 +87,13 @@ export function Topbar() {
             ))}
           </nav>
 
-          {/* Right: Type system extensions, Dark Mode, GitHub */}
+          {/* Right: Examples, Type system extensions, Dark Mode, GitHub */}
           <div className="flex items-center space-x-3">
+            {/* Examples */}
+            <div className="hidden md:block">
+              <ExamplesDropdown onSelect={onSelectExample} />
+            </div>
+
             {/* Type System Extensions */}
             <div className="hidden md:block">
               <TypeTheoriesDropdown />
@@ -153,6 +173,7 @@ export function Topbar() {
 
           {/* Mobile Type System Extensions */}
           <div className="flex flex-col items-start gap-2 pb-2">
+            <ExamplesDropdown onSelect={onSelectExample} />
             <TypeTheoriesDropdown />
             <LayoutPresetsDropdown />
             <ActiveExtensionsBadges />

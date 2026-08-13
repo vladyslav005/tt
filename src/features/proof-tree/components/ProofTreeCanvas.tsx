@@ -21,7 +21,7 @@ export function ProofTreeCanvas({texTree, treeKey, stepByStep = false, exportFil
     useStepBuild(texTree, treeKey, stepByStep);
 
   return (
-    <div className="flex-1 w-full relative rounded-xl bg-muted/30 border overflow-hidden">
+    <div className="flex-1 w-full relative rounded-b-xl bg-muted/30 border overflow-hidden">
       <TransformWrapper
         initialScale={1}
         minScale={0.1}
@@ -106,7 +106,7 @@ export function ProofTreeCanvas({texTree, treeKey, stepByStep = false, exportFil
             <TransformComponent
               wrapperClass="!w-full !h-full"
               contentClass="!w-full !h-full !flex !items-center !justify-center"
-              wrapperStyle={{width: '100%', height: '100%', overflow: 'hidden', minHeight: '600px'}}
+              wrapperStyle={{width: '100%', height: '100%', overflow: 'hidden'}}
             >
               <div className="flex items-center justify-center p-6">
                 <StepBuildProvider value={{enabled: stepByStep, isRevealed}}>

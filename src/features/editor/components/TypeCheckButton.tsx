@@ -32,7 +32,7 @@ export function TypeCheckButton({
       size="default"
     >
       <Network className="h-4 w-4" />
-      Type Check
+      Parse & Type Check
     </Button>
   );
 }

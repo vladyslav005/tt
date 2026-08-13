@@ -13,8 +13,9 @@ import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {cn} from "@/shared/lib/utils.ts";
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
-import {ZoomIn, ZoomOut, Crosshair} from "lucide-react";
+import {ZoomIn, ZoomOut, Crosshair, Hammer} from "lucide-react";
 import {env} from "@/shared/lib/env.ts";
+import {EmptyState} from "@/shared/components/EmptyState.tsx";
 
 export function ProofTreeBuilder() {
   const dispatch = useAppDispatch();
@@ -27,21 +28,25 @@ export function ProofTreeBuilder() {
   if (!studentTree || !answerKey) {
     const hasErrors = !proof || countProofErrors(proof) > 0;
     return (
-      <div className="p-6 text-center rounded-xl bg-muted/30 border space-y-3">
-        <p className="text-sm text-muted-foreground">
-          {!proof
-            ? "Type a valid expression first — Build & Check needs a term that already type-checks."
-            : hasErrors
-              ? "This term doesn't type-check yet — fix the errors first, then come back to build its proof yourself."
-              : "Construct the typing derivation for the current term yourself, then check it against the real one."}
-        </p>
-        <Button
-          size="sm"
-          disabled={hasErrors}
-          onClick={() => dispatch(enterBuildMode())}
+      <div className="h-full p-6">
+        <EmptyState
+          icon={Hammer}
+          message={
+            !proof
+              ? "Type a valid expression first — Build & Check needs a term that already type-checks."
+              : hasErrors
+                ? "This term doesn't type-check yet — fix the errors first, then come back to build its proof yourself."
+                : "Construct the typing derivation for the current term yourself, then check it against the real one."
+          }
         >
-          Start Building
-        </Button>
+          <Button
+            size="sm"
+            disabled={hasErrors}
+            onClick={() => dispatch(enterBuildMode())}
+          >
+            Start Building
+          </Button>
+        </EmptyState>
       </div>
     );
   }
@@ -50,7 +55,7 @@ export function ProofTreeBuilder() {
 
   return (
     <div className="w-full h-full flex flex-col space-y-4">
-      <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border">
+      <div className="flex items-center justify-between gap-3 p-3 rounded-b-xl bg-muted/30 border">
         <p className="text-sm text-muted-foreground">
           {summary.filled}/{summary.total} node{summary.total !== 1 ? "s" : ""} filled
           {summary.filled > 0 && (
@@ -131,7 +136,7 @@ export function ProofTreeBuilder() {
               <TransformComponent
                 wrapperClass="!w-full !h-full"
                 contentClass="!w-full !h-full !flex !items-center !justify-center"
-                wrapperStyle={{width: "100%", height: "100%", overflow: "hidden", minHeight: "600px"}}
+                wrapperStyle={{width: "100%", height: "100%", overflow: "hidden"}}
               >
                 <div className="flex items-center justify-center p-6">
                   <ProofTreeBuilderNode

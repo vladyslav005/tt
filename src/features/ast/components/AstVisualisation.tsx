@@ -4,7 +4,8 @@ import {cn} from "@/shared/lib/utils.ts";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
 import {motion} from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
-import {Maximize2, Minimize2, Copy, ClipboardPaste, Download} from "lucide-react";
+import {Maximize2, Minimize2, Copy, ClipboardPaste, Download, Network} from "lucide-react";
+import {EmptyState} from "@/shared/components/EmptyState.tsx";
 import {Ast} from "@/features/ast/components/ast/Ast.tsx";
 import {AstEditor, type AstEditorHandle} from "@/features/ast/components/ast-editor/AstEditor.tsx";
 import {AstNodePaletteDropdowns} from "@/features/ast/components/ast-editor/AstNodePaletteDropdowns.tsx";
@@ -155,15 +156,15 @@ export function AstVisualisation({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
+        <CardContent className="flex-1 overflow-hidden p-0">
           {activeTab === "viewer" ? (
             hasViewerAst ? (
-              <div className="space-y-4 h-full flex flex-col">
-                <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
+              <div className="h-full flex flex-col">
+                <div className="flex-1 rounded-b-xl border overflow-hidden bg-muted/30">
                   <Ast AST={viewerAst}/>
                 </div>
                 {env.VITE_SHOW_DEBUG_DATA && (
-                  <details className="group">
+                  <details className="group mx-6 mb-6 mt-4">
                     <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                       <span className="inline-flex items-center gap-2">
                         View Raw AST Data (DEBUG)
@@ -178,21 +179,19 @@ export function AstVisualisation({
                 )}
               </div>
             ) : (
-              <div className="p-6 text-center rounded-xl bg-muted/30 border">
-                <p className="text-sm text-muted-foreground">
-                  Type a valid expression to generate an AST.
-                </p>
+              <div className="h-full p-6">
+                <EmptyState icon={Network} message="Type a valid expression to generate an AST." />
               </div>
             )
           ) : (
-            <div className="space-y-4 h-full flex flex-col">
-              <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
+            <div className="h-full flex flex-col">
+              <div className="flex-1 rounded-b-xl border overflow-hidden bg-muted/30">
                 <ReactFlowProvider>
                   <AstEditor ref={astEditorRef} graph={graph} setGraph={setGraph} AST={editorAst} setAST={setEditorAst}/>
                 </ReactFlowProvider>
               </div>
               {env.VITE_SHOW_DEBUG_DATA && (
-                <details className="group">
+                <details className="group mx-6 mb-6 mt-4">
                   <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
                     <span className="inline-flex items-center gap-2">
                       View Raw AST Data (DEBUG)

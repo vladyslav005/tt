@@ -771,7 +771,14 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
     }
 
     const id = `manual-${newNodeType}-${Date.now()}`;
-    const position = { x: 120 + graph.nodes.length * 30, y: 120 + graph.nodes.length * 20 };
+    const wrapperRect = wrapperRef.current?.getBoundingClientRect();
+    const viewportCenter = wrapperRect
+      ? rf.screenToFlowPosition({x: wrapperRect.left + wrapperRect.width / 2, y: wrapperRect.top + wrapperRect.height / 2})
+      : {x: 0, y: 0};
+    // Cascade successive additions a bit so they don't stack exactly on top of each other,
+    // wrapping around instead of drifting arbitrarily far from the visible viewport.
+    const cascade = (graph.nodes.length % 8) * 24;
+    const position = {x: viewportCenter.x - 80 + cascade, y: viewportCenter.y - 40 + cascade};
 
     const makeNode = () => {
       if (newNodeType === "program") {
@@ -905,7 +912,7 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
       ...prevGraph,
       nodes: [...prevGraph.nodes, makeNode() as AstFlowGraph["nodes"][number]],
     }));
-  }, [graph, newNodeType_, setGraph, snapshotHistory, updateNodeTerm]);
+  }, [graph, newNodeType_, rf, setGraph, snapshotHistory, updateNodeTerm]);
 
   useImperativeHandle(ref, () => ({addStandaloneNode}), [addStandaloneNode]);
 
@@ -1183,12 +1190,9 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
   const commitAddNodeOnDrop = useCallback((choice: string) => {
     if (!connectDraft) return;
 
-    const rect = wrapperRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
     const position = rf.screenToFlowPosition({
-      x: connectDraft.clientX - rect.left,
-      y: connectDraft.clientY - rect.top,
+      x: connectDraft.clientX,
+      y: connectDraft.clientY,
     });
 
     const nodeType = choice as any;
