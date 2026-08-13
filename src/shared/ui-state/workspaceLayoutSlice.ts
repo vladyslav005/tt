@@ -1,6 +1,6 @@
 import {createSlice, type PayloadAction} from "@reduxjs/toolkit";
 
-export type LayoutPresetId = "editorFocus" | "editorWide" | "compact" | "grid";
+export type LayoutPresetId = "editorFocus" | "editorWide" | "compact" | "grid" | "editorErrors";
 
 export interface LayoutPresetDescriptor {
   id: LayoutPresetId;
@@ -12,6 +12,7 @@ export const LAYOUT_PRESETS: LayoutPresetDescriptor[] = [
   {id: "editorFocus", label: "Editor Focus", description: "Editor and results side by side, results tabbed"},
   {id: "editorWide", label: "Editor Wide", description: "Editor full-width on top, results tabbed below"},
   {id: "grid", label: "Grid", description: "All panels visible at once, arranged in a grid"},
+  {id: "editorErrors", label: "Editor + Errors", description: "Editor and Errors side by side on top, everything else tabbed below"},
 ];
 
 interface WorkspaceLayoutUiState {

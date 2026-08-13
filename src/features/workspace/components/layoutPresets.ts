@@ -15,6 +15,9 @@ export function applyLayoutPreset(api: DockviewApi, preset: LayoutPresetId, edit
     case "grid":
       applyGrid(api, editorParams);
       break;
+    case "editorErrors":
+      applyEditorErrors(api, editorParams);
+      break;
   }
 }
 
@@ -74,6 +77,43 @@ function applyGrid(api: DockviewApi, editorParams: EditorPanelParams): void {
 
   if (api.width > 0) {
     api.getPanel("editor")?.api.setSize({width: Math.round(api.width * 0.35)});
+  }
+}
+
+// Editor and Errors side by side on top; everything else tabbed together, spanning the full
+// width below. The bottom group is docked with an absolute (not relative-to-panel) position so
+// it sits under the whole top row instead of just under "editor".
+function applyEditorErrors(api: DockviewApi, editorParams: EditorPanelParams): void {
+  api.addPanel({id: "editor", component: "editor", title: "Editor", params: editorParams});
+  api.addPanel({
+    id: "errorOutput",
+    component: "errorOutput",
+    title: "Errors",
+    position: {referencePanel: "editor", direction: "right"},
+  });
+  api.addPanel({
+    id: "evaluation",
+    component: "evaluation",
+    title: "Evaluation",
+    position: {direction: "below"},
+  });
+  api.addPanel({
+    id: "proofTree",
+    component: "proofTree",
+    title: "Proof Tree",
+    position: {referencePanel: "evaluation", direction: "within"},
+  });
+  api.addPanel({
+    id: "ast",
+    component: "ast",
+    title: "AST",
+    params: editorParams,
+    position: {referencePanel: "evaluation", direction: "within"},
+  });
+  api.getPanel("evaluation")?.api.setActive();
+
+  if (api.width > 0) {
+    api.getPanel("errorOutput")?.api.setSize({width: Math.round(api.width * 0.25)});
   }
 }
 
