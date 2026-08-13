@@ -1,5 +1,6 @@
 import { TYPE_THEORIES, type TypeTheoryId } from "@/shared/core/domain/typeTheory.ts";
 import { useAppSelector } from "@/shared/hooks/reduxHooks.ts";
+import { cn } from "@/shared/lib/utils.ts";
 
 const SWATCH: Record<TypeTheoryId, string> = {
   letPolymorphism: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
@@ -12,20 +13,19 @@ const SWATCH: Record<TypeTheoryId, string> = {
 
 const STLC_SWATCH = "border-border bg-muted text-muted-foreground";
 
-// Pinned to the card's top-right corner so toggling extensions never reflows the toolbar buttons.
-export function ActiveExtensionsBadges() {
+export function ActiveExtensionsBadges({className}: {className?: string}) {
   const enabledTheories = useAppSelector((state) => state.term.enabledTheories);
   const enabled = TYPE_THEORIES.filter((theory) => enabledTheories[theory.id]);
 
   return (
-    <div className="absolute -top-2 right-4 flex max-w-[80%] flex-wrap justify-end gap-1">
+    <div className={cn("flex flex-wrap items-center gap-1", className)}>
       <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none ${STLC_SWATCH}`}>
         STLC
       </span>
       {enabled.map((theory) => (
         <span
           key={theory.id}
-          className={`rounded-full border px-1.5 py-0.5 text-[14px] font-medium leading-none ${SWATCH[theory.id]}`}
+          className={`rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none ${SWATCH[theory.id]}`}
         >
           {theory.shortLabel}
         </span>

@@ -5,8 +5,6 @@ import {useTheme} from "next-themes";
 import {cn} from "@/shared/lib/utils.ts";
 import {TypeCheckButton} from "@/features/editor/components/TypeCheckButton.tsx";
 import {ExamplesDropdown} from "@/features/editor/components/ExamplesDropdown.tsx";
-import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
-import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensionsBadges.tsx";
 import { motion } from "framer-motion";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
@@ -188,7 +186,6 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
           isFullscreen && "fixed inset-0 z-50 m-0 flex flex-col rounded-none border-0 shadow-none max-h-none",
         )}
       >
-        <ActiveExtensionsBadges />
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -203,16 +200,15 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <ExamplesDropdown onSelect={(code) => {
                 editorRef.current?.setValue(code);
                 dispatch(setTermText(code));
               }} />
-              <TypeTheoriesDropdown />
               <TypeCheckButton />
               <EvaluateButton />
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={() => setIsFullscreen((v) => !v)}
                 title={isFullscreen ? "Exit full screen" : "Full screen"}

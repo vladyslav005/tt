@@ -4,6 +4,8 @@ import {Button} from '@/shared/components/ui/button';
 import {Input} from '@/shared/components/ui/input';
 import {NavLink} from "react-router-dom";
 import {useTheme} from "next-themes";
+import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
+import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensionsBadges.tsx";
 
 type NavItem = {
   label: string;
@@ -37,7 +39,7 @@ export function Topbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/50 backdrop-blur-md border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Logo and Brand */}
           <div className="flex items-center space-x-3">
@@ -68,8 +70,13 @@ export function Topbar() {
             ))}
           </nav>
 
-          {/* Right: Search, Dark Mode, GitHub */}
+          {/* Right: Type system extensions, Dark Mode, GitHub */}
           <div className="flex items-center space-x-3">
+            {/* Type System Extensions */}
+            <div className="hidden md:block">
+              <TypeTheoriesDropdown />
+            </div>
+
             {/* Dark Mode Toggle */}
             <Button
               variant="ghost"
@@ -110,6 +117,11 @@ export function Topbar() {
             </Button>
           </div>
         </div>
+
+        {/* Active extensions badges, pinned straddling the topbar's bottom edge */}
+        <div className="hidden md:flex absolute -bottom-2.5 left-4 sm:left-6 lg:left-8 max-w-[60%] flex-wrap justify-start gap-1">
+          <ActiveExtensionsBadges />
+        </div>
       </div>
 
       {/* Mobile Navigation Menu */}
@@ -130,6 +142,12 @@ export function Topbar() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4"
             />
+          </div>
+
+          {/* Mobile Type System Extensions */}
+          <div className="flex flex-col items-start gap-2 pb-2">
+            <TypeTheoriesDropdown />
+            <ActiveExtensionsBadges />
           </div>
 
           {/* Mobile Nav Items */}
