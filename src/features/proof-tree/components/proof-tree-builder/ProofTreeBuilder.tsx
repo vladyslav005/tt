@@ -14,6 +14,7 @@ import {Label} from "@/shared/components/ui/label.tsx";
 import {cn} from "@/shared/lib/utils.ts";
 import {TransformWrapper, TransformComponent} from "react-zoom-pan-pinch";
 import {ZoomIn, ZoomOut, Crosshair} from "lucide-react";
+import {env} from "@/shared/lib/env.ts";
 
 export function ProofTreeBuilder() {
   const dispatch = useAppDispatch();
@@ -147,18 +148,20 @@ export function ProofTreeBuilder() {
         </TransformWrapper>
       </div>
 
-      <details className="group">
-        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
-          <span className="inline-flex items-center gap-2">
-            View Raw Student Proof Data (DEBUG)
-          </span>
-        </summary>
-        <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
-          <pre className="text-xs overflow-x-auto text-foreground/80">
-            {JSON.stringify({studentTree, answerKey, summary}, null, 2)}
-          </pre>
-        </div>
-      </details>
+      {env.VITE_SHOW_DEBUG_DATA && (
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+            <span className="inline-flex items-center gap-2">
+              View Raw Student Proof Data (DEBUG)
+            </span>
+          </summary>
+          <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+            <pre className="text-xs overflow-x-auto text-foreground/80">
+              {JSON.stringify({studentTree, answerKey, summary}, null, 2)}
+            </pre>
+          </div>
+        </details>
+      )}
     </div>
   );
 }

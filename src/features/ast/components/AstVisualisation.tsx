@@ -19,6 +19,7 @@ import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
 import {ReactFlowProvider} from "@xyflow/react";
+import {env} from "@/shared/lib/env.ts";
 
 export interface AstVisualisationProps {
   className?: string;
@@ -150,18 +151,20 @@ export function AstVisualisation({
                 <div className="flex-1 rounded-xl border overflow-hidden bg-muted/30">
                   <Ast AST={viewerAst} fullScreen={isFullscreen}/>
                 </div>
-                <details className="group">
-                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
-                    <span className="inline-flex items-center gap-2">
-                      View Raw AST Data (DEBUG)
-                    </span>
-                  </summary>
-                  <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
-                    <pre className="text-xs overflow-x-auto text-foreground/80">
-                      {JSON.stringify(viewerAst, null, 2)}
-                    </pre>
-                  </div>
-                </details>
+                {env.VITE_SHOW_DEBUG_DATA && (
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+                      <span className="inline-flex items-center gap-2">
+                        View Raw AST Data (DEBUG)
+                      </span>
+                    </summary>
+                    <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+                      <pre className="text-xs overflow-x-auto text-foreground/80">
+                        {JSON.stringify(viewerAst, null, 2)}
+                      </pre>
+                    </div>
+                  </details>
+                )}
               </div>
             ) : (
               <div className="p-6 text-center rounded-xl bg-muted/30 border">
@@ -177,18 +180,20 @@ export function AstVisualisation({
                   <AstEditor graph={graph} setGraph={setGraph} AST={editorAst} setAST={setEditorAst} fullScreen={isFullscreen}/>
                 </ReactFlowProvider>
               </div>
-              <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
-                  <span className="inline-flex items-center gap-2">
-                    View Raw AST Data (DEBUG)
-                  </span>
-                </summary>
-                <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
-                  <pre className="text-xs overflow-x-auto text-foreground/80">
-                    {JSON.stringify(editorAst, null, 2)}
-                  </pre>
-                </div>
-              </details>
+              {env.VITE_SHOW_DEBUG_DATA && (
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+                    <span className="inline-flex items-center gap-2">
+                      View Raw AST Data (DEBUG)
+                    </span>
+                  </summary>
+                  <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+                    <pre className="text-xs overflow-x-auto text-foreground/80">
+                      {JSON.stringify(editorAst, null, 2)}
+                    </pre>
+                  </div>
+                </details>
+              )}
             </div>
           )}
         </CardContent>

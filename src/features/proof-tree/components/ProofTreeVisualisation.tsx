@@ -15,6 +15,7 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared
 import {ProofTreeBuilder} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilder.tsx";
 import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
+import {env} from "@/shared/lib/env.ts";
 
 
 interface ProofTreeVisualisationProps {
@@ -124,18 +125,20 @@ export function ProofTreeVisualisation({
             logicTree ? (
               <div className="w-full h-full flex flex-col space-y-4">
                 <ProofTreeCanvas texTree={logicTree} treeKey={`logic-${proof?.id ?? "none"}`} exportFilename="logic-tree.tex"/>
-                <details className="group">
-                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
-                    <span className="inline-flex items-center gap-2">
-                      View Raw Logic Tree Data (DEBUG)
-                    </span>
-                  </summary>
-                  <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
-                    <pre className="text-xs overflow-x-auto text-foreground/80">
-                      {JSON.stringify(logicTree, null, 2)}
-                    </pre>
-                  </div>
-                </details>
+                {env.VITE_SHOW_DEBUG_DATA && (
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+                      <span className="inline-flex items-center gap-2">
+                        View Raw Logic Tree Data (DEBUG)
+                      </span>
+                    </summary>
+                    <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+                      <pre className="text-xs overflow-x-auto text-foreground/80">
+                        {JSON.stringify(logicTree, null, 2)}
+                      </pre>
+                    </div>
+                  </details>
+                )}
               </div>
             ) : (
               <div className="p-6 text-center rounded-xl bg-muted/30 border">
@@ -154,18 +157,20 @@ export function ProofTreeVisualisation({
                   exportFilename="proof-tree.tex"
                 />
               )}
-              <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
-                  <span className="inline-flex items-center gap-2">
-                    View Raw Proof Data (DEBUG)
-                  </span>
-                </summary>
-                <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
-                  <pre className="text-xs overflow-x-auto text-foreground/80">
-                    {JSON.stringify(proof, null, 2)}
-                  </pre>
-                </div>
-              </details>
+              {env.VITE_SHOW_DEBUG_DATA && (
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-muted/50">
+                    <span className="inline-flex items-center gap-2">
+                      View Raw Proof Data (DEBUG)
+                    </span>
+                  </summary>
+                  <div className="mt-3 p-4 rounded-xl bg-muted/50 border">
+                    <pre className="text-xs overflow-x-auto text-foreground/80">
+                      {JSON.stringify(proof, null, 2)}
+                    </pre>
+                  </div>
+                </details>
+              )}
             </div>
           )}
           </div>
