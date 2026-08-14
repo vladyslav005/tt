@@ -422,6 +422,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
       : {kind: "tex", value: variableType}
 
     return {
+      id: `${node.id}-membership`,
       judgement: `${variableName} : ${variableType} \\in ${gammaTex}`,
       judgementSegments: [
         {kind: "tex", value: `${variableName} : `},

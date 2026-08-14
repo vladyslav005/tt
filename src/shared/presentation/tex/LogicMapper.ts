@@ -162,6 +162,7 @@ export class LogicMapper {
     const gammaSeg: TexSegment = gammaRef ? {kind: "ref", key: gammaRef.key} : {kind: "tex", value: "\\Gamma"};
 
     return {
+      id: `${node.id}-hypothesis`,
       judgement: `${prop} \\in ${gammaTex}`,
       judgementSegments: [{kind: "tex", value: `${prop} \\in `}, gammaSeg],
       registry: this.gammaRegistry.registry,

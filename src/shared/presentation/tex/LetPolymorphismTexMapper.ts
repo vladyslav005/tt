@@ -380,6 +380,7 @@ export class LetPolymorphismTexMapper {
       const schemeSeg: TexSegment = aliasRef ? {kind: "ref", key: aliasRef.key} : {kind: "tex", value: schemeTex};
 
       return {
+        id: `${node.id}-membership`,
         judgement: `\\mathit{instantiate}(${variableName} : ${schemeTex} \\in ${gammaTex})`,
         judgementSegments: [
           {kind: "tex", value: `\\mathit{instantiate}(${variableName} : `},
@@ -399,6 +400,7 @@ export class LetPolymorphismTexMapper {
       : {kind: "tex", value: TexMapper.typeToTex(node.type)};
 
     return {
+      id: `${node.id}-membership`,
       judgement: `${variableName} : ${TexMapper.typeToTex(node.type)} \\in ${gammaTex}`,
       judgementSegments: [
         {kind: "tex", value: `${variableName} : `},
