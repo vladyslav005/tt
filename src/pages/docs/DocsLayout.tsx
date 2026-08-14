@@ -53,7 +53,7 @@ function SidebarContent({onNavigate}: {onNavigate?: () => void}) {
           <NavLink to="/docs/rules" className={navLinkClass} onClick={onNavigate}>
             <span className="flex items-center gap-2">
               <ScrollText className="h-4 w-4 shrink-0"/>
-              Rule Cards
+              Rules
             </span>
           </NavLink>
           <NavLink to="/docs/grammar" className={navLinkClass} onClick={onNavigate}>

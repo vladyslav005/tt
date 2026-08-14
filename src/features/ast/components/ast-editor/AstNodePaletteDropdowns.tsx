@@ -11,14 +11,27 @@ import {AST_NODE_PALETTE} from "@/features/ast/components/ast-editor/astNodePale
 
 export interface AstNodePaletteDropdownsProps {
   onInsert: (nodeType: string) => void;
+  // Omit to show every node type, as the main app's editor does.
+  allowedTypes?: string[];
 }
 
 // One dropdown per category (Terms, Types, Polymorphism, Declarations) instead of one long
 // toolbar row — each keeps its sub-groups (Math, Sums, Lists, ...) as labeled sections inside.
-export function AstNodePaletteDropdowns({onInsert}: AstNodePaletteDropdownsProps) {
+export function AstNodePaletteDropdowns({onInsert, allowedTypes}: AstNodePaletteDropdownsProps) {
+  const categories = allowedTypes
+    ? AST_NODE_PALETTE
+      .map((category) => ({
+        ...category,
+        groups: category.groups
+          .map((group) => ({...group, items: group.items.filter((item) => allowedTypes.includes(item.type))}))
+          .filter((group) => group.items.length > 0),
+      }))
+      .filter((category) => category.groups.length > 0)
+    : AST_NODE_PALETTE;
+
   return (
     <>
-      {AST_NODE_PALETTE.map((category) => (
+      {categories.map((category) => (
         <DropdownMenu key={category.id}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1">

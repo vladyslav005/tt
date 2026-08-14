@@ -90,7 +90,7 @@ export function DocsGrammarPage() {
       <motion.section initial="initial" animate="animate" variants={fadeInUp}>
         <h2 className="text-lg font-semibold mb-1">Notation you'll see</h2>
         <p className="text-sm text-muted-foreground mb-4 max-w-2xl leading-relaxed">
-          Used when the app displays judgements, proof trees, and rule cards — not part
+          Used when the app displays judgements, proof trees, and rules — not part
           of the term/type grammar, so you never type these into the editor.
         </p>
         <SymbolTable symbols={NOTATION_SYMBOLS} showHowToType={false}/>

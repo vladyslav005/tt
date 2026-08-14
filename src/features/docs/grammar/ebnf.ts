@@ -1,7 +1,4 @@
-// Hand-transcribed from the real parser grammar at
-// src/shared/core/antlr/Lambda.g4 — kept in sync by hand, not generated.
-// Alternative labels (# Application, # Fold, ...) from the .g4 are dropped
-// here; the ANTLR source is the ground truth if the two ever drift.
+// Hand-transcribed from src/shared/core/antlr/Lambda.g4 — that's the source of truth if they drift.
 export const EBNF_GRAMMAR = `program     ::= { global-decl } [ term ';' ]
 
 global-decl ::= ID ':' type ';'                                  (* variable declaration *)

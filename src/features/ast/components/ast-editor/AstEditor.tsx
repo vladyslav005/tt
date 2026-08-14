@@ -769,6 +769,9 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
       newNodeType = nodeType as typeof newNodeType_;
     }
 
+    // There is exactly one program root per graph — never a second one.
+    if (newNodeType === "program" && graph.nodes.some((n) => n.type === "program")) return;
+
     const id = `manual-${newNodeType}-${Date.now()}`;
     const wrapperRect = wrapperRef.current?.getBoundingClientRect();
     const viewportCenter = wrapperRect
@@ -928,10 +931,12 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
     if (selectedNodeIds.length === 0 && selectedEdgeIds.length === 0) return;
     snapshotHistory(graph);
     setGraph((prev) => {
-      const remainingNodes = prev.nodes.filter((n) => !selectedNodeIds.includes(n.id));
+      // The program root is never deletable, even as part of a multi-select.
+      const deletableIds = selectedNodeIds.filter((id) => prev.nodes.find((n) => n.id === id)?.type !== "program");
+      const remainingNodes = prev.nodes.filter((n) => !deletableIds.includes(n.id));
       const remainingEdges = prev.edges.filter((e) => {
         if (selectedEdgeIds.includes(e.id)) return false;
-        if (selectedNodeIds.includes(e.source) || selectedNodeIds.includes(e.target)) return false;
+        if (deletableIds.includes(e.source) || deletableIds.includes(e.target)) return false;
         return true;
       });
       return { ...prev, nodes: remainingNodes, edges: remainingEdges };
@@ -939,6 +944,7 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
   }, [graph, selectedEdgeIds, selectedNodeIds, snapshotHistory]);
 
   const deleteNode = useCallback((nodeId: string) => {
+    if (graph.nodes.find((n) => n.id === nodeId)?.type === "program") return;
     snapshotHistory(graph);
     setGraph((prev) => ({
       ...prev,
@@ -951,7 +957,8 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
     snapshotHistory(graph);
     setGraph((prev) => {
       const original = prev.nodes.find((n) => n.id === nodeId);
-      if (!original) return prev;
+      // Never a second program root — it's the one node that isn't duplicable.
+      if (!original || original.type === "program") return prev;
       const newId = `${nodeId}-copy-${Date.now()}`;
       const newNode = {
         ...original,
@@ -978,7 +985,16 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
 
   const clearAll = useCallback(() => {
     snapshotHistory(graph);
-    setGraph({ nodes: [], edges: [] });
+    setGraph((prev) => {
+      // Reset the program root instead of removing it — it always stays.
+      const programNode = prev.nodes.find((n) => n.type === "program");
+      if (!programNode) return { nodes: [], edges: [] };
+      const resetProgram = {
+        ...programNode,
+        data: { ...(programNode.data as any), term: { id: programNode.id, kind: "Program", globals: [] } },
+      } as AstFlowGraph["nodes"][number];
+      return { nodes: [resetProgram], edges: [] };
+    });
   }, [graph, setGraph, snapshotHistory]);
 
   function offsetPosition(pos: { x: number; y: number }, dx: number, dy: number) {
@@ -1004,7 +1020,8 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
   }, [selectedNodeIds]);
 
   const pasteSelection = useCallback(() => {
-    const clip = clipboardRef.current;
+    // Never paste a copied program root — there's only ever one.
+    const clip = clipboardRef.current?.filter(({node}) => node.type !== "program");
     if (!clip || clip.length === 0) return;
 
     snapshotHistory(graph);
@@ -1102,7 +1119,7 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
   );
 
   const onNodesDelete = useCallback((deleted: Node[]) => {
-    const ids = new Set(deleted.map((n) => n.id));
+    const ids = new Set(deleted.filter((n) => n.type !== "program").map((n) => n.id));
     setGraph((prev) => ({
       ...prev,
       nodes: prev.nodes.filter((n) => !ids.has(n.id)),

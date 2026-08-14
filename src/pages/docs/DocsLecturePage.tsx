@@ -4,11 +4,13 @@ import {BookOpen} from "lucide-react";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {EmptyState} from "@/shared/components/EmptyState.tsx";
 import {LECTURE_REGISTRY} from "@/features/docs/lectureRegistry.ts";
+import {LECTURE_CONTENT} from "@/features/docs/lectureContentRegistry.tsx";
 
 export function DocsLecturePage() {
   const {slug} = useParams<{slug: string}>();
   const index = LECTURE_REGISTRY.findIndex((l) => l.slug === slug);
   const lecture = index === -1 ? undefined : LECTURE_REGISTRY[index];
+  const Content = slug ? LECTURE_CONTENT[slug] : undefined;
 
   if (!lecture) {
     return (
@@ -31,11 +33,15 @@ export function DocsLecturePage() {
         <p className="text-muted-foreground mt-2 max-w-2xl leading-relaxed">{lecture.summary}</p>
       </div>
 
-      <EmptyState
-        icon={BookOpen}
-        message="This lecture hasn't been written yet — check back soon."
-        className="min-h-64"
-      />
+      {Content ? (
+        <Content/>
+      ) : (
+        <EmptyState
+          icon={BookOpen}
+          message="This lecture hasn't been written yet — check back soon."
+          className="min-h-64"
+        />
+      )}
     </motion.div>
   );
 }

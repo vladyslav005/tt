@@ -82,7 +82,7 @@ export function DocsIndexPage() {
                     <ScrollText className="h-5 w-5 text-primary"/>
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">Rule Cards</p>
+                    <p className="font-semibold mb-1">Rules</p>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       Every typing and evaluation rule introduced across the lectures, collected into one reference deck.
                     </p>

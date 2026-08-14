@@ -23,7 +23,7 @@ export function ProgramFlowNode({data, selected}: { data: ProgramNodeData; selec
       <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-primary/15 pt-3">
         <div className="relative flex flex-col items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-3">
           <span className="text-xs font-medium text-primary">Declarations</span>
-          <Handle type="source" position={Position.Left} id="global-decl"
+          <Handle type="source" position={Position.Bottom} id="global-decl"
             className="!w-3 !h-3 !bg-primary !border-2 !border-background"/>
         </div>
 

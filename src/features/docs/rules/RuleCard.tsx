@@ -3,34 +3,47 @@ import {cn} from "@/shared/lib/utils.ts";
 import {Card, CardContent} from "@/shared/components/ui/card.tsx";
 import type {RuleDefinition} from "@/features/docs/rules/ruleDefinitions.ts";
 
-// Deliberately mirrors the visual language of the real Proof Tree panel
-// (src/features/proof-tree/components/proof-tree-using-css/ProofTree.css) —
-// premises above a horizontal line, conclusion below, rule name in italic
-// serif to the right — using the same MathJax rendering, not plain text.
+const ruleNameStyle = {fontFamily: "'Times New Roman', Times, serif"};
+// Scrolls instead of wrapping; overflow-y must be pinned too or MathJax spawns a stray scrollbar.
+const mathRow = "overflow-x-auto overflow-y-hidden max-w-full [&_mjx-container]:!m-0 [&_mjx-container]:!inline-flex";
+
+// Mirrors the real Proof Tree panel's visual language (proof-tree-using-css/ProofTree.css).
 export function RuleCard({rule, className}: {rule: RuleDefinition; className?: string}) {
+  const hasPremises = rule.premisesTex.length > 0;
+
   return (
     <Card className={cn("shadow-sm hover:shadow-md transition-shadow duration-200", className)}>
       <CardContent className="pt-6 pb-4 flex flex-col items-center gap-3">
-        <div className="flex flex-col items-center">
-          {rule.premisesTex.length > 0 && (
-            <div className="flex flex-wrap items-end justify-center gap-x-5 gap-y-1 border-b border-foreground/50 pb-1 px-2 [&_mjx-container]:!m-0">
+        <div className="flex flex-col w-full">
+          {hasPremises && (
+            <div className={cn("flex flex-wrap items-end justify-center gap-x-5 gap-y-1 px-1 pb-1", mathRow)}>
               {rule.premisesTex.map((premise, i) => (
                 <MathJax key={i} inline>{`\\(${premise}\\)`}</MathJax>
               ))}
             </div>
           )}
-          <div className="flex items-center gap-4 pt-1.5">
-            <div className="[&_mjx-container]:!m-0">
+
+          {hasPremises ? (
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex-1 border-t border-foreground/50"/>
+              <span className="text-sm text-muted-foreground italic whitespace-nowrap shrink-0" style={ruleNameStyle}>
+                {rule.id}
+              </span>
+            </div>
+          ) : null}
+
+          <div className={cn("flex items-center gap-2 w-full", hasPremises ? "pt-1.5 justify-center" : "justify-center")}>
+            <div className={mathRow}>
               <MathJax inline>{`\\(${rule.conclusionTex}\\)`}</MathJax>
             </div>
-            <span
-              className="text-sm text-muted-foreground italic whitespace-nowrap"
-              style={{fontFamily: "'Times New Roman', Times, serif"}}
-            >
-              {rule.id}
-            </span>
+            {!hasPremises && (
+              <span className="text-sm text-muted-foreground italic whitespace-nowrap shrink-0" style={ruleNameStyle}>
+                {rule.id}
+              </span>
+            )}
           </div>
         </div>
+
         <p className="text-xs text-muted-foreground leading-relaxed text-center">{rule.description}</p>
       </CardContent>
     </Card>

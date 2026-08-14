@@ -4,8 +4,7 @@ export interface LectureEntry {
   summary: string;
 }
 
-// Ordered to mirror the app's own build order — each lecture leans on state
-// (proof trees, evaluation, extensions) introduced by the ones before it.
+// Ordered to mirror the app's own build order — each lecture builds on the ones before it.
 export const LECTURE_REGISTRY: LectureEntry[] = [
   {
     slug: "stlc-basics",

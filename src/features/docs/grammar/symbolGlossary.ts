@@ -5,9 +5,7 @@ export interface SymbolEntry {
   howToType?: string; // present only for symbols that appear in actual source code
 }
 
-// Symbols that appear in code you type into the editor — the Monaco completion
-// provider in src/features/editor/hooks/setUpEditor.ts inserts the real
-// unicode character for each of these on \-triggered completion.
+// Typed via \-triggered Monaco completion — see src/features/editor/hooks/setUpEditor.ts.
 export const TYPED_SYMBOLS: SymbolEntry[] = [
   {symbol: "λ", name: "Lambda", meaning: "Term abstraction binder — λx:T. t", howToType: "\\ or \\lambda"},
   {symbol: "Λ", name: "Capital Lambda", meaning: "Type abstraction binder (System F) — ΛX. t", howToType: "\\Lambda"},
@@ -21,8 +19,7 @@ export const TYPED_SYMBOLS: SymbolEntry[] = [
   {symbol: "α β γ ...", name: "Greek letters", meaning: "Conventional names for type variables", howToType: "\\alpha, \\beta, \\gamma, ..."},
 ];
 
-// Notation the app renders for you (proof trees, rule cards, judgements) —
-// never typed into the editor, since it's not part of the term/type grammar.
+// Rendered by the app (proof trees, rules); never typed, not part of the grammar.
 export const NOTATION_SYMBOLS: SymbolEntry[] = [
   {
     symbol: "Γ",
