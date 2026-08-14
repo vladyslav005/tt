@@ -13,6 +13,7 @@ import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
 import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
+import type {SourcePosition} from "@/shared/core/domain/ast";
 
 export interface TextEditorProps {
   defaultValue?: string;
@@ -29,6 +30,7 @@ export interface TextEditorProps {
 export interface TextEditorHandle {
   setValue: (text: string) => void;
   getValue: () => string;
+  highlightRange: (pos: SourcePosition | null) => void;
 }
 
 export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function TextEditor(
@@ -51,6 +53,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const editorRef = useRef<any>(null);
+  const highlightDecorationsRef = useRef<any>(null);
   const dispatch = useAppDispatch()
   const { parseAndTypeCheck } = useTermHooks();
   const errorMarkers = useAppSelector((state) => state.term.errorMarkers);
@@ -83,6 +86,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    highlightDecorationsRef.current = editor.createDecorationsCollection([]);
 
     console.log('Editor mounted - setting initial theme:', monacoTheme);
     monaco.editor.setTheme(monacoTheme);
@@ -169,6 +173,25 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     getValue: () => {
       const editor = editorRef.current;
       return editor ? editor.getValue() : (value ?? defaultValue);
+    },
+    highlightRange: (pos: SourcePosition | null) => {
+      const decorations = highlightDecorationsRef.current;
+      if (!decorations) return;
+      if (!pos) {
+        decorations.set([]);
+        return;
+      }
+      decorations.set([{
+        range: {
+          startLineNumber: pos.line,
+          startColumn: pos.column + 1,
+          endLineNumber: pos.endLine ?? pos.line,
+          endColumn: pos.endColumn !== undefined ? pos.endColumn + 1 : pos.column + 1 + pos.length,
+        },
+        options: {
+          inlineClassName: "proof-hover-highlight",
+        },
+      }]);
     },
   }), [defaultValue, dispatch, value]);
 

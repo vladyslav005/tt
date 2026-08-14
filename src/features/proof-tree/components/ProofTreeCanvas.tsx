@@ -7,16 +7,18 @@ import {StepBuildProvider} from "@/features/proof-tree/components/proof-tree-usi
 import {useStepBuild} from "@/features/proof-tree/hooks/useStepBuild.ts";
 import {ExportLatexButtons} from "@/features/proof-tree/components/ExportLatexButtons.tsx";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {SourcePosition} from "@/shared/core/domain/ast";
 
 interface ProofTreeCanvasProps {
   texTree: TexTree;
   treeKey: string;
   stepByStep?: boolean;
   exportFilename?: string;
+  onNodeHover?: (pos: SourcePosition | null) => void;
 }
 
 // The pan/zoom viewport shared by every read-only proof tree tab (type-theory, logic, ...).
-export function ProofTreeCanvas({texTree, treeKey, stepByStep = false, exportFilename = "proof-tree.tex"}: ProofTreeCanvasProps) {
+export function ProofTreeCanvas({texTree, treeKey, stepByStep = false, exportFilename = "proof-tree.tex", onNodeHover}: ProofTreeCanvasProps) {
   const {isRevealed, step, total, canGoNext, canGoPrev, goNext, goPrev, reset} =
     useStepBuild(texTree, treeKey, stepByStep);
 
@@ -110,7 +112,7 @@ export function ProofTreeCanvas({texTree, treeKey, stepByStep = false, exportFil
             >
               <div className="flex items-center justify-center p-6">
                 <StepBuildProvider value={{enabled: stepByStep, isRevealed}}>
-                  <ProofTreeComponentUsingCss node={texTree}/>
+                  <ProofTreeComponentUsingCss node={texTree} onNodeHover={onNodeHover}/>
                 </StepBuildProvider>
               </div>
             </TransformComponent>

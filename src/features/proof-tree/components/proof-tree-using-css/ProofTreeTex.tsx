@@ -1,5 +1,6 @@
 import {Fragment} from "react";
 import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {SourcePosition} from "@/shared/core/domain/ast";
 import {Conclusion} from "@/features/proof-tree/components/proof-tree-using-css/Conclusion.tsx";
 import {useStepBuild} from "@/features/proof-tree/components/proof-tree-using-css/StepBuildContext.tsx";
 import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
@@ -9,12 +10,14 @@ import "./ProofTree.css"
 interface ProofTreeUsingCssProps {
   node: TexTree,
   root?: boolean,
+  onNodeHover?: (pos: SourcePosition | null) => void,
 }
 
 export function ProofTreeComponentUsingCss(
   {
     node,
     root = true,
+    onNodeHover,
   }: ProofTreeUsingCssProps,) {
   const isDef = node.rule === "T-Def" || node.rule === "CT-Def" || node.rule === "Lemma";
   // Shared (not local) so the LaTeX export can snapshot which T-Def/CT-Def/Lemma
@@ -42,7 +45,8 @@ export function ProofTreeComponentUsingCss(
             <Fragment key={`${premise.id}-${index}`}>
               <ProofTreeComponentUsingCss
                 root={false}
-                node={premise}/>
+                node={premise}
+                onNodeHover={onNodeHover}/>
               {displayChildren !== undefined && index !== displayChildren.length - 1 && (
                 <div className="inter-proof"></div>
               )}
@@ -50,7 +54,11 @@ export function ProofTreeComponentUsingCss(
           ))}
         </div>
       )}
-      <div className={cn(`conclusion ${isItRoot} ${isItLeaf}`, !revealed && "step-pending")}>
+      <div
+        className={cn(`conclusion ${isItRoot} ${isItLeaf}`, !revealed && "step-pending")}
+        onMouseEnter={() => onNodeHover?.(node.pos ?? null)}
+        onMouseLeave={() => onNodeHover?.(null)}
+      >
         <div className="conclusion-left">
         </div>
 

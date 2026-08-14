@@ -127,3 +127,7 @@
 .dv-tab {
   border-radius: 12px 12px 0 0;
 }
+
+.proof-hover-highlight {
+  background-color: rgb(244 241 6 / 0.42);
+}

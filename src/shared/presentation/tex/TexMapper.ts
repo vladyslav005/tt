@@ -70,6 +70,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     if (node.error)
       tex.error = node.error;
     tex.id = node.id;
+    tex.pos = node.term.pos;
     return tex;
   }
 

@@ -1,3 +1,5 @@
+import type {SourcePosition} from "@/shared/core/domain/ast";
+
 // A piece of a judgement rendered as an inline MathJax span ("tex") or as a clickable,
 // expandable reference to a numbered Γ/C set ("ref") — see TexRegistryEntry.
 export type TexSegment =
@@ -23,6 +25,8 @@ export interface TexTree {
   ruleTooltip?: string
   children?: TexTree[]
   id?: string
+  // The source span of the original term this node was derived from, for hover-to-highlight in the text editor.
+  pos?: SourcePosition
   error?: string
   meta?: string
   // How this node renders while collapsed (only used by T-Def). Ignored unless expanded.

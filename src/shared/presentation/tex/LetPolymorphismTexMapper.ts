@@ -74,6 +74,7 @@ export class LetPolymorphismTexMapper {
     const tex = this.dispatch(node as InferProofTree);
     if (node.error) tex.error = node.error;
     tex.id = node.id;
+    tex.pos = node.term.pos;
     return tex;
   }
 

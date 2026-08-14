@@ -48,6 +48,7 @@ export function useSetUpEditor() {
           [/\[/, "lb"],
           [/\./, "dot"],
           [/:/, "semi"],
+          [/^[1-9][0-9]*$/, "number"],
 
           [/∀/, "forall"],
           [/Π/, "pi"],
@@ -92,7 +93,7 @@ export function useSetUpEditor() {
         {token: 'doubleArrow', foreground: '#16a34a', fontStyle: 'bold'}, // green-600
         {token: 'semi', foreground: '#7c3aed', fontStyle: 'bold'},
         {token: 'variable', foreground: '#334155', fontStyle: 'regular'}, // slate-700
-        {token: 'number', foreground: '#ea580c', fontStyle: 'bold'}, // orange-600
+        {token: 'number', foreground: '#0ca7ea', fontStyle: 'bold'}, // orange-600
         {token: 'string', foreground: '#16a34a'},
         {token: 'comment', foreground: '#94a3b8', fontStyle: 'italic'}, // slate-400
         {token: 'delimiter', foreground: '#dc2626'},
@@ -153,7 +154,7 @@ export function useSetUpEditor() {
         {token: 'doubleArrow', foreground: '#4ade80', fontStyle: 'bold'}, // green-400
         {token: 'semi', foreground: '#a78bfa', fontStyle: 'bold'},
         {token: 'variable', foreground: '#e2e8f0', fontStyle: 'regular'}, // slate-200
-        {token: 'number', foreground: '#fb923c', fontStyle: 'bold'}, // orange-400
+        {token: 'number', foreground: '#4a92f1', fontStyle: 'bold'}, // orange-400
         {token: 'string', foreground: '#4ade80'},
         {token: 'comment', foreground: '#64748b', fontStyle: 'italic'}, // slate-500
         {token: 'delimiter', foreground: '#f87171'},

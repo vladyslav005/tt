@@ -48,10 +48,10 @@ export function EvaluationPanel() {
   );
 }
 
-export function ProofTreePanel() {
+export function ProofTreePanel({params}: IDockviewPanelProps<EditorPanelParams>) {
   return (
     <div className="h-full overflow-auto p-2">
-      <ProofTreeVisualisation className="h-full"/>
+      <ProofTreeVisualisation className="h-full" editorRef={params.editorRef}/>
     </div>
   );
 }

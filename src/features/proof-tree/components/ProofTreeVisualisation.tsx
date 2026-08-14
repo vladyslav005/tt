@@ -9,7 +9,8 @@ import {EmptyState} from "@/shared/components/EmptyState.tsx";
 import {isPlainStlc} from "@/shared/core/domain/typeTheory.ts";
 import {ProofTreeCanvas} from "@/features/proof-tree/components/ProofTreeCanvas.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
+import type {RefObject} from "react";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
 import {Tabs, TabsList, TabsTrigger} from "@/shared/components/ui/tabs.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
@@ -17,16 +18,20 @@ import {ProofTreeBuilder} from "@/features/proof-tree/components/proof-tree-buil
 import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {env} from "@/shared/lib/env.ts";
+import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
+import type {SourcePosition} from "@/shared/core/domain/ast";
 
 
 interface ProofTreeVisualisationProps {
   className?: string;
+  editorRef?: RefObject<TextEditorHandle | null>;
 }
 
 type ProofTreeTab = "automatic" | "logic" | "build-check";
 
 export function ProofTreeVisualisation({
-                                         className
+                                         className,
+                                         editorRef,
                                        }: ProofTreeVisualisationProps) {
   const proof = useAppSelector((state) => state.term.proof);
   const proofTheories = useAppSelector((state) => state.term.proofTheories);
@@ -37,6 +42,18 @@ export function ProofTreeVisualisation({
   // Not Radix's <TabsContent> — mounting TransformWrapper inside it hung the tab.
   const [activeTab, setActiveTab] = useState<ProofTreeTab>("automatic");
   const [stepByStep, setStepByStep] = useState(false);
+  const [highlightOnHover, setHighlightOnHover] = useState(true);
+
+  const handleNodeHover = highlightOnHover
+    ? (pos: SourcePosition | null) => editorRef?.current?.highlightRange?.(pos)
+    : undefined;
+
+  // Clear any lingering highlight when leaving the automatic tab, the switch is off,
+  // or this panel unmounts — otherwise a stale highlight sticks in the text editor.
+  useEffect(() => {
+    const editor = editorRef?.current;
+    return () => editor?.highlightRange?.(null);
+  }, [activeTab, editorRef]);
 
   const hasProof = proof !== null && proof !== undefined;
   // Gate on the theories the *proof* was derived under, not the live toggle state — otherwise
@@ -97,6 +114,22 @@ export function ProofTreeVisualisation({
                   </Label>
                 </div>
               )}
+
+              {effectiveTab === "automatic" && hasProof && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="highlight-on-hover"
+                    checked={highlightOnHover}
+                    onCheckedChange={(checked) => {
+                      setHighlightOnHover(checked);
+                      if (!checked) editorRef?.current?.highlightRange?.(null);
+                    }}
+                  />
+                  <Label htmlFor="highlight-on-hover" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Highlight in editor
+                  </Label>
+                </div>
+              )}
             </div>
 
             <Button
@@ -152,6 +185,7 @@ export function ProofTreeVisualisation({
                   treeKey={proof?.id ?? "none"}
                   stepByStep={stepByStep}
                   exportFilename="proof-tree.tex"
+                  onNodeHover={handleNodeHover}
                 />
               )}
               {env.VITE_SHOW_DEBUG_DATA && (
