@@ -11,13 +11,23 @@ import {
 import {LAYOUT_PRESETS, requestLayoutPreset} from "@/shared/ui-state/workspaceLayoutSlice.ts";
 import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
 
-export function LayoutPresetsDropdown() {
+export interface LayoutPresetsDropdownProps {
+  disabled?: boolean;
+}
+
+export function LayoutPresetsDropdown({disabled = false}: LayoutPresetsDropdownProps) {
   const dispatch = useAppDispatch();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" title="Layout presets" aria-label="Layout presets">
+        <Button
+          variant="outline"
+          size="icon"
+          title={disabled ? "Only available on the Editor page" : "Layout presets"}
+          aria-label="Layout presets"
+          disabled={disabled}
+        >
           <LayoutGrid className="h-4 w-4"/>
         </Button>
       </DropdownMenuTrigger>

@@ -186,6 +186,7 @@ export function Ast({
     const newGraph = mapAstToFlow();
     const layoutGraph = layoutAstFlow(newGraph.nodes, newGraph.edges);
     if (newGraph) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGraph(layoutGraph);
     }
   }, [AST]); // eslint-disable-line react-hooks/exhaustive-deps

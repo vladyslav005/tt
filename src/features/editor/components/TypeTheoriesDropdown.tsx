@@ -12,14 +12,24 @@ import { TYPE_THEORIES } from "@/shared/core/domain/typeTheory.ts";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/reduxHooks.ts";
 import { setTheoryEnabled } from "@/shared/ui-state/termSlice.ts";
 
-export function TypeTheoriesDropdown() {
+export interface TypeTheoriesDropdownProps {
+  disabled?: boolean;
+}
+
+export function TypeTheoriesDropdown({disabled = false}: TypeTheoriesDropdownProps) {
   const dispatch = useAppDispatch();
   const enabledTheories = useAppSelector((state) => state.term.enabledTheories);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={disabled}
+          title={disabled ? "Only available on the Editor page" : undefined}
+        >
           <FlaskConical className="h-3.5 w-3.5" />
           Type System Extensions
           <ChevronDown className="h-3.5 w-3.5" />

@@ -3,7 +3,7 @@ import type {RefObject} from 'react';
 import {BookType, Github, Menu, Moon, Search, Sun, X} from 'lucide-react';
 import {Button} from '@/shared/components/ui/button';
 import {Input} from '@/shared/components/ui/input';
-import {NavLink} from "react-router-dom";
+import {NavLink, useLocation} from "react-router-dom";
 import {useTheme} from "next-themes";
 import {TypeTheoriesDropdown} from "@/features/editor/components/TypeTheoriesDropdown.tsx";
 import {ActiveExtensionsBadges} from "@/features/editor/components/ActiveExtensionsBadges.tsx";
@@ -35,6 +35,8 @@ export function Topbar({editorRef}: TopbarProps) {
 
   const {setTheme} = useTheme()
   const dispatch = useAppDispatch();
+  const {pathname} = useLocation();
+  const isEditorPage = pathname === "/main";
 
   const onSelectExample = (code: string) => {
     editorRef.current?.setValue(code);
@@ -91,17 +93,17 @@ export function Topbar({editorRef}: TopbarProps) {
           <div className="flex items-center space-x-3">
             {/* Examples */}
             <div className="hidden md:block">
-              <ExamplesDropdown onSelect={onSelectExample} />
+              <ExamplesDropdown onSelect={onSelectExample} disabled={!isEditorPage} />
             </div>
 
             {/* Type System Extensions */}
             <div className="hidden md:block">
-              <TypeTheoriesDropdown />
+              <TypeTheoriesDropdown disabled={!isEditorPage} />
             </div>
 
             {/* Layout presets */}
             <div className="hidden md:block">
-              <LayoutPresetsDropdown />
+              <LayoutPresetsDropdown disabled={!isEditorPage} />
             </div>
 
             {/* Dark Mode Toggle */}
@@ -173,9 +175,9 @@ export function Topbar({editorRef}: TopbarProps) {
 
           {/* Mobile Type System Extensions */}
           <div className="flex flex-col items-start gap-2 pb-2">
-            <ExamplesDropdown onSelect={onSelectExample} />
-            <TypeTheoriesDropdown />
-            <LayoutPresetsDropdown />
+            <ExamplesDropdown onSelect={onSelectExample} disabled={!isEditorPage} />
+            <TypeTheoriesDropdown disabled={!isEditorPage} />
+            <LayoutPresetsDropdown disabled={!isEditorPage} />
             <ActiveExtensionsBadges />
           </div>
 

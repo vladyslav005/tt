@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import {useEffect, useState} from "react";
 
 interface Example {
   label: string;
@@ -406,13 +407,31 @@ vecHead 3 v4;`,
 
 interface ExamplesDropdownProps {
   onSelect: (code: string) => void;
+  disabled?: boolean;
 }
 
-export function ExamplesDropdown({ onSelect }: ExamplesDropdownProps) {
+export function ExamplesDropdown({ onSelect, disabled = false }: ExamplesDropdownProps) {
+  const [subdomain, setSubdomain] = useState<string>('');
+
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+
+    if (parts.length > 2) {
+      setSubdomain(parts.slice(0, -2).join('.'));
+    }
+  }, []);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1"
+          disabled={disabled}
+          title={disabled ? "Only available on the Editor page" : undefined}
+        >
           <BookOpen className="h-3.5 w-3.5" />
           Examples
           <ChevronDown className="h-3.5 w-3.5" />
