@@ -1,10 +1,9 @@
 import {Handle, Position} from "@xyflow/react";
-import type {ProgramNodeData} from "@/shared/presentation/flow/types.ts";
 import {LimitedHandle} from "./LimitedHandle.tsx";
 import {cn} from "@/shared/lib/utils";
 import {FileCode2} from "lucide-react";
 
-export function ProgramFlowNode({data, selected}: { data: ProgramNodeData; selected?: boolean }) {
+export function ProgramFlowNode({selected}: {selected?: boolean }) {
   return (
     <div className={cn(
       "min-w-64 rounded-xl border-2 bg-gradient-to-br from-primary/5 to-primary/10 text-card-foreground shadow-lg transition-all duration-150",

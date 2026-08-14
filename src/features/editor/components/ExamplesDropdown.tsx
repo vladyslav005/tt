@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import {useEffect, useState} from "react";
 
 interface Example {
   label: string;
@@ -411,17 +410,6 @@ interface ExamplesDropdownProps {
 }
 
 export function ExamplesDropdown({ onSelect, disabled = false }: ExamplesDropdownProps) {
-  const [subdomain, setSubdomain] = useState<string>('');
-
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    const parts = hostname.split('.');
-
-    if (parts.length > 2) {
-      setSubdomain(parts.slice(0, -2).join('.'));
-    }
-  }, []);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
