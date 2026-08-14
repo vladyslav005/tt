@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
+import {FloatingLambdaSymbols} from "@/shared/components/FloatingLambdaSymbols.tsx";
 
 const fadeInUp = {
   initial: {opacity: 0, y: 20},
@@ -42,32 +43,36 @@ export function AboutPage() {
   return (
     <div className="pt-16 min-h-screen bg-gradient-to-b from-background to-muted/40">
       {/* Hero Section */}
-      <motion.section
-        className="container mx-auto px-4 py-16 md:py-24 max-w-4xl text-center"
-        initial="initial"
-        animate="animate"
-        variants={fadeInUp}
-      >
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          About This Project
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
-          An interactive environment for experimenting with typed lambda calculus.
-          It supports parsing, AST inspection/editing, type checking and inference,
-          proof tree visualization, and building your own derivations by hand.
-        </p>
-        <p className="text-sm md:text-base text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-          Built as a Master Thesis project, the goal is to make the underlying
-          theory explorable: you can see the syntax tree, derived types, and the
-          proof steps that justify them.
-        </p>
-        <div className="flex items-center justify-center">
-          <Button size="lg" className="rounded-2xl shadow-lg" disabled>
-            <FileCode className="mr-2 h-5 w-5" />
-            Read the Thesis (coming soon)
-          </Button>
-        </div>
-      </motion.section>
+      <div className="relative overflow-hidden">
+        <FloatingLambdaSymbols />
+
+        <motion.section
+          className="container mx-auto px-4 py-16 md:py-24 max-w-4xl text-center"
+          initial="initial"
+          animate="animate"
+          variants={fadeInUp}
+        >
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            About This Project
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
+            An interactive environment for experimenting with typed lambda calculus.
+            It supports parsing, AST inspection/editing, type checking and inference,
+            proof tree visualization, and building your own derivations by hand.
+          </p>
+          <p className="text-sm md:text-base text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+            Built as a Master Thesis project, the goal is to make the underlying
+            theory explorable: you can see the syntax tree, derived types, and the
+            proof steps that justify them.
+          </p>
+          <div className="flex items-center justify-center">
+            <Button size="lg" className="rounded-2xl shadow-lg" disabled>
+              <FileCode className="mr-2 h-5 w-5" />
+              Read the Thesis (coming soon)
+            </Button>
+          </div>
+        </motion.section>
+      </div>
 
       {/* Project Overview Section */}
       <motion.section
