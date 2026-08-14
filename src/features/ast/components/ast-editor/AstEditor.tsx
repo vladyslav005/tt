@@ -6,7 +6,6 @@ import {
   addEdge,
   ReactFlow,
   Background,
-  Controls,
   MiniMap,
   Panel,
   type NodeTypes,
@@ -80,7 +79,7 @@ import {UnfoldFlowNode} from "@/features/ast/components/ast/flow/UnfoldFlowNode"
 import {RecursiveTypeFlowNode} from "@/features/ast/components/ast/flow/RecursiveTypeFlowNode";
 import {KindStarFlowNode} from "@/features/ast/components/ast/flow/KindStarFlowNode.tsx";
 import {KindArrowFlowNode} from "@/features/ast/components/ast/flow/KindArrowFlowNode.tsx";
-import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2, Eraser, Map} from "lucide-react";
+import {Undo2, Redo2, LayoutGrid, Crosshair, Trash2, Eraser, Map as MapIcon} from "lucide-react";
 
 const HANDLE_LABELS: Record<string, string> = {
   "global-decl": "decl",
@@ -160,7 +159,7 @@ function KindFlowNodeDispatch(props: any) {
   }
 }
 
-export const nodeTypes: NodeTypes = {
+const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
   varDecl: VarDeclFlowNode,
@@ -1473,7 +1472,7 @@ export const AstEditor = forwardRef<AstEditorHandle, AstProps>(function AstEdito
               onClick={() => setShowMiniMap((prev) => !prev)}
               title={showMiniMap ? "Hide Minimap" : "Show Minimap"}
               className="shadow-lg hover:shadow-xl transition-shadow">
-              <Map className="h-4 w-4" />
+              <MapIcon className="h-4 w-4" />
             </Button>
           </div>
         </Panel>

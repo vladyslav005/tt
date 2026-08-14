@@ -1,6 +1,6 @@
 import type {Program} from "@/shared/core/domain/ast";
 import {useCallback, useState, useEffect} from "react";
-import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, Controls, MiniMap, Panel, useReactFlow, type NodeTypes} from "@xyflow/react";
+import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, MiniMap, Panel, useReactFlow, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
 import {useTheme} from "next-themes";
 import {Crosshair, Map} from "lucide-react";
@@ -135,7 +135,7 @@ function MiniMapToggleButton({showMiniMap, setShowMiniMap}: {showMiniMap: boolea
   );
 }
 
-export const nodeTypes: NodeTypes = {
+const nodeTypes: NodeTypes = {
   program: ProgramFlowNode,
   funDecl: FunDeclFlowNode,
   varDecl: VarDeclFlowNode,
