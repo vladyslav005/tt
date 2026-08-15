@@ -223,9 +223,9 @@ export interface ReferenceEntry {
   href: string;
 }
 
-export function ReferenceList({entries}: {entries: ReferenceEntry[]}) {
+export function ReferenceList({id, entries}: {id?: string; entries: ReferenceEntry[]}) {
   return (
-    <div className="rounded-xl border border-dashed bg-transparent p-4">
+    <div id={id} className="scroll-mt-24 rounded-xl border border-dashed bg-transparent p-4">
       <div className="flex items-center gap-1.5 mb-2.5">
         <BookOpen className="h-3.5 w-3.5 text-muted-foreground"/>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sources for this text</p>

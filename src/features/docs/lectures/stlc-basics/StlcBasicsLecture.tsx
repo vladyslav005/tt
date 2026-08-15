@@ -74,6 +74,7 @@ const STLC_BASICS_OUTLINE: TocItem[] = [
     ],
   },
   {id: "summary", label: "Summary"},
+  {id: "sources", label: "Sources"},
 ];
 
 export function StlcBasicsLecture() {
@@ -604,6 +605,7 @@ export function StlcBasicsLecture() {
 
         <motion.div variants={fadeInUp}>
           <ReferenceList
+            id="sources"
             entries={[
               {
                 label: "TUKE Type Theory course — Lecture 1 (Introduction, NBL, Lambda Calculus)",
