@@ -1,13 +1,15 @@
-import type {ReactNode} from "react";
+import {useEffect, useState, type ReactNode} from "react";
 import {Link} from "react-router-dom";
-import {ArrowRight, Sparkles} from "lucide-react";
+import {ArrowRight, BookOpen, Sparkles} from "lucide-react";
+import {cn} from "@/shared/lib/utils.ts";
 import {RuleCard} from "@/features/docs/rules/RuleCard.tsx";
 import {findRule} from "@/features/docs/rules/ruleDefinitions.ts";
 
 // Chapter-level heading (Syntax / Typing / Semantics); ConceptSection nests under it.
-export function SectionHeading({index, title, blurb}: {index: string; title: string; blurb: string}) {
+// scroll-mt-24 keeps anchored/scrolled-to headings clear of the fixed top bar.
+export function SectionHeading({id, index, title, blurb}: {id?: string; index: string; title: string; blurb: string}) {
   return (
-    <div className="flex items-start gap-4">
+    <div id={id} className="scroll-mt-24 flex items-start gap-4">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-base font-bold">
         {index}
       </span>
@@ -19,12 +21,78 @@ export function SectionHeading({index, title, blurb}: {index: string; title: str
   );
 }
 
-export function ConceptSection({title, children}: {title: string; children: ReactNode}) {
+export function ConceptSection({id, title, children}: {id?: string; title: string; children: ReactNode}) {
   return (
-    <section className="space-y-3 border-l-2 border-primary/20 pl-5 ml-5">
+    <section id={id} className="scroll-mt-24 space-y-3 border-l-2 border-primary/20 pl-5 ml-5">
       <h3 className="text-lg font-semibold">{title}</h3>
       <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">{children}</div>
     </section>
+  );
+}
+
+export interface TocItem {
+  id: string;
+  label: string;
+  subitems?: {id: string; label: string}[];
+}
+
+// Right-rail "on this page" nav — highlights whichever heading is currently topmost in view.
+export function TableOfContents({items}: {items: TocItem[]}) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ids = items.flatMap((item) => [item.id, ...(item.subitems ?? []).map((s) => s.id)]);
+    const targets = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (targets.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length === 0) return;
+        const topmost = visible.reduce((a, b) => (a.boundingClientRect.top <= b.boundingClientRect.top ? a : b));
+        setActiveId(topmost.target.id);
+      },
+      {rootMargin: "-100px 0px -70% 0px", threshold: 0},
+    );
+
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [items]);
+
+  const linkClass = (id: string, sub?: boolean) =>
+    cn(
+      "block py-1 border-l-2 pl-3 -ml-px transition-colors",
+      sub ? "text-xs" : "text-sm",
+      activeId === id
+        ? "border-primary text-primary font-medium"
+        : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30",
+    );
+
+  return (
+    <nav aria-label="On this page" className="hidden xl:block w-52 shrink-0">
+      <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 pl-3">On this page</p>
+        <ul>
+          {items.map((item) => (
+            <li key={item.id}>
+              <a href={`#${item.id}`} className={linkClass(item.id)}>{item.label}</a>
+              {item.subitems && item.subitems.length > 0 && (
+                <ul>
+                  {item.subitems.map((sub) => (
+                    <li key={sub.id}>
+                      <a href={`#${sub.id}`} className={cn(linkClass(sub.id, true), "ml-3")}>{sub.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </nav>
   );
 }
 
@@ -133,9 +201,9 @@ export interface SummaryPoint {
   detail: string;
 }
 
-export function SummaryBox({points, next}: {points: SummaryPoint[]; next?: ReactNode}) {
+export function SummaryBox({id, points, next}: {id?: string; points: SummaryPoint[]; next?: ReactNode}) {
   return (
-    <div className="rounded-xl border bg-muted/10 p-4">
+    <div id={id} className="scroll-mt-24 rounded-xl border bg-muted/10 p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Summary</p>
       <ul className="space-y-1.5 text-sm">
         {points.map((point) => (
@@ -157,9 +225,12 @@ export interface ReferenceEntry {
 
 export function ReferenceList({entries}: {entries: ReferenceEntry[]}) {
   return (
-    <div className="rounded-xl border bg-muted/10 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Further reading</p>
-      <ul className="space-y-1.5 text-sm">
+    <div className="rounded-xl border border-dashed bg-transparent p-4">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <BookOpen className="h-3.5 w-3.5 text-muted-foreground"/>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sources for this text</p>
+      </div>
+      <ol className="space-y-1.5 text-sm list-decimal list-inside marker:text-muted-foreground marker:text-xs">
         {entries.map((entry) => (
           <li key={entry.href}>
             <a
@@ -172,7 +243,7 @@ export function ReferenceList({entries}: {entries: ReferenceEntry[]}) {
             </a>
           </li>
         ))}
-      </ul>
+      </ol>
     </div>
   );
 }

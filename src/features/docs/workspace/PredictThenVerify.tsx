@@ -2,7 +2,6 @@ import {useState} from "react";
 import {Check, X} from "lucide-react";
 import {MathJax} from "better-react-mathjax";
 import {Button} from "@/shared/components/ui/button.tsx";
-import {Input} from "@/shared/components/ui/input.tsx";
 import {useMiniWorkspace} from "@/features/docs/workspace/useMiniWorkspace.ts";
 
 interface PredictThenVerifyProps {
@@ -39,12 +38,14 @@ export function PredictThenVerify({term, prompt = "What type does this term have
       <p className="text-sm text-muted-foreground">{prompt}</p>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input
+        <textarea
           value={guess}
           onChange={(e) => setGuess(e.target.value)}
           placeholder="e.g. Bool -> Bool"
-          className="max-w-xs font-mono"
           disabled={revealed}
+          rows={1}
+          spellCheck={false}
+          className="w-full max-w-xs min-h-9 resize-y font-mono text-sm rounded-md border bg-transparent px-3 py-1.5 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {revealed ? (
           <Button size="sm" variant="ghost" onClick={reset}>Try again</Button>
