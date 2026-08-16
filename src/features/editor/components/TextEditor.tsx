@@ -25,6 +25,9 @@ export interface TextEditorProps {
   readOnly?: boolean;
   className?: string;
   options?: Record<string, any>;
+  // Hides the Parse/Evaluate buttons from the editor's own header — used on mobile,
+  // where those actions live in a shared sticky bottom bar instead.
+  hideActions?: boolean;
 }
 
 export interface TextEditorHandle {
@@ -44,6 +47,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     readOnly = false,
     className,
     options = {},
+    hideActions = false,
   }: TextEditorProps,
   ref,
 ) {
@@ -210,10 +214,12 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       >
         <CardHeader>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 flex-nowrap overflow-x-auto min-w-0 flex-1">
-              <TypeCheckButton />
-              <EvaluateButton />
-            </div>
+            {!hideActions && (
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                <TypeCheckButton />
+                <EvaluateButton />
+              </div>
+            )}
             <Button
               variant="ghost"
               size="icon"

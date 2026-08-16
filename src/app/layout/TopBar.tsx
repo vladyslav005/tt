@@ -101,8 +101,9 @@ export function Topbar({editorRef}: TopbarProps) {
               <TypeTheoriesDropdown disabled={!isEditorPage} />
             </div>
 
-            {/* Layout presets */}
-            <div className="hidden md:block">
+            {/* Layout presets — panel arrangement is meaningless once the editor drops to its
+                single-column tabbed layout, so this only shows once dockview is active (lg+). */}
+            <div className="hidden lg:block">
               <LayoutPresetsDropdown disabled={!isEditorPage} />
             </div>
 
@@ -111,7 +112,8 @@ export function Topbar({editorRef}: TopbarProps) {
               variant="ghost"
               size="icon"
               onClick={toggleDarkMode}
-              className="rounded-lg"
+              className="rounded-lg size-11 md:size-9"
+              aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDarkMode ? (
                 <Sun className="w-5 h-5"/>
@@ -123,7 +125,9 @@ export function Topbar({editorRef}: TopbarProps) {
 
             <Button
               variant="ghost"
-              className="transition-all duration-200"
+              size="icon"
+              className="transition-all duration-200 size-11 md:size-9"
+              aria-label="Open GitHub repository"
               onClick={() => {
                 window.location.assign("https://github.com/vladyslav005/tt")
               }}
@@ -136,7 +140,8 @@ export function Topbar({editorRef}: TopbarProps) {
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden rounded-lg"
+              className="md:hidden rounded-lg size-11"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMobileMenuOpen ? (
                 <X className="w-5 h-5"/>
@@ -153,14 +158,23 @@ export function Topbar({editorRef}: TopbarProps) {
         </div>
       </div>
 
+      {/* Mobile drawer backdrop — opaque and dimmed so page content never bleeds through, tap to close */}
+      {isMobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 top-16 z-40 bg-background/80 backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Mobile Navigation Menu */}
       <div
         className={`
-          md:hidden overflow-hidden transition-all duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
+          md:hidden relative z-50 overflow-hidden transition-all duration-300 ease-in-out bg-background
+          ${isMobileMenuOpen ? 'max-h-[calc(100dvh-4rem)] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0'}
         `}
       >
-        <div className="px-4 py-3 space-y-2 bg-muted/50 border-t">
+        <div className="px-4 py-3 space-y-2 border-t">
           {/* Mobile Search */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
@@ -169,7 +183,7 @@ export function Topbar({editorRef}: TopbarProps) {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4"
+              className="pl-9 pr-4 h-11"
             />
           </div>
 
@@ -177,7 +191,6 @@ export function Topbar({editorRef}: TopbarProps) {
           <div className="flex flex-col items-start gap-2 pb-2">
             <ExamplesDropdown onSelect={onSelectExample} disabled={!isEditorPage} />
             <TypeTheoriesDropdown disabled={!isEditorPage} />
-            <LayoutPresetsDropdown disabled={!isEditorPage} />
             <ActiveExtensionsBadges />
           </div>
 
@@ -187,7 +200,7 @@ export function Topbar({editorRef}: TopbarProps) {
               key={item.href}
               to={item.href}
               onClick={() => setIsMobileMenuOpen(false)}
-              className={({isActive}) => `w-full block text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}
+              className={({isActive}) => `w-full block text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 min-h-11 ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}
             >
               {item.label}
             </NavLink>

@@ -9,6 +9,7 @@ import {
   ReferenceList,
   RuleAnatomy,
   RuleCardStrip,
+  MobileTableOfContents,
   SectionHeading,
   SummaryBox,
   TableOfContents,
@@ -92,6 +93,10 @@ export function StlcBasicsLecture() {
           questions every language in this app (and this course) answers, just with more machinery
           added lecture by lecture.
         </motion.p>
+
+        <motion.div variants={fadeInUp}>
+          <MobileTableOfContents items={STLC_BASICS_OUTLINE}/>
+        </motion.div>
 
         {/* ------------------------------------------------------------ MOTIVATION ---------- */}
         <motion.div variants={fadeInUp}>

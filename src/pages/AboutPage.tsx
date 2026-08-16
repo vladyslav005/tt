@@ -52,7 +52,7 @@ export function AboutPage() {
           animate="animate"
           variants={fadeInUp}
         >
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             About This Project
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
@@ -83,7 +83,7 @@ export function AboutPage() {
       >
         <Card className="shadow-xl hover:shadow-2xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-3xl">What This Project Does</CardTitle>
+            <CardTitle className="text-2xl sm:text-3xl">What This Project Does</CardTitle>
             <CardDescription className="text-base">
               A type theory playground for learning, debugging, and research
             </CardDescription>

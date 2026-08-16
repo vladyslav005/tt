@@ -89,7 +89,7 @@ export function EvaluateButton({
         <DropdownMenuTrigger asChild>
           <Button
             size="icon"
-            className="shadow-none"
+            className="shadow-none h-fullby "
             aria-label="Choose evaluation strategy"
             disabled={disabled}
           >

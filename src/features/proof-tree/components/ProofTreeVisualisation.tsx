@@ -81,10 +81,10 @@ export function ProofTreeVisualisation({
     >
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 flex-nowrap overflow-x-auto min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 min-w-0 flex-1">
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProofTreeTab)}>
-                <TabsList className="shrink-0">
+                <TabsList className="h-auto flex-wrap justify-start gap-1 p-1">
                   <TabsTrigger value="automatic">Automatic</TabsTrigger>
                   <TabsTrigger value="build-check">Build &amp; Check</TabsTrigger>
                   {showLogicTab ? (

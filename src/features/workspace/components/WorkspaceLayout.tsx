@@ -28,6 +28,8 @@ import {
 } from "@/shared/ui-state/persistWorkspaceLayout.ts";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {clearPendingLayoutPreset} from "@/shared/ui-state/workspaceLayoutSlice.ts";
+import {useMediaQuery} from "@/shared/hooks/useMediaQuery.ts";
+import {MobileWorkspaceLayout} from "@/features/workspace/components/MobileWorkspaceLayout.tsx";
 
 const components = {
   editor: EditorPanel,
@@ -54,6 +56,7 @@ export interface WorkspaceLayoutProps {
 
 export function WorkspaceLayout({className}: WorkspaceLayoutProps) {
   const {editorRef} = useOutletContext<AppOutletContext>();
+  const isMobile = useMediaQuery("(max-width: 1023px)");
   const apiRef = useRef<DockviewApi | null>(null);
   const {resolvedTheme} = useTheme();
   const dispatch = useAppDispatch();
@@ -106,6 +109,10 @@ export function WorkspaceLayout({className}: WorkspaceLayoutProps) {
     persistWorkspaceLayout(api.toJSON());
     dispatch(clearPendingLayoutPreset());
   }, [pendingPreset, dispatch, editorRef, rewireEditorRef]);
+
+  if (isMobile) {
+    return <MobileWorkspaceLayout className={className}/>;
+  }
 
   return (
     <div className={className}>

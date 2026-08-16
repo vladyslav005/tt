@@ -1,6 +1,6 @@
 import {useEffect, useState, type ReactNode} from "react";
 import {Link} from "react-router-dom";
-import {ArrowRight, BookOpen, Sparkles} from "lucide-react";
+import {ArrowRight, BookOpen, ChevronDown, ListTree, Sparkles} from "lucide-react";
 import {cn} from "@/shared/lib/utils.ts";
 import {RuleCard} from "@/features/docs/rules/RuleCard.tsx";
 import {findRule} from "@/features/docs/rules/ruleDefinitions.ts";
@@ -93,6 +93,42 @@ export function TableOfContents({items}: {items: TocItem[]}) {
         </ul>
       </div>
     </nav>
+  );
+}
+
+// Collapsible "on this page" nav for viewports too narrow for the sticky right rail —
+// placed at the top of the article, since a below-the-fold TOC on mobile is dead weight.
+export function MobileTableOfContents({items}: {items: TocItem[]}) {
+  return (
+    <details className="group xl:hidden rounded-xl border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold min-h-11">
+        <span className="flex items-center gap-2">
+          <ListTree className="h-4 w-4 text-muted-foreground"/>
+          On this page
+        </span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180"/>
+      </summary>
+      <ul className="max-h-64 overflow-y-auto px-2 pb-3">
+        {items.map((item) => (
+          <li key={item.id}>
+            <a href={`#${item.id}`} className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
+              {item.label}
+            </a>
+            {item.subitems && item.subitems.length > 0 && (
+              <ul>
+                {item.subitems.map((sub) => (
+                  <li key={sub.id}>
+                    <a href={`#${sub.id}`} className="block rounded-md py-1.5 pl-6 pr-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">
+                      {sub.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
