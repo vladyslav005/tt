@@ -7,10 +7,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Lock files (shared across workspaces)
 package-lock.json
+
+# Build outputs
 dist
 dist-ssr
+apps/web/dist
+packages/core/dist
 *.local
 
 # Editor directories and files
@@ -24,11 +31,17 @@ dist-ssr
 *.sln
 *.sw?
 
+# ANTLR parser files
 #src/shared/core/antlr/
-src/shared/core/main.ts
-!src/shared/core/antlr/Lambda.g4
+!packages/core/src/antlr/Lambda.g4
 
+# Scripts
 generate_parser.sh
 
+# Documentation
 desc.md
-/.env
+
+# Environment variables
+.env
+.env.local
+
