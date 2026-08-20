@@ -625,12 +625,6 @@ Contributions welcome! Please:
 
 ---
 
-## 📜 License
-
-MIT — See LICENSE file
-
----
-
 ## 🔗 Related
 
 - **Main project**: [tt](https://github.com/vladyslav005/tt) — Interactive web UI for this library
