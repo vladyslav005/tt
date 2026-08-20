@@ -70,15 +70,15 @@ export class AstPrettyPrinter {
 
   private printVarDecl(decl: VarDecl): string {
     if (decl.value.id)
-      return `${decl.name} : ${this.printType(decl.type)} = ${this.printTerm(decl.value)}`;
+      return `${decl.name} = ${this.printTerm(decl.value)} : ${this.printType(decl.type)}`;
     else
       return `${decl.name} : ${this.printType(decl.type)}`;
 
   }
 
   private printFunDecl(decl: FunDecl): string {
-    // Same syntax as VarDecl in this language.
-    return `${decl.name} : ${this.printType(decl.type)} = ${this.printTerm(decl.value)}`;
+    // Grammar's GlobalFunctionDeclaration is `ID EQ term COLON type SEMI`.
+    return `${decl.name} = ${this.printTerm(decl.value)} : ${this.printType(decl.type)}`;
   }
 
   private printTypeAliasDecl(decl: TypeAliasDecl): string {

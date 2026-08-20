@@ -1,6 +1,6 @@
 {
   "name": "@vladyslav005/tt-core",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Pure TypeScript library for parsing, type-checking, and evaluating Simply Typed Lambda Calculus with proof tree visualization",
   "type": "module",
   "main": "./dist/index.cjs",
