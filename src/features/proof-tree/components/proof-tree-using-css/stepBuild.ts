@@ -1,4 +1,4 @@
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {TexTree} from "@vladyslav005/tt-core";
 
 // Pre-order traversal: the goal judgement comes first, then each premise needed
 // to justify it, recursively — mirroring how a derivation is built by hand,

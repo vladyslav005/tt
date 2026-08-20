@@ -13,7 +13,7 @@ import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
 import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
-import type {SourcePosition} from "@/shared/core/domain/ast";
+import type {SourcePosition} from "@vladyslav005/tt-core";
 
 export interface TextEditorProps {
   defaultValue?: string;

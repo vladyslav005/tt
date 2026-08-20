@@ -5,7 +5,7 @@ import {countProofErrors, summarizeStudentTree} from "@/shared/ui-state/studentP
 import {ProofTreeBuilderNode} from "@/features/proof-tree/components/proof-tree-builder/ProofTreeBuilderNode.tsx";
 import {buildGammaRegistry} from "@/features/proof-tree/components/proof-tree-builder/buildGammaRegistry.ts";
 import {studentNodeToExportTree} from "@/features/proof-tree/components/proof-tree-builder/studentProofToTex.ts";
-import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {GammaRegistry} from "@vladyslav005/tt-core";
 import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 import {ExportLatexButtons} from "@/features/proof-tree/components/ExportLatexButtons.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";

@@ -39,8 +39,8 @@ import type {
   VarDecl,
   Variant,
   VariantCase,
-} from "@/shared/core/domain/ast";
-import {AstVisitor} from "@/shared/core/application/AstVisitor";
+} from "@vladyslav005/tt-core";
+import {AstVisitor} from "@vladyslav005/tt-core";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types.ts";
 
 export class AstFlowMapper extends AstVisitor<void> {

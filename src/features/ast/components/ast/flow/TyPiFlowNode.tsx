@@ -1,7 +1,7 @@
 import {Handle, Position} from "@xyflow/react";
 import type {TypeNodeData} from "@/shared/presentation/flow/types";
-import type {TyPi} from "@/shared/core/domain/ast";
-import {typeToString} from "@/shared/core/application/typecheck/utils.ts";
+import type {TyPi} from "@vladyslav005/tt-core";
+import {typeToString} from "@vladyslav005/tt-core";
 import {cn} from "@/shared/lib/utils";
 import {Input} from "@/shared/components/ui/input.tsx";
 import {LimitedHandle} from "./LimitedHandle.tsx";

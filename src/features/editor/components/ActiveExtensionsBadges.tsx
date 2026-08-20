@@ -1,4 +1,4 @@
-import { TYPE_THEORIES, type TypeTheoryId } from "@/shared/core/domain/typeTheory.ts";
+import { TYPE_THEORIES, type TypeTheoryId } from "@vladyslav005/tt-core";
 import { useAppSelector } from "@/shared/hooks/reduxHooks.ts";
 import { cn } from "@/shared/lib/utils.ts";
 

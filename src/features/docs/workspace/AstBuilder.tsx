@@ -2,11 +2,11 @@ import {useCallback, useRef, useState} from "react";
 import {Lightbulb} from "lucide-react";
 import {ReactFlowProvider} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type {Program} from "@/shared/core/domain/ast";
+import type {Program} from "@vladyslav005/tt-core";
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {AstEditor, type AstEditorHandle} from "@/features/ast/components/ast-editor/AstEditor.tsx";
 import {AstNodePaletteDropdowns} from "@/features/ast/components/ast-editor/AstNodePaletteDropdowns.tsx";
-import {astToText} from "@/shared/presentation/AstPrettyPrinter.ts";
+import {astToText} from "@vladyslav005/tt-core";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {ButtonGroup} from "@/shared/components/ui/button-group.tsx";
 

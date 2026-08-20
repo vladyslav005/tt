@@ -1,4 +1,4 @@
-import type {Program} from "@/shared/core/domain/ast";
+import type {Program} from "@vladyslav005/tt-core";
 import {useCallback, useState, useEffect} from "react";
 import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, MiniMap, Panel, useReactFlow, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';

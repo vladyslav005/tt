@@ -4,12 +4,12 @@ import {MathJax} from "better-react-mathjax";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/shared/components/ui/select.tsx";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
+import {TexMapper} from "@vladyslav005/tt-core";
 import {
   EVALUATION_STRATEGY_LABELS,
   EvaluationStrategy,
   type ReductionStep,
-} from "@/shared/core/application/evaluation/type.ts";
+} from "@vladyslav005/tt-core";
 
 interface ReductionStrategyExplorerProps {
   term: string;

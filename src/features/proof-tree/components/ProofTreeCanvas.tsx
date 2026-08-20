@@ -6,8 +6,8 @@ import {TexRefExpansionProvider} from "@/features/proof-tree/components/proof-tr
 import {StepBuildProvider} from "@/features/proof-tree/components/proof-tree-using-css/StepBuildContext.tsx";
 import {useStepBuild} from "@/features/proof-tree/hooks/useStepBuild.ts";
 import {ExportLatexButtons} from "@/features/proof-tree/components/ExportLatexButtons.tsx";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
-import type {SourcePosition} from "@/shared/core/domain/ast";
+import type {TexTree} from "@vladyslav005/tt-core";
+import type {SourcePosition} from "@vladyslav005/tt-core";
 
 interface ProofTreeCanvasProps {
   texTree: TexTree;

@@ -1,9 +1,9 @@
-import {AntlrParserAdapter} from "@/shared/core/adapter/AntlrParserAdapter.ts";
-import {SLTLCTypeChecker} from "@/shared/core/application/typecheck/STLCTypeChecker.ts";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
-import {LogicMapper} from "@/shared/presentation/tex/LogicMapper.ts";
+import {AntlrParserAdapter} from "@vladyslav005/tt-core";
+import {SLTLCTypeChecker} from "@vladyslav005/tt-core";
+import {TexMapper} from "@vladyslav005/tt-core";
+import {LogicMapper} from "@vladyslav005/tt-core";
 import {AstFlowMapper} from "@/shared/presentation/flow/FlowMapper.ts";
-import {Evaluator} from "@/shared/core/application/evaluation/Evaluator.ts";
+import {Evaluator} from "@vladyslav005/tt-core";
 
 
 export function makeDependencies() {

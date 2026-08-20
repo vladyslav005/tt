@@ -1,9 +1,9 @@
 // src/store/counterSlice.ts
 import {createSlice} from "@reduxjs/toolkit";
-import type {Program, SourcePosition, Type} from "@/shared/core/domain/ast";
-import type {ProofTree, Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-import {EvaluationStrategy, type EvaluationResult} from "@/shared/core/application/evaluation/type.ts";
-import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig, type TypeTheoryId} from "@/shared/core/domain/typeTheory.ts";
+import type {Program, SourcePosition, Type} from "@vladyslav005/tt-core";
+import type {ProofTree, Rule} from "@vladyslav005/tt-core";
+import {EvaluationStrategy, type EvaluationResult} from "@vladyslav005/tt-core";
+import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig, type TypeTheoryId} from "@vladyslav005/tt-core";
 import {
   buildStudentNode,
   type ContextBinding,

@@ -1,8 +1,8 @@
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
-import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {ProofTree} from "@vladyslav005/tt-core";
+import type {TexTree} from "@vladyslav005/tt-core";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import {NonStlcProofError} from "@/shared/presentation/tex/LogicMapper.ts";
+import {NonStlcProofError} from "@vladyslav005/tt-core";
 
 
 export function useProofHooks() {

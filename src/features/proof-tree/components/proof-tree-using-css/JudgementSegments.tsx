@@ -1,6 +1,6 @@
 import {useCallback} from "react";
 import {MathJax} from "better-react-mathjax";
-import type {TexRegistryEntry, TexSegment} from "@/shared/presentation/tex/texTree.ts";
+import type {TexRegistryEntry, TexSegment} from "@vladyslav005/tt-core";
 import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 
 interface JudgementSegmentsProps {

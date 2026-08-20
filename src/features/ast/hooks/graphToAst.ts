@@ -1,6 +1,6 @@
 import type {Edge} from "@xyflow/react";
 import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types";
-import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Kind, KindArrow, Program, RecursiveType, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, TyIndexApp, TyPi, Type, TypeAliasDecl, TypeConstructorDecl, Var, VarDecl, TyArrow} from "@/shared/core/domain/ast";
+import type {Abs, App, ASTNode, FunDecl, GlobalDecl, Kind, KindArrow, Program, RecursiveType, Term, TyConstructorAbs, TyConstructorApp, TyForall, TyIdentifier, TyIndexApp, TyPi, Type, TypeAliasDecl, TypeConstructorDecl, Var, VarDecl, TyArrow} from "@vladyslav005/tt-core";
 
 function unitLit(id: string): Term {
   return {id, kind: "Lit", value: "unit"} as Term;

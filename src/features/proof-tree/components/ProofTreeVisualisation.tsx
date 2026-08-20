@@ -6,7 +6,7 @@ import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
 import {Maximize2, Minimize2, ListTree, Info} from "lucide-react";
 import {EmptyState} from "@/shared/components/EmptyState.tsx";
-import {isPlainStlc} from "@/shared/core/domain/typeTheory.ts";
+import {isPlainStlc} from "@vladyslav005/tt-core";
 import {ProofTreeCanvas} from "@/features/proof-tree/components/ProofTreeCanvas.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {useEffect, useRef, useState} from "react";
@@ -19,7 +19,7 @@ import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {env} from "@/shared/lib/env.ts";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
-import type {SourcePosition} from "@/shared/core/domain/ast";
+import type {SourcePosition} from "@vladyslav005/tt-core";
 
 
 interface ProofTreeVisualisationProps {

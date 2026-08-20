@@ -1,5 +1,5 @@
 import {useState} from "react";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {TexTree} from "@vladyslav005/tt-core";
 import {MathJax} from "better-react-mathjax";
 import "./ProofTree.css"
 import {cn} from "@/shared/lib/utils.ts";

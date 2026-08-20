@@ -1,5 +1,5 @@
 import {createContext, useContext, type ReactNode} from "react";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {TexTree} from "@vladyslav005/tt-core";
 
 interface StepBuildValue {
   enabled: boolean;

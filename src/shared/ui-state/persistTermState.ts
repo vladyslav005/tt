@@ -1,5 +1,5 @@
-import {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
-import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@/shared/core/domain/typeTheory.ts";
+import {EvaluationStrategy} from "@vladyslav005/tt-core";
+import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@vladyslav005/tt-core";
 import type {TermState} from "@/shared/ui-state/termSlice.ts";
 
 const STORAGE_KEY = "tt.settings.v1";

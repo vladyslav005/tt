@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/shared/components/ui/dropdown-menu.tsx";
 import {ButtonGroup} from "@/shared/components/ui/button-group.tsx";
-import {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
+import {EvaluationStrategy} from "@vladyslav005/tt-core";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setEvaluationStrategy} from "@/shared/ui-state/termSlice.ts";
 

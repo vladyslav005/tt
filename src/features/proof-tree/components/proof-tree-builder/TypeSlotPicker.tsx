@@ -1,10 +1,10 @@
 import {useState} from "react";
-import type {Kind, Term, Type} from "@/shared/core/domain/ast";
+import type {Kind, Term, Type} from "@vladyslav005/tt-core";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Input} from "@/shared/components/ui/input.tsx";
 import {cn} from "@/shared/lib/utils.ts";
-import {kindToString, termIndexToString} from "@/shared/core/application/typecheck/utils.ts";
-import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@/shared/core/domain/typeTheory.ts";
+import {kindToString, termIndexToString} from "@vladyslav005/tt-core";
+import {DEFAULT_TYPE_THEORY_CONFIG, type TypeTheoryConfig} from "@vladyslav005/tt-core";
 
 // A click-only draft of every Type kind the checker can produce as an answer. `null` sub-slots mean
 // "not filled in yet" — draftToType returns null until every slot down to the leaves is complete.

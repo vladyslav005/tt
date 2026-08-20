@@ -13,7 +13,7 @@ import {Switch} from "@/shared/components/ui/switch.tsx";
 import {Label} from "@/shared/components/ui/label.tsx";
 import {EvaluationStepsViewer, ViewToggle} from "@/features/evaluation/components/EvaluationStepsViewer.tsx";
 import {env} from "@/shared/lib/env.ts";
-import {EVALUATION_STRATEGY_LABELS} from "@/shared/core/application/evaluation/type.ts";
+import {EVALUATION_STRATEGY_LABELS} from "@vladyslav005/tt-core";
 
 interface EvaluationVisualisationProps {
   className?: string;

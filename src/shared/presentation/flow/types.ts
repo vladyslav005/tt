@@ -36,7 +36,7 @@ import type {
   VarDecl,
   Variant,
   VariantCase,
-} from "@/shared/core/domain/ast";
+} from "@vladyslav005/tt-core";
 
 export type ProgramNodeData = {
   term: Program;

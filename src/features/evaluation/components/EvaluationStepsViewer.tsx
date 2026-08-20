@@ -1,11 +1,11 @@
 import { createContext, useContext, useMemo, useState } from "react";
-import type { Term, Type } from "@/shared/core/domain/ast";
-import type { EvaluationResult, ReductionStep } from "@/shared/core/application/evaluation/type";
-import { accumulateBindings, type BoundEntry } from "@/shared/core/application/evaluation/accumulatedBindings.ts";
+import type { Term, Type } from "@vladyslav005/tt-core";
+import type { EvaluationResult, ReductionStep } from "@vladyslav005/tt-core";
+import { accumulateBindings, type BoundEntry } from "@vladyslav005/tt-core";
 import { Button } from "@/shared/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowDown, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { expandTypeAliases, normalizeType, typeEquals } from "@/shared/core/application/typecheck/utils.ts";
+import { expandTypeAliases, normalizeType, typeEquals } from "@vladyslav005/tt-core";
 
 // Lets TypeView (nested deep in TermView) resolve type aliases without threading a prop through every case.
 const TypeAliasesContext = createContext<Record<string, Type>>({});

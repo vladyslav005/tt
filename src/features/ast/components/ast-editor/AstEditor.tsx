@@ -1,4 +1,4 @@
-import type {Program} from "@/shared/core/domain/ast";
+import type {Program} from "@vladyslav005/tt-core";
 import {useCallback, useState, useEffect, useRef, forwardRef, useImperativeHandle} from "react";
 import {
   applyEdgeChanges,
@@ -37,7 +37,7 @@ import {
 } from "@/shared/components/ui/select.tsx";
 import {graphToAst} from "@/features/ast/hooks/graphToAst";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
-import type {TyArrow, TyIdentifier} from "@/shared/core/domain/ast";
+import type {TyArrow, TyIdentifier} from "@vladyslav005/tt-core";
 import {TyIdentifierFlowNode} from "@/features/ast/components/ast/flow/TyIdentifierFlowNode";
 import {TyArrowFlowNode} from "@/features/ast/components/ast/flow/TyArrowFlowNode";
 import {SumTypeFlowNode} from "@/features/ast/components/ast/flow/SumTypeFlowNode";

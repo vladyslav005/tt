@@ -1,6 +1,6 @@
-import {type ProofTree, Rule, type TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {Type} from "@/shared/core/domain/ast";
-import {termIndexEquals} from "@/shared/core/application/typecheck/utils.ts";
+import {type ProofTree, Rule, type TypeScheme} from "@vladyslav005/tt-core";
+import type {Type} from "@vladyslav005/tt-core";
+import {termIndexEquals} from "@vladyslav005/tt-core";
 
 export interface ContextBinding {
   name: string;

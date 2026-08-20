@@ -2,7 +2,7 @@ import {useMemo, useState} from "react";
 import type {ReactNode} from "react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/shared/components/ui/popover.tsx";
 import {Input} from "@/shared/components/ui/input.tsx";
-import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
+import {Rule} from "@vladyslav005/tt-core";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {chooseRule} from "@/shared/ui-state/termSlice.ts";
 import {RULE_LABELS, rulesForTheories} from "@/features/proof-tree/components/proof-tree-builder/ruleLabels.ts";

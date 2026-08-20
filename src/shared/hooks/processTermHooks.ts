@@ -1,11 +1,11 @@
-import type {Program} from "@/shared/core/domain/ast";
-import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
+import type {Program} from "@vladyslav005/tt-core";
+import type {ProofTree} from "@vladyslav005/tt-core";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {clean, pushProcessingError, setAst, setErrorMarkers, setEvaluation, setProof, setTypeAliases} from "@/shared/ui-state/termSlice.ts";
-import type {EvaluationStrategy} from "@/shared/core/application/evaluation/type.ts";
-import {ParseSyntaxError} from "@/shared/core/adapter/SyntaxErrorListener.ts";
-import {TypeCheckError} from "@/shared/core/application/typecheck/TypeCheckError.ts";
+import type {EvaluationStrategy} from "@vladyslav005/tt-core";
+import {ParseSyntaxError} from "@vladyslav005/tt-core";
+import {TypeCheckError} from "@vladyslav005/tt-core";
 
 export function useTermHooks() {
   const {

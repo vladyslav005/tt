@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { TYPE_THEORIES } from "@/shared/core/domain/typeTheory.ts";
+import { TYPE_THEORIES } from "@vladyslav005/tt-core";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/reduxHooks.ts";
 import { setTheoryEnabled } from "@/shared/ui-state/termSlice.ts";
 

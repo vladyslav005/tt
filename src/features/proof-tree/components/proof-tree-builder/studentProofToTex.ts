@@ -1,10 +1,10 @@
-import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {Type} from "@/shared/core/domain/ast";
+import type {ProofTree, TypeScheme} from "@vladyslav005/tt-core";
+import {Rule} from "@vladyslav005/tt-core";
+import type {Type} from "@vladyslav005/tt-core";
 import type {StudentProofNode} from "@/shared/ui-state/studentProof.ts";
-import type {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
-import type {ExportTree} from "@/shared/presentation/tex/ebproofExport.ts";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
+import type {GammaRegistry} from "@vladyslav005/tt-core";
+import type {ExportTree} from "@vladyslav005/tt-core";
+import {TexMapper} from "@vladyslav005/tt-core";
 import {gammaRefTex} from "@/features/proof-tree/components/proof-tree-builder/ConclusionBuilder.tsx";
 import {RULE_LABELS} from "@/features/proof-tree/components/proof-tree-builder/ruleLabels.ts";
 

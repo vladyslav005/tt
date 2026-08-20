@@ -1,5 +1,5 @@
-import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
-import {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import type {ProofTree} from "@vladyslav005/tt-core";
+import {GammaRegistry} from "@vladyslav005/tt-core";
 
 export function buildGammaRegistry(root: ProofTree): GammaRegistry {
   const registry = new GammaRegistry();

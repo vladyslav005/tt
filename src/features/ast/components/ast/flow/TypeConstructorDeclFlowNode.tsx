@@ -1,6 +1,6 @@
 import {Handle, Position} from "@xyflow/react";
 import type {TypeConstructorDeclNodeData} from "@/shared/presentation/flow/types.ts";
-import {kindToString} from "@/shared/core/application/typecheck/utils.ts";
+import {kindToString} from "@vladyslav005/tt-core";
 import {Input} from "@/shared/components/ui/input";
 import {cn} from "@/shared/lib/utils";
 import {LimitedHandle} from "./LimitedHandle.tsx";

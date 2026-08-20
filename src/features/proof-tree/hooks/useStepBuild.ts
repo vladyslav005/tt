@@ -1,5 +1,5 @@
 import {useMemo, useState} from "react";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
+import type {TexTree} from "@vladyslav005/tt-core";
 import {collectBuildOrder} from "@/features/proof-tree/components/proof-tree-using-css/stepBuild.ts";
 
 // Manual, click-through reveal of a proof tree in build order (the goal

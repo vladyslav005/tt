@@ -1,18 +1,18 @@
 import {Fragment, memo} from "react";
 import {MathJax} from "better-react-mathjax";
 import {RotateCcw} from "lucide-react";
-import type {ProofTree, TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {Type} from "@/shared/core/domain/ast";
+import type {ProofTree, TypeScheme} from "@vladyslav005/tt-core";
+import {Rule} from "@vladyslav005/tt-core";
+import type {Type} from "@vladyslav005/tt-core";
 import type {StudentProofNode} from "@/shared/ui-state/studentProof.ts";
 import {ConclusionBuilder, gammaRefTex} from "@/features/proof-tree/components/proof-tree-builder/ConclusionBuilder.tsx";
 import {RulePickerPopover} from "@/features/proof-tree/components/proof-tree-builder/RulePickerPopover.tsx";
 import {RULE_LABELS} from "@/features/proof-tree/components/proof-tree-builder/ruleLabels.ts";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
+import {TexMapper} from "@vladyslav005/tt-core";
 import {useAppDispatch} from "@/shared/hooks/reduxHooks.ts";
 import {resetNode} from "@/shared/ui-state/termSlice.ts";
 import {cn} from "@/shared/lib/utils.ts";
-import type {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import type {GammaRegistry} from "@vladyslav005/tt-core";
 import "@/features/proof-tree/components/proof-tree-using-css/ProofTree.css";
 
 interface ProofTreeBuilderNodeProps {

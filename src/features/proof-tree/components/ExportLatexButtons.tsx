@@ -1,8 +1,8 @@
 import {useState} from "react";
 import {Copy, Download, Eye, FileText} from "lucide-react";
 import {toast} from "sonner";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
-import {texTreeToEbproofDocument} from "@/shared/presentation/tex/ebproofExport.ts";
+import type {TexTree} from "@vladyslav005/tt-core";
+import {texTreeToEbproofDocument} from "@vladyslav005/tt-core";
 import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 import {downloadTextFile} from "@/shared/lib/downloadTextFile.ts";
 import {Button} from "@/shared/components/ui/button.tsx";

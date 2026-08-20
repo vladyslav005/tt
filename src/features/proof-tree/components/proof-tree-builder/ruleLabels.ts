@@ -1,5 +1,5 @@
-import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {TypeTheoryConfig, TypeTheoryId} from "@/shared/core/domain/typeTheory.ts";
+import {Rule} from "@vladyslav005/tt-core";
+import type {TypeTheoryConfig, TypeTheoryId} from "@vladyslav005/tt-core";
 
 // Display labels for every rule the student can pick, matching TexMapper's labels where one exists.
 // DummyAbs renders identically to Abs in TexMapper ("T-Abs") but needs its own label here so the two

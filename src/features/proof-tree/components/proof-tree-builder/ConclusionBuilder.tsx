@@ -1,18 +1,18 @@
 import {useCallback, useState} from "react";
 import {MathJax} from "better-react-mathjax";
-import type {ProofTree} from "@/shared/core/application/typecheck/ProofTree.ts";
-import {Rule} from "@/shared/core/application/typecheck/ProofTree.ts";
+import type {ProofTree} from "@vladyslav005/tt-core";
+import {Rule} from "@vladyslav005/tt-core";
 import type {ContextBinding, StudentProofNode} from "@/shared/ui-state/studentProof.ts";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
-import type {GammaRegistry} from "@/shared/presentation/tex/GammaRegistry.ts";
+import {TexMapper} from "@vladyslav005/tt-core";
+import type {GammaRegistry} from "@vladyslav005/tt-core";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {revealPremise, setNodeContext, setNodeType} from "@/shared/ui-state/termSlice.ts";
 import {Popover, PopoverAnchor, PopoverContent} from "@/shared/components/ui/popover.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Input} from "@/shared/components/ui/input.tsx";
 import {cn} from "@/shared/lib/utils.ts";
-import type {TypeScheme} from "@/shared/core/application/typecheck/ProofTree.ts";
-import type {Type} from "@/shared/core/domain/ast";
+import type {TypeScheme} from "@vladyslav005/tt-core";
+import type {Type} from "@vladyslav005/tt-core";
 import {BASE_TYPES, type DraftType, draftToType, typeLabel, TypeSlotPicker, typeToDraft} from "@/features/proof-tree/components/proof-tree-builder/TypeSlotPicker.tsx";
 import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";
 

@@ -1,9 +1,9 @@
 import {useCallback, useState} from "react";
-import type {Type} from "@/shared/core/domain/ast";
+import type {Type} from "@vladyslav005/tt-core";
 import {useDependencies} from "@/app/providers/di/DependencyProvider.tsx";
-import {TexMapper} from "@/shared/presentation/tex/TexMapper.ts";
-import {typeToString} from "@/shared/core/application/typecheck/utils.ts";
-import {DEFAULT_TYPE_THEORY_CONFIG} from "@/shared/core/domain/typeTheory.ts";
+import {TexMapper} from "@vladyslav005/tt-core";
+import {typeToString} from "@vladyslav005/tt-core";
+import {DEFAULT_TYPE_THEORY_CONFIG} from "@vladyslav005/tt-core";
 
 export interface MiniWorkspaceResult {
   type: Type;

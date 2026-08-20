@@ -1,6 +1,6 @@
 import {Fragment} from "react";
-import type {TexTree} from "@/shared/presentation/tex/texTree.ts";
-import type {SourcePosition} from "@/shared/core/domain/ast";
+import type {TexTree} from "@vladyslav005/tt-core";
+import type {SourcePosition} from "@vladyslav005/tt-core";
 import {Conclusion} from "@/features/proof-tree/components/proof-tree-using-css/Conclusion.tsx";
 import {useStepBuild} from "@/features/proof-tree/components/proof-tree-using-css/StepBuildContext.tsx";
 import {useTexRefExpansion} from "@/features/proof-tree/components/proof-tree-using-css/TexRefExpansionContext.tsx";

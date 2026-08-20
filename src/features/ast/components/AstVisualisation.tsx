@@ -14,10 +14,10 @@ import {ButtonGroup, ButtonGroupSeparator} from "@/shared/components/ui/button-g
 import {Tabs, TabsList, TabsTrigger} from "@/shared/components/ui/tabs.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
-import type {Program} from "@/shared/core/domain/ast";
+import type {Program} from "@vladyslav005/tt-core";
 import type {RefObject} from "react";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
-import {astToText} from "@/shared/presentation/AstPrettyPrinter.ts";
+import {astToText} from "@vladyslav005/tt-core";
 import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
 import {useMapAstToFlow} from "@/features/ast/hooks/mapAstToFlow.ts";
 import {layoutAstFlow} from "@/features/ast/hooks/layoutAstFlow.ts";
