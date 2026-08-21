@@ -1,71 +1,94 @@
-# tt-vscode-extension README
+# tt for VS Code
 
-This is the README for your extension "tt-vscode-extension". After writing up a brief description, we recommend including the following sections.
+Language support for **tt**, a typed lambda calculus playground language, directly in the editor —
+syntax highlighting, live diagnostics, completions, and the same AST / typing-derivation / evaluation
+views as the web playground ([type-theory.dev](https://type-theory.dev) /
+[tt-woad.vercel.app](https://tt-woad.vercel.app/)), rendered as native VS Code panels.
+
+> tt is also available as a web app at **[type-theory.dev](https://type-theory.dev)** (mirrored at
+> **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**). This extension is for working with `.tt`
+> files locally in your editor instead.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### Editing
 
-For example if there is an image subfolder under your extension project workspace:
+- **Syntax highlighting** for `.tt` files, plus two bundled color themes (TT Light / TT Dark) tuned for it.
+- **Live diagnostics** — parse and type errors underlined as you type, respecting whichever type-theory
+  extensions you have enabled (see below).
+- **Completions** — keywords, in-scope variable names, and backslash-triggered shortcuts for special
+  syntax (`\to` → `->`, `\lambda` → `λ`, the full Greek alphabet, `\forall`, `\Pi`, ...).
+- A small **λ badge** on `.tt` files in the Explorer, layered on top of whatever file-icon theme
+  you already use — it doesn't replace or require switching your icon theme.
 
-\!\[feature X\]\(images/feature-x.png\)
+### Type theory & evaluation
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+tt supports six optional extensions on top of plain simply-typed lambda calculus: let-polymorphism,
+type inference, iso-recursive types, System F, System Fω, and System λP (dependent types). And three
+evaluation strategies: normal order, call-by-value, call-by-name.
+
+- **`TT: Toggle Type Theories`** — multi-select picker to enable/disable extensions.
+- **`TT: Choose Evaluation Strategy`** — pick the reduction strategy used everywhere below.
+- Both are also one click away from the **status bar** whenever a `.tt` file is active.
+- **`TT: Evaluate Current File`** — runs evaluation and prints the strategy, each reduction step, and
+  the result to the **"TT" Output Channel**.
+
+### Visual panels
+
+Three panels mirror the web app's visualizations, built to open together automatically the first time
+you open a `.tt` file (and stay closed if you close one — they won't nag you back open):
+
+- **Evaluation Steps** (`TT: Show Evaluation Steps`) — the reduction trace, step by step.
+- **Proof Tree** (`TT: Show Proof Tree`) — the typing derivation, with a toggle for the Curry–Howard
+  (propositional logic) view when the term uses no type-theory extension. Pan by dragging, zoom with
+  the wheel/pinch; hover a judgement to highlight its source span in the editor (never steals focus or
+  moves your cursor).
+- **AST Diagram** (`TT: Show AST Diagram`) — the parsed syntax tree as a node-link graph, colored by
+  node category (declarations / terms / types / kinds), same pan/zoom/hover-highlight interaction.
+
+There's also a plain **"TT AST"** tree view in the Explorer sidebar for quick text-based browsing —
+click a node to jump straight to it in the source.
+
+**`TT: Export Proof Tree as LaTeX`** writes the current derivation (or its Curry–Howard reading, if
+applicable) to a standalone `ebproof`/`amsmath` `.tex` file, ready to compile or drop into a paper.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+None beyond VS Code itself — no external tooling or language server to install.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+- `tt.typeTheories.letPolymorphism`, `tt.typeTheories.typeInference`, `tt.typeTheories.isoRecursiveTypes`,
+  `tt.typeTheories.systemF`, `tt.typeTheories.systemFOmega`, `tt.typeTheories.systemLambdaP` — booleans,
+  default `false`. Same as the `TT: Toggle Type Theories` picker, editable directly in `settings.json`.
+- `tt.evaluationStrategy` — `"NORMAL" | "CALL_BY_VALUE" | "CALL_BY_NAME"`, default `"CALL_BY_VALUE"`.
 
-For example:
+## Commands
 
-This extension contributes the following settings:
+| Command | Description |
+| --- | --- |
+| `TT: Parse Current File` | Quick parse check with a pass/fail notification. |
+| `TT: Evaluate Current File` | Evaluate and print the trace to the Output Channel. |
+| `TT: Toggle Type Theories` | Multi-select which extensions are enabled. |
+| `TT: Choose Evaluation Strategy` | Pick normal order / call-by-value / call-by-name. |
+| `TT: Show Evaluation Steps` | Open the evaluation trace panel. |
+| `TT: Show Proof Tree` | Open the typing derivation panel. |
+| `TT: Show AST Diagram` | Open the AST graph panel. |
+| `TT: Export Proof Tree as LaTeX` | Save the current derivation as a standalone `.tex` file. |
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## Known limitations
 
-## Known Issues
+- The AST sidebar tree doesn't preserve which nodes were expanded across an edit (VS Code recreates
+  tree items on refresh) — a cosmetic rough edge, not a data issue.
+- Proof tree judgements are rendered as plain unicode text (Γ, ⊢, λ, →, ...) in the panel itself, not
+  full LaTeX typesetting — there's no MathJax dependency here by design, to keep the extension
+  lightweight. Use `TT: Export Proof Tree as LaTeX` for a properly typeset version.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## Related
 
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+- Web playground: **[type-theory.dev](https://type-theory.dev)** /
+  **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**
+- `@vladyslav005/tt-core` — the language engine this extension and the web app both build on, published
+  independently on npm.
 
 **Enjoy!**

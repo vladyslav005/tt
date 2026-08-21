@@ -44,7 +44,7 @@ console.log(checker.getErrors());           // [] — empty when well-typed
 const evaluator = new Evaluator();
 const result = evaluator.evaluate(program, EvaluationStrategy.CALL_BY_VALUE);
 
-console.log(astToText({ globals: [], term: result.result })); // "a;"
+console.log(astToText({ ...program, term: result.result })); // "a;"
 console.log(result.steps.length);                             // 2
 
 // 4. Render the typing derivation (e.g. for LaTeX/UI rendering).
@@ -118,8 +118,13 @@ extensions below.
 
 ### Optional type theories
 
-Plain STLC (the grammar above minus the extension rows) is always on. Six more theories can be
-toggled independently via `SLTLCTypeChecker#setTheories`, each unlocking more grammar:
+The Terms/Types grammar above is the always-on STLC core. Six more theories add further syntax —
+System F's `ΛX. t`/`t [T]`, `∀X. T`; System Fω's `λX:K. T`/`F T` and kinds; System λP's `Π x:A. B`
+and dependent kinds; iso-recursive `μX.T`/`fold`/`unfold` — summarized by example below rather than
+spelled out in full BNF here; see [`src/antlr/Lambda.g4`](./src/antlr/Lambda.g4) for the complete
+grammar including every extension. The parser accepts all of it unconditionally (grammar doesn't
+know about theory flags); `SLTLCTypeChecker#setTheories` is what actually gates which constructs
+type-check successfully:
 
 | Theory | Unlocks | Example |
 | --- | --- | --- |
@@ -299,5 +304,5 @@ npm run gen-grammar    # regenerate src/antlr/* from src/antlr/Lambda.g4
 ## Related
 
 - **Main project**: [tt](https://github.com/vladyslav005/tt) — the interactive web UI built on this library
-- **Live demo**: [tt-woad.vercel.app](https://tt-woad.vercel.app/)
+- **Live demo**: [type-theory.dev](https://type-theory.dev) / [tt-woad.vercel.app](https://tt-woad.vercel.app/)
 - **NPM**: [npmjs.com/package/@vladyslav005/tt-core](https://www.npmjs.com/package/@vladyslav005/tt-core)

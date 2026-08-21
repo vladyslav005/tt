@@ -1,4 +1,40 @@
-*You can track project development and ongoing results on [this link](https://tt-woad.vercel.app/).*
+# tt — an interactive typed lambda calculus playground
+
+**Live app: [type-theory.dev](https://type-theory.dev)** /
+**[tt-woad.vercel.app](https://tt-woad.vercel.app/)**
+
+A web-based environment for writing lambda calculus terms and interactively exploring how they parse,
+type-check, evaluate, and correspond to logical proofs — built on a framework-agnostic language engine
+(`@vladyslav005/tt-core`, published independently on npm) that also powers a
+[VS Code extension](apps/vscode-extension) for working with `.tt` files locally.
+
+## What's implemented today
+
+- **Parser & type checker** for simply-typed lambda calculus plus six optional extensions, toggleable
+  independently: let-polymorphism, type inference, iso-recursive types, System F, System Fω, and
+  System λP (dependent types).
+- **AST visualization** as an interactive node graph, alongside a structural AST editor for building
+  terms without writing syntax.
+- **Typing derivation (proof) trees** that are always fully constructed, with explicit error nodes
+  showing exactly where and why a derivation fails, rather than a plain pass/fail result.
+- **Manual proof construction mode** — build a typing derivation yourself, rule by rule, with the
+  system validating it against the term as you go.
+- **Curry–Howard view** — typing derivations for the plain-STLC fragment can be shown as propositional
+  logic proofs instead, with LaTeX/ebproof export.
+- **Evaluation** under normal order, call-by-value, or call-by-name, run fully or traced step by step,
+  with the active redex highlighted at each step.
+- **VS Code extension** (`apps/vscode-extension`) mirroring the AST/proof-tree/evaluation views as
+  native editor panels, plus syntax highlighting, diagnostics, and completions for `.tt` files.
+
+This repo is an npm workspaces monorepo — see [`CLAUDE.md`](CLAUDE.md) for the architecture and
+development commands, `packages/core/README.md` for the language engine's library API and grammar
+reference, and `apps/vscode-extension/README.md` for the extension.
+
+---
+
+*The sections below describe the original design vision this project was built from — some framing is
+forward-looking rather than a description of the current build (e.g. §8, generating a term from a
+manually-built logical proof, is not yet implemented).*
 
 # Specification and Design of an Interactive Visualization Tool for Typing, Evaluation, and Proofs
 
