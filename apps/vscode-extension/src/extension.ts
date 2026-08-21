@@ -4,8 +4,13 @@ import * as vscode from 'vscode';
 import {
 	AntlrParserAdapter,
 } from "@vladyslav005/tt-core";
+import {registerDiagnostics} from "./diagnostics";
+import {registerCompletions} from "./completions";
 
 export function activate(context: vscode.ExtensionContext) {
+	registerDiagnostics(context);
+	registerCompletions(context);
+
 	let disposable = vscode.commands.registerCommand(
 		"tt-vscode-extension.parseCurrentFile",
 		() => {

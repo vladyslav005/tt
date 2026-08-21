@@ -1,0 +1,71 @@
+{
+	"name": "TT Light",
+	"type": "light",
+	"colors": {
+		"editor.foreground": "#0F172BFF",
+		"editor.background": "#ffffff",
+		"editorCursor.foreground": "#0f172a",
+		"editor.lineHighlightBackground": "#f8fafc",
+		"editorLineNumber.foreground": "#94a3b8",
+		"editorLineNumber.activeForeground": "#475569",
+		"editor.selectionBackground": "#e0e7ff",
+		"editor.selectionHighlightBackground": "#e0e7ff80",
+		"editor.wordHighlightBackground": "#f1f5f9",
+		"editor.wordHighlightStrongBackground": "#e2e8f0",
+		"editorWidget.background": "#ffffff",
+		"editorWidget.border": "#e2e8f0",
+		"editorSuggestWidget.background": "#ffffff",
+		"editorSuggestWidget.border": "#e2e8f0",
+		"editorSuggestWidget.selectedBackground": "#f1f5f9"
+	},
+	"tokenColors": [
+		{
+			"scope": "keyword.control.tt",
+			"settings": { "foreground": "#7c3aed", "fontStyle": "bold" }
+		},
+		{
+			"scope": "keyword.operator.tt",
+			"settings": { "foreground": "#dc2626", "fontStyle": "bold" }
+		},
+		{
+			"scope": "keyword.operator.assignment.tt",
+			"settings": { "foreground": "#dc2626", "fontStyle": "" }
+		},
+		{
+			"scope": ["keyword.operator.doublearrow.tt", "keyword.operator.arrow.tt"],
+			"settings": { "foreground": "#16a34a", "fontStyle": "bold" }
+		},
+		{
+			"scope": "constant.language.tt",
+			"settings": { "foreground": "#ea580c", "fontStyle": "" }
+		},
+		{
+			"scope": "support.type.tt",
+			"settings": { "foreground": "#d97706", "fontStyle": "" }
+		},
+		{
+			"scope": "storage.modifier.kind.tt",
+			"settings": { "foreground": "#0d9488", "fontStyle": "bold" }
+		},
+		{
+			"scope": ["punctuation.definition.array.tt", "punctuation.accessor.tt"],
+			"settings": { "foreground": "#64748b", "fontStyle": "bold" }
+		},
+		{
+			"scope": "punctuation.separator.colon.tt",
+			"settings": { "foreground": "#7c3aed", "fontStyle": "bold" }
+		},
+		{
+			"scope": "constant.numeric.tt",
+			"settings": { "foreground": "#0ca7ea", "fontStyle": "bold" }
+		},
+		{
+			"scope": "comment.line.double-slash.tt",
+			"settings": { "foreground": "#94a3b8", "fontStyle": "italic" }
+		},
+		{
+			"scope": "variable.other.tt",
+			"settings": { "foreground": "#334155", "fontStyle": "" }
+		}
+	]
+}

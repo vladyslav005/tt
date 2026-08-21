@@ -1,0 +1,108 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "TT",
+	"scopeName": "source.tt",
+	"patterns": [
+		{ "include": "#comments" },
+		{ "include": "#builtInTypes" },
+		{ "include": "#constants" },
+		{ "include": "#numbers" },
+		{ "include": "#keywords" },
+		{ "include": "#doubleArrow" },
+		{ "include": "#arrow" },
+		{ "include": "#twoCharOperators" },
+		{ "include": "#redOperators" },
+		{ "include": "#assignment" },
+		{ "include": "#kindStar" },
+		{ "include": "#brackets" },
+		{ "include": "#dot" },
+		{ "include": "#colon" },
+		{ "include": "#identifiers" }
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{ "name": "comment.line.double-slash.tt", "match": "//.*$" }
+			]
+		},
+		"builtInTypes": {
+			"comment": "Matches Monaco's builtInType rule, which runs before the constant rule — so 'Unit' is always a type here, never the constant.",
+			"patterns": [
+				{ "name": "support.type.tt", "match": "\\b(Nat|Bool|Unit)\\b" }
+			]
+		},
+		"constants": {
+			"patterns": [
+				{ "name": "constant.language.tt", "match": "\\b(true|True|false|False|unit)\\b" }
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{ "name": "constant.numeric.tt", "match": "\\b\\d+(\\.\\d+)?\\b" }
+			]
+		},
+		"keywords": {
+			"comment": "Exactly Monaco's `keywords` list — note 'List' is intentionally absent there, so it renders as a plain identifier, not a keyword.",
+			"patterns": [
+				{
+					"name": "keyword.control.tt",
+					"match": "\\b(as|case|of|if|then|else|inl|inr|nil|isnil|head|tail|cons|typedef|fix|let|in|fold|unfold)\\b"
+				}
+			]
+		},
+		"doubleArrow": {
+			"patterns": [
+				{ "name": "keyword.operator.doublearrow.tt", "match": "=>|⇒" }
+			]
+		},
+		"arrow": {
+			"comment": "Only the Unicode arrow is a single token here, matching Monaco — ASCII '->' isn't recognized as a unit and falls through to '-' and '>' separately (both landing in #redOperators).",
+			"patterns": [
+				{ "name": "keyword.operator.arrow.tt", "match": "→" }
+			]
+		},
+		"twoCharOperators": {
+			"patterns": [
+				{ "name": "keyword.operator.tt", "match": ">=|<=|==|!=" }
+			]
+		},
+		"redOperators": {
+			"comment": "Monaco colors all of these identically (bold red) regardless of role — arithmetic/comparison symbols, the lambda/mu binders, and forall/pi all share one bucket.",
+			"patterns": [
+				{ "name": "keyword.operator.tt", "match": "λ|Λ|μ|∀|Π|[/^+\\-*<>]" }
+			]
+		},
+		"assignment": {
+			"comment": "The bare '=' is its own (non-bold) token in Monaco, distinct from the comparison/arithmetic bucket above.",
+			"patterns": [
+				{ "name": "keyword.operator.assignment.tt", "match": "=" }
+			]
+		},
+		"kindStar": {
+			"patterns": [
+				{ "name": "storage.modifier.kind.tt", "match": "@" }
+			]
+		},
+		"brackets": {
+			"patterns": [
+				{ "name": "punctuation.definition.array.tt", "match": "[\\[\\]]" }
+			]
+		},
+		"dot": {
+			"patterns": [
+				{ "name": "punctuation.accessor.tt", "match": "\\." }
+			]
+		},
+		"colon": {
+			"patterns": [
+				{ "name": "punctuation.separator.colon.tt", "match": ":" }
+			]
+		},
+		"identifiers": {
+			"comment": "Catch-all matching Monaco's 'variable' token — must stay last so keywords/types/constants above claim their words first.",
+			"patterns": [
+				{ "name": "variable.other.tt", "match": "\\b[a-zA-Z_]\\w*\\b" }
+			]
+		}
+	}
+}
