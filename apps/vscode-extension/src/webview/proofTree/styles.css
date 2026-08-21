@@ -1,0 +1,95 @@
+body {
+	color: var(--vscode-editor-foreground);
+	background: var(--vscode-editor-background);
+	font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
+	font-size: var(--vscode-editor-font-size, 13px);
+	padding: 12px;
+	overflow-x: auto;
+}
+
+.tt-toolbar {
+	margin-bottom: 12px;
+}
+
+.tt-toggle {
+	color: var(--vscode-button-foreground);
+	background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+	border: 1px solid var(--vscode-button-border, transparent);
+	border-radius: 2px;
+	padding: 4px 10px;
+	cursor: pointer;
+	font-size: inherit;
+}
+
+.tt-toggle:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.tt-toggle-active {
+	background: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+}
+
+.tt-node {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	vertical-align: top;
+	padding: 4px 8px;
+}
+
+.tt-premises {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
+	gap: 16px;
+}
+
+.tt-bar {
+	width: 100%;
+	border: none;
+	border-top: 1.5px solid var(--vscode-editor-foreground);
+	margin: 4px 0;
+}
+
+.tt-conclusion {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	white-space: nowrap;
+}
+
+.tt-judgement {
+	font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.tt-judgement.tt-clickable {
+	cursor: pointer;
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+}
+
+.tt-rule {
+	font-size: 0.8em;
+	color: var(--vscode-descriptionForeground);
+}
+
+.tt-ref {
+	cursor: pointer;
+	text-decoration: underline dotted;
+	text-underline-offset: 2px;
+}
+
+.tt-node-error {
+	outline: 1.5px solid var(--vscode-errorForeground);
+	border-radius: 4px;
+}
+
+.tt-node-error-text {
+	color: var(--vscode-errorForeground);
+	font-size: 0.85em;
+	max-width: 260px;
+	white-space: normal;
+	text-align: center;
+}

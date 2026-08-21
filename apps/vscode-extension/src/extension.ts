@@ -6,10 +6,66 @@ import {
 } from "@vladyslav005/tt-core";
 import {registerDiagnostics} from "./diagnostics";
 import {registerCompletions} from "./completions";
+import {registerEvaluateCurrentFileCommand} from "./commands/evaluateCurrentFileCommand";
+import {registerEvaluationStrategyCommand} from "./commands/evaluationStrategyCommand";
+import {registerToggleTypeTheoriesCommand} from "./commands/toggleTypeTheoriesCommand";
+import {ttOutputChannel} from "./outputChannel";
+import {registerEvaluationStepsCommand} from "./panels/evaluationStepsPanel";
+import {registerProofTreeCommand} from "./panels/proofTreePanel";
+import {AstTreeProvider} from "./astView/astTreeProvider";
+import {revealPosition} from "./editorReveal";
+import {registerStatusBar} from "./statusBar";
 
 export function activate(context: vscode.ExtensionContext) {
+	context.subscriptions.push(ttOutputChannel);
+
 	registerDiagnostics(context);
 	registerCompletions(context);
+	registerToggleTypeTheoriesCommand(context);
+	registerEvaluationStrategyCommand(context);
+	registerEvaluateCurrentFileCommand(context);
+	registerStatusBar(context);
+	registerEvaluationStepsCommand(context);
+	registerProofTreeCommand(context);
+
+	const astProvider = new AstTreeProvider();
+	context.subscriptions.push(vscode.window.registerTreeDataProvider("ttAstView", astProvider));
+	context.subscriptions.push(
+		vscode.commands.registerCommand("tt-vscode-extension.astView.reveal", async (pos) => {
+			const activeEditor = vscode.window.activeTextEditor;
+			if (activeEditor) {
+				await revealPosition(activeEditor.document.uri, pos);
+			}
+		}),
+	);
+
+	// No active text editor doesn't mean "switched away from a .tt file" — it also fires when
+	// focus moves to a webview panel, the Output panel, etc. Only flip the context key when we
+	// can see the user is actually on a different kind of file; otherwise leave it as-is so the
+	// "TT AST" view doesn't disappear just because a panel was clicked.
+	function updateTtActiveFileContext(): void {
+		const activeEditor = vscode.window.activeTextEditor;
+		if (!activeEditor) {
+			return;
+		}
+		void vscode.commands.executeCommand("setContext", "tt.activeFileIsTt", activeEditor.document.languageId === "tt");
+	}
+	updateTtActiveFileContext();
+
+	let astRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+	context.subscriptions.push(
+		vscode.window.onDidChangeActiveTextEditor(() => {
+			updateTtActiveFileContext();
+			astProvider.refresh();
+		}),
+		vscode.workspace.onDidChangeTextDocument((e) => {
+			if (e.document.languageId !== "tt") {
+				return;
+			}
+			clearTimeout(astRefreshTimer);
+			astRefreshTimer = setTimeout(() => astProvider.refresh(), 300);
+		}),
+	);
 
 	const disposable = vscode.commands.registerCommand(
 		"tt-vscode-extension.parseCurrentFile",

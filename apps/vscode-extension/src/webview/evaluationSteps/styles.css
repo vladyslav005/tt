@@ -1,0 +1,54 @@
+body {
+	color: var(--vscode-editor-foreground);
+	background: var(--vscode-editor-background);
+	font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
+	font-size: var(--vscode-editor-font-size, 13px);
+	padding: 8px 12px;
+}
+
+.tt-header {
+	font-weight: 600;
+	margin-bottom: 8px;
+	opacity: 0.8;
+}
+
+.tt-step {
+	padding: 6px 0;
+	border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.tt-step-line {
+	white-space: pre-wrap;
+}
+
+.tt-arrow {
+	opacity: 0.6;
+	padding: 0 4px;
+}
+
+.tt-step-reducing {
+	color: var(--vscode-charts-orange, var(--vscode-descriptionForeground));
+	padding-left: 12px;
+	font-size: 0.9em;
+}
+
+.tt-step-binding {
+	color: var(--vscode-descriptionForeground);
+	padding-left: 12px;
+	font-size: 0.9em;
+}
+
+.tt-result {
+	margin-top: 10px;
+	font-weight: 600;
+}
+
+.tt-note {
+	color: var(--vscode-descriptionForeground);
+	margin-top: 6px;
+}
+
+.tt-error {
+	color: var(--vscode-errorForeground);
+	margin-top: 6px;
+}

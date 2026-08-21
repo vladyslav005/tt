@@ -4,14 +4,16 @@ import {
   type DependentKindArrowContext,
   type KindArrowContext,
   type ParenKindContext,
+  type StarKindContext,
 } from "@/antlr/LambdaParser.ts";
 import {TypeBuilderVisitor} from "@/adapter/TypeBuilderVisitor.ts";
+import {sourcePos} from "@/adapter/sourcePos.ts";
 
 export class KindBuilderVisitor
   extends LambdaVisitor<Kind> {
 
-  visitStarKind = (): Kind => {
-    return {kind: "StarKind", id: crypto.randomUUID()}
+  visitStarKind = (ctx: StarKindContext): Kind => {
+    return {kind: "StarKind", id: crypto.randomUUID(), pos: sourcePos(ctx)}
   }
 
   visitKindArrow = (ctx: KindArrowContext): Kind => {
@@ -20,6 +22,7 @@ export class KindBuilderVisitor
       id: crypto.randomUUID(),
       from: this.visit(ctx.kind(0)),
       to: this.visit(ctx.kind(1)),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -31,6 +34,7 @@ export class KindBuilderVisitor
       id: crypto.randomUUID(),
       from: new TypeBuilderVisitor().visit(ctx.type_()),
       to: this.visit(ctx.kind()),
+      pos: sourcePos(ctx),
     }
   }
 

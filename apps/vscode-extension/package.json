@@ -20,15 +20,17 @@
   "main": "./dist/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run package",
-    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "compile": "npm run check-types && npm run check-types:webview && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "watch:tsc:webview": "tsc --noEmit --watch --project tsconfig.webview.json",
+    "package": "npm run check-types && npm run check-types:webview && npm run lint && node esbuild.js --production",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
+    "check-types:webview": "tsc --noEmit --project tsconfig.webview.json",
     "lint": "eslint src",
     "test": "vscode-test"
   },
@@ -50,10 +52,72 @@
     "serialize-javascript": "^7.0.6"
   },
   "contributes": {
+    "configuration": {
+      "title": "TT",
+      "properties": {
+        "tt.typeTheories.letPolymorphism": {
+          "type": "boolean",
+          "default": false,
+          "description": "Generalize let-bound values (Hindley-Milner) so they can be reused at different types."
+        },
+        "tt.typeTheories.typeInference": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow omitting a lambda's parameter type anywhere; it's inferred from how the parameter is used (always allowed inside a let-bound value)."
+        },
+        "tt.typeTheories.isoRecursiveTypes": {
+          "type": "boolean",
+          "default": false,
+          "description": "Self-referential types (μX.T) introduced/eliminated explicitly via fold/unfold, isomorphic (not equal) to their one-step unfolding."
+        },
+        "tt.typeTheories.systemF": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit polymorphism via type abstraction (ΛX. t) and type application (t [T])."
+        },
+        "tt.typeTheories.systemFOmega": {
+          "type": "boolean",
+          "default": false,
+          "description": "Types abstracted over types (λX:K. T) and applied to a type argument (F T), classified by kinds instead of just types."
+        },
+        "tt.typeTheories.systemLambdaP": {
+          "type": "boolean",
+          "default": false,
+          "description": "Types that depend on terms via Π-types (Πx:A.M, of which A→B is the non-dependent special case), and kinds indexed by a type."
+        },
+        "tt.evaluationStrategy": {
+          "type": "string",
+          "enum": ["NORMAL", "CALL_BY_VALUE", "CALL_BY_NAME"],
+          "enumDescriptions": ["Normal Order", "Call by value", "Call by name"],
+          "default": "CALL_BY_VALUE",
+          "description": "Reduction strategy used by \"TT: Evaluate Current File\" and the Evaluation Steps panel."
+        }
+      }
+    },
     "commands": [
       {
         "command": "tt-vscode-extension.parseCurrentFile",
         "title": "TT: Parse Current File"
+      },
+      {
+        "command": "tt-vscode-extension.toggleTypeTheories",
+        "title": "TT: Toggle Type Theories"
+      },
+      {
+        "command": "tt-vscode-extension.chooseEvaluationStrategy",
+        "title": "TT: Choose Evaluation Strategy"
+      },
+      {
+        "command": "tt-vscode-extension.evaluateCurrentFile",
+        "title": "TT: Evaluate Current File"
+      },
+      {
+        "command": "tt-vscode-extension.showEvaluationSteps",
+        "title": "TT: Show Evaluation Steps"
+      },
+      {
+        "command": "tt-vscode-extension.showProofTree",
+        "title": "TT: Show Proof Tree"
       }
     ],
     "languages": [
@@ -89,6 +153,16 @@
         "label": "TT (Minimal)",
         "path": "./fileicons/tt-icon-theme.json"
       }
-    ]
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "ttAstView",
+          "name": "TT AST",
+          "when": "tt.activeFileIsTt",
+          "icon": "$(list-tree)"
+        }
+      ]
+    }
   }
 }

@@ -1,7 +1,20 @@
 const esbuild = require("esbuild");
+const fs = require("fs");
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
+
+const WEBVIEW_CSS_FILES = [
+	['src/webview/evaluationSteps/styles.css', 'dist/webview/evaluationSteps.css'],
+	['src/webview/proofTree/styles.css', 'dist/webview/proofTree.css'],
+];
+
+function copyWebviewCss() {
+	fs.mkdirSync('dist/webview', { recursive: true });
+	for (const [from, to] of WEBVIEW_CSS_FILES) {
+		fs.copyFileSync(from, to);
+	}
+}
 
 /**
  * @type {import('esbuild').Plugin}
@@ -24,7 +37,7 @@ const esbuildProblemMatcherPlugin = {
 };
 
 async function main() {
-	const ctx = await esbuild.context({
+	const nodeCtx = await esbuild.context({
 		define: {
 			"import.meta.url": "import_meta_url",
 		},
@@ -48,11 +61,33 @@ async function main() {
 			esbuildProblemMatcherPlugin,
 		],
 	});
+
+	const webviewCtx = await esbuild.context({
+		entryPoints: [
+			{ in: 'src/webview/evaluationSteps/main.ts', out: 'evaluationSteps' },
+			{ in: 'src/webview/proofTree/main.ts', out: 'proofTree' },
+		],
+		bundle: true,
+		format: 'iife',
+		platform: 'browser',
+		target: 'es2020',
+		outdir: 'dist/webview',
+		minify: production,
+		sourcemap: !production,
+		sourcesContent: false,
+		logLevel: 'silent',
+		plugins: [
+			esbuildProblemMatcherPlugin,
+		],
+	});
+
+	copyWebviewCss();
+
 	if (watch) {
-		await ctx.watch();
+		await Promise.all([nodeCtx.watch(), webviewCtx.watch()]);
 	} else {
-		await ctx.rebuild();
-		await ctx.dispose();
+		await Promise.all([nodeCtx.rebuild(), webviewCtx.rebuild()]);
+		await Promise.all([nodeCtx.dispose(), webviewCtx.dispose()]);
 	}
 }
 

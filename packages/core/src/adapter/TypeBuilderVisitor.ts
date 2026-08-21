@@ -1,5 +1,6 @@
 import type {SumType, TupleType, TyArrow, Type, TyIdentifier, VariantType, TyForall, TyConstructorAbs, TyConstructorApp, TyPi, TyIndexApp, ListType, RecursiveType} from "@/domain/ast";
 import LambdaVisitor from "@/antlr/LambdaVisitor.ts";
+import {sourcePos} from "@/adapter/sourcePos.ts";
 import {
   ForallTypeContext,
   FunctionTypeContext,
@@ -24,10 +25,10 @@ export class TypeBuilderVisitor
     const text = ctx.getText()
 
     if (text === "Nat" || text === "Bool" || text === "Unit" || text === "String") {
-      return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text as any }
+      return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text as any, pos: sourcePos(ctx) }
     }
 
-    return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text }
+    return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text, pos: sourcePos(ctx) }
   }
 
   visitFunctionType = (ctx: FunctionTypeContext): TyArrow => {
@@ -35,7 +36,8 @@ export class TypeBuilderVisitor
       kind: "TyArrow",
       id: crypto.randomUUID(),
       from: this.visit(ctx.type_(0)),
-      to: this.visit(ctx.type_(1))
+      to: this.visit(ctx.type_(1)),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -48,7 +50,8 @@ export class TypeBuilderVisitor
       kind: "SumType",
       id: crypto.randomUUID(),
       right: this.visit(ctx.type_(1)),
-      left: this.visit(ctx.type_(0))
+      left: this.visit(ctx.type_(0)),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -56,7 +59,8 @@ export class TypeBuilderVisitor
     return {
       kind: "TupleType",
       id: crypto.randomUUID(),
-      elements: ctx.type__list().map((t) => this.visit(t))
+      elements: ctx.type__list().map((t) => this.visit(t)),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -67,7 +71,8 @@ export class TypeBuilderVisitor
       variants: ctx.ID_list().map((id, index) => ({
         label: id.getText(),
         type: this.visit(ctx.type_(index))
-      }))
+      })),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -76,8 +81,8 @@ export class TypeBuilderVisitor
       kind: "TyForall",
       id: crypto.randomUUID(),
       typeVariable: ctx.typeVariable().getText(),
-      type: this.visit(ctx.type_())
-
+      type: this.visit(ctx.type_()),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -88,6 +93,7 @@ export class TypeBuilderVisitor
       typeParam: ctx.typeVariable().getText(),
       paramKind: new KindBuilderVisitor().visit(ctx.kind()),
       body: this.visit(ctx.type_()),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -97,6 +103,7 @@ export class TypeBuilderVisitor
       id: crypto.randomUUID(),
       func: this.visit(ctx.type_(0)),
       arg: this.visit(ctx.type_(1)),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -107,6 +114,7 @@ export class TypeBuilderVisitor
       paramVar: ctx.ID().getText(),
       paramType: this.visit(ctx.type_(0)),
       body: this.visit(ctx.type_(1)),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -116,6 +124,7 @@ export class TypeBuilderVisitor
       id: crypto.randomUUID(),
       func: this.visit(ctx.type_()),
       arg: new TermBuilderVisitor().visit(ctx.term()),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -124,6 +133,7 @@ export class TypeBuilderVisitor
       kind: "ListType",
       id: crypto.randomUUID(),
       elementType: this.visit(ctx.type_()),
+      pos: sourcePos(ctx),
     }
   }
 
@@ -133,6 +143,7 @@ export class TypeBuilderVisitor
       id: crypto.randomUUID(),
       typeVariable: ctx.typeVariable().getText(),
       type: this.visit(ctx.type_()),
+      pos: sourcePos(ctx),
     }
   }
 }
