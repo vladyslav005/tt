@@ -8,24 +8,34 @@ import { createTtWebviewPanel } from "./panelBase";
 
 const REFRESH_DEBOUNCE_MS = 300;
 
-class EvaluationStepsPanel {
+export class EvaluationStepsPanel {
 	private static current: EvaluationStepsPanel | undefined;
 
 	private readonly panel: vscode.WebviewPanel;
 	private document: vscode.TextDocument;
 	private changeTimer: ReturnType<typeof setTimeout> | undefined;
 
-	static createOrShow(context: vscode.ExtensionContext, document: vscode.TextDocument): void {
+	static createOrShow(
+		context: vscode.ExtensionContext,
+		document: vscode.TextDocument,
+		column: vscode.ViewColumn = vscode.ViewColumn.Beside,
+		onClosedByUser?: () => void,
+	): void {
 		if (EvaluationStepsPanel.current) {
 			EvaluationStepsPanel.current.document = document;
-			EvaluationStepsPanel.current.panel.reveal(vscode.ViewColumn.Beside);
+			EvaluationStepsPanel.current.panel.reveal();
 			EvaluationStepsPanel.current.refresh();
 			return;
 		}
-		EvaluationStepsPanel.current = new EvaluationStepsPanel(context, document);
+		EvaluationStepsPanel.current = new EvaluationStepsPanel(context, document, column, onClosedByUser);
 	}
 
-	private constructor(context: vscode.ExtensionContext, document: vscode.TextDocument) {
+	private constructor(
+		context: vscode.ExtensionContext,
+		document: vscode.TextDocument,
+		column: vscode.ViewColumn,
+		onClosedByUser?: () => void,
+	) {
 		this.document = document;
 		this.panel = createTtWebviewPanel(
 			context,
@@ -33,9 +43,11 @@ class EvaluationStepsPanel {
 			"TT: Evaluation Steps",
 			"evaluationSteps.js",
 			"evaluationSteps.css",
+			column,
 		);
 		this.panel.onDidDispose(() => {
 			EvaluationStepsPanel.current = undefined;
+			onClosedByUser?.();
 		});
 		this.panel.webview.onDidReceiveMessage((msg: EvalStepsToHostMessage) => {
 			if (msg.type === "ready") {

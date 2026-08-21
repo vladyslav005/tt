@@ -1,17 +1,15 @@
 import * as vscode from "vscode";
-import { isPlainStlc, LogicMapper, NonStlcProofError, TexMapper, TexTree } from "@vladyslav005/tt-core";
 import { analysisCache } from "../analysis";
+import { toAstGraphNode } from "../astView/astStructure";
 import { clearHighlight, highlightPosition } from "../editorHighlight";
-import { toUnicodeRegistry, toUnicodeTree } from "../proofTree/latexToUnicode";
-import { HostToProofTreeMessage, ProofTreePayload, ProofTreeToHostMessage } from "../webviewProtocol";
+import { AstGraphToHostMessage, HostToAstGraphMessage } from "../webviewProtocol";
 import { createTtWebviewPanel } from "./panelBase";
 
-export class ProofTreePanel {
-	private static current: ProofTreePanel | undefined;
+class AstGraphPanel {
+	private static current: AstGraphPanel | undefined;
 
 	private readonly panel: vscode.WebviewPanel;
 	private document: vscode.TextDocument;
-	private mode: "derivation" | "logic" = "derivation";
 	private wasVisible = true;
 
 	static createOrShow(
@@ -20,13 +18,13 @@ export class ProofTreePanel {
 		column: vscode.ViewColumn = vscode.ViewColumn.Beside,
 		onClosedByUser?: () => void,
 	): void {
-		if (ProofTreePanel.current) {
-			ProofTreePanel.current.document = document;
-			ProofTreePanel.current.panel.reveal();
-			ProofTreePanel.current.refresh();
+		if (AstGraphPanel.current) {
+			AstGraphPanel.current.document = document;
+			AstGraphPanel.current.panel.reveal();
+			AstGraphPanel.current.refresh();
 			return;
 		}
-		ProofTreePanel.current = new ProofTreePanel(context, document, column, onClosedByUser);
+		AstGraphPanel.current = new AstGraphPanel(context, document, column, onClosedByUser);
 	}
 
 	private constructor(
@@ -36,9 +34,9 @@ export class ProofTreePanel {
 		onClosedByUser?: () => void,
 	) {
 		this.document = document;
-		this.panel = createTtWebviewPanel(context, "ttProofTree", "TT: Proof Tree", "proofTree.js", "proofTree.css", column);
+		this.panel = createTtWebviewPanel(context, "ttAstGraph", "TT: AST Diagram", "astGraph.js", "astGraph.css", column);
 		this.panel.onDidDispose(() => {
-			ProofTreePanel.current = undefined;
+			AstGraphPanel.current = undefined;
 			onClosedByUser?.();
 		});
 		// A panel auto-opened as a background tab renders once at zero size; re-sending the
@@ -53,11 +51,8 @@ export class ProofTreePanel {
 			}
 			this.wasVisible = isVisible;
 		});
-		this.panel.webview.onDidReceiveMessage((msg: ProofTreeToHostMessage) => {
+		this.panel.webview.onDidReceiveMessage((msg: AstGraphToHostMessage) => {
 			if (msg.type === "ready") {
-				this.refresh();
-			} else if (msg.type === "setMode") {
-				this.mode = msg.mode;
 				this.refresh();
 			} else if (msg.type === "hoverPos") {
 				highlightPosition(this.document.uri, msg.pos);
@@ -75,7 +70,7 @@ export class ProofTreePanel {
 		);
 	}
 
-	private post(message: HostToProofTreeMessage): void {
+	private post(message: HostToAstGraphMessage): void {
 		this.panel.webview.postMessage(message);
 	}
 
@@ -85,48 +80,25 @@ export class ProofTreePanel {
 			this.post({ type: "invalid", messages: analysis.parseErrors.map((e) => e.message) });
 			return;
 		}
-		if (!analysis.proof) {
+		if (!analysis.program) {
 			this.post({ type: "clear" });
 			return;
 		}
-
-		const logicAvailable = isPlainStlc(analysis.theories);
-		const effectiveMode = this.mode === "logic" && !logicAvailable ? "derivation" : this.mode;
-
-		let texTree: TexTree;
-		try {
-			const mapper = effectiveMode === "logic" ? new LogicMapper() : new TexMapper();
-			mapper.setTypeAliases(analysis.typeAliases ?? {});
-			texTree = mapper.visit(analysis.proof);
-		} catch (error) {
-			if (error instanceof NonStlcProofError) {
-				const fallback = new TexMapper();
-				fallback.setTypeAliases(analysis.typeAliases ?? {});
-				texTree = fallback.visit(analysis.proof);
-			} else {
-				throw error;
-			}
-		}
-
-		const payload: ProofTreePayload = {
-			mode: effectiveMode,
-			logicAvailable,
-			registry: toUnicodeRegistry(texTree.registry ?? {}),
-			tree: toUnicodeTree(texTree),
-		};
-		this.post({ type: "render", payload });
+		this.post({ type: "render", payload: { tree: toAstGraphNode(analysis.program, "Program") } });
 	}
 }
 
-export function registerProofTreeCommand(context: vscode.ExtensionContext): void {
+export function registerAstGraphCommand(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(
-		vscode.commands.registerCommand("tt-vscode-extension.showProofTree", () => {
+		vscode.commands.registerCommand("tt-vscode-extension.showAstGraph", () => {
 			const editor = vscode.window.activeTextEditor;
 			if (!editor || editor.document.languageId !== "tt") {
 				vscode.window.showWarningMessage("Open a .tt file first.");
 				return;
 			}
-			ProofTreePanel.createOrShow(context, editor.document);
+			AstGraphPanel.createOrShow(context, editor.document);
 		}),
 	);
 }
+
+export { AstGraphPanel };

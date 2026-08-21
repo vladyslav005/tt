@@ -1,13 +1,7 @@
 {
 	"iconDefinitions": {
-		"_file": { "iconPath": "./file.svg" },
-		"_folder": { "iconPath": "./folder.svg" },
-		"_folder_open": { "iconPath": "./folder-open.svg" },
 		"tt": { "iconPath": "./tt-file.png" }
 	},
-	"file": "_file",
-	"folder": "_folder",
-	"folderExpanded": "_folder_open",
 	"fileExtensions": {
 		"tt": "tt"
 	}

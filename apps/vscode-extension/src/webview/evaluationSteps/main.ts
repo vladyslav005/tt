@@ -9,10 +9,20 @@ window.addEventListener("message", (event: MessageEvent<HostToEvalStepsMessage>)
 	const msg = event.data;
 	if (msg.type === "render") {
 		render(msg.payload);
+	} else if (msg.type === "invalid") {
+		renderInvalid(msg.messages);
 	} else {
 		root.replaceChildren();
 	}
 });
+
+function renderInvalid(messages: string[]): void {
+	root.replaceChildren();
+	root.appendChild(line("tt-note", "Fix the error below to see evaluation steps:"));
+	for (const message of messages) {
+		root.appendChild(line("tt-error", message));
+	}
+}
 
 function span(text: string, className?: string): HTMLElement {
 	const el = document.createElement("span");

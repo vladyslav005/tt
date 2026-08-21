@@ -12,9 +12,11 @@ import {registerToggleTypeTheoriesCommand} from "./commands/toggleTypeTheoriesCo
 import {ttOutputChannel} from "./outputChannel";
 import {registerEvaluationStepsCommand} from "./panels/evaluationStepsPanel";
 import {registerProofTreeCommand} from "./panels/proofTreePanel";
+import {registerAstGraphCommand} from "./panels/astGraphPanel";
 import {AstTreeProvider} from "./astView/astTreeProvider";
 import {revealPosition} from "./editorReveal";
 import {registerStatusBar} from "./statusBar";
+import {registerAutoShowPanels} from "./autoShowPanels";
 
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(ttOutputChannel);
@@ -27,6 +29,8 @@ export function activate(context: vscode.ExtensionContext) {
 	registerStatusBar(context);
 	registerEvaluationStepsCommand(context);
 	registerProofTreeCommand(context);
+	registerAstGraphCommand(context);
+	registerAutoShowPanels(context);
 
 	const astProvider = new AstTreeProvider();
 	context.subscriptions.push(vscode.window.registerTreeDataProvider("ttAstView", astProvider));

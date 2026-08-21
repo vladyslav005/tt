@@ -7,6 +7,7 @@ const watch = process.argv.includes('--watch');
 const WEBVIEW_CSS_FILES = [
 	['src/webview/evaluationSteps/styles.css', 'dist/webview/evaluationSteps.css'],
 	['src/webview/proofTree/styles.css', 'dist/webview/proofTree.css'],
+	['src/webview/astGraph/styles.css', 'dist/webview/astGraph.css'],
 ];
 
 function copyWebviewCss() {
@@ -66,6 +67,7 @@ async function main() {
 		entryPoints: [
 			{ in: 'src/webview/evaluationSteps/main.ts', out: 'evaluationSteps' },
 			{ in: 'src/webview/proofTree/main.ts', out: 'proofTree' },
+			{ in: 'src/webview/astGraph/main.ts', out: 'astGraph' },
 		],
 		bundle: true,
 		format: 'iife',

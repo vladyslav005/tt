@@ -69,4 +69,31 @@ export type HostToProofTreeMessage =
 export type ProofTreeToHostMessage =
 	| { type: "ready" }
 	| { type: "setMode"; mode: "derivation" | "logic" }
-	| { type: "revealPos"; pos: UnicodeSourcePosition };
+	| { type: "hoverPos"; pos: UnicodeSourcePosition }
+	| { type: "unhoverPos" };
+
+// ===== AST Graph panel =====
+
+export type AstNodeCategory = "program" | "decl" | "term" | "type" | "kind";
+
+export interface AstGraphNode {
+	kind: string;
+	label: string;
+	description: string;
+	category: AstNodeCategory;
+	pos?: UnicodeSourcePosition;
+	children: AstGraphNode[];
+}
+
+export interface AstGraphPayload {
+	tree: AstGraphNode;
+}
+
+export type HostToAstGraphMessage =
+	| { type: "render"; payload: AstGraphPayload }
+	| { type: "invalid"; messages: string[] }
+	| { type: "clear" };
+export type AstGraphToHostMessage =
+	| { type: "ready" }
+	| { type: "hoverPos"; pos: UnicodeSourcePosition }
+	| { type: "unhoverPos" };

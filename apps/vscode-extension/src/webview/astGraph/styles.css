@@ -1,0 +1,93 @@
+html, body {
+	margin: 0;
+	height: 100%;
+	overflow: hidden;
+	color: var(--vscode-editor-foreground);
+	background: var(--vscode-editor-background);
+	font-family: var(--vscode-font-family);
+	font-size: 12px;
+}
+
+#root {
+	width: 100%;
+	height: 100%;
+}
+
+.tt-svg {
+	width: 100%;
+	height: 100%;
+	cursor: grab;
+}
+
+.tt-svg:active {
+	cursor: grabbing;
+}
+
+.tt-link {
+	fill: none;
+	stroke: var(--vscode-panel-border);
+	stroke-width: 1.5;
+}
+
+.tt-node-rect {
+	fill: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+	stroke: var(--vscode-panel-border);
+	stroke-width: 1;
+}
+
+.tt-node-label {
+	text-anchor: middle;
+	font-weight: 600;
+	fill: var(--vscode-editor-foreground);
+	pointer-events: none;
+}
+
+.tt-node-desc {
+	text-anchor: middle;
+	fill: var(--vscode-descriptionForeground);
+	font-family: var(--vscode-editor-font-family, monospace);
+	pointer-events: none;
+}
+
+.tt-node.tt-hoverable {
+	cursor: default;
+}
+
+.tt-node.tt-hoverable:hover .tt-node-rect {
+	stroke-width: 1.5;
+	fill: var(--vscode-list-hoverBackground, var(--vscode-editorWidget-background));
+}
+
+.tt-cat-program .tt-node-rect {
+	stroke: var(--vscode-charts-foreground, var(--vscode-editor-foreground));
+	stroke-width: 2;
+}
+
+.tt-cat-decl .tt-node-rect {
+	stroke: var(--vscode-charts-purple, var(--vscode-panel-border));
+}
+
+.tt-cat-type .tt-node-rect {
+	stroke: var(--vscode-charts-blue, var(--vscode-panel-border));
+}
+
+.tt-cat-kind .tt-node-rect {
+	stroke: var(--vscode-charts-yellow, var(--vscode-panel-border));
+}
+
+.tt-cat-term .tt-node-rect {
+	stroke: var(--vscode-panel-border);
+}
+
+.tt-fallback {
+	padding: 12px;
+}
+
+.tt-note {
+	color: var(--vscode-descriptionForeground);
+	margin-bottom: 8px;
+}
+
+.tt-error {
+	color: var(--vscode-errorForeground);
+}

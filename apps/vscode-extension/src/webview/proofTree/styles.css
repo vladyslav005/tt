@@ -1,14 +1,35 @@
+html, body {
+	margin: 0;
+	height: 100%;
+}
+
 body {
+	display: flex;
+	flex-direction: column;
 	color: var(--vscode-editor-foreground);
 	background: var(--vscode-editor-background);
 	font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
 	font-size: var(--vscode-editor-font-size, 13px);
-	padding: 12px;
-	overflow-x: auto;
+}
+
+#root {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
 }
 
 .tt-toolbar {
-	margin-bottom: 12px;
+	padding: 12px 12px 0;
+}
+
+.tt-fallback {
+	padding: 12px;
+}
+
+.tt-note {
+	color: var(--vscode-descriptionForeground);
+	margin-bottom: 8px;
 }
 
 .tt-toggle {
@@ -29,6 +50,28 @@ body {
 .tt-toggle-active {
 	background: var(--vscode-button-background);
 	color: var(--vscode-button-foreground);
+}
+
+/* The pannable/zoomable viewport: fills remaining space, clips content, d3-zoom attaches here. */
+.tt-stage {
+	flex: 1;
+	min-height: 0;
+	position: relative;
+	overflow: hidden;
+	cursor: grab;
+}
+
+.tt-stage:active {
+	cursor: grabbing;
+}
+
+/* Positioned absolutely so d3-zoom's translate/scale transform has a stable 0,0 origin. */
+.tt-viewport {
+	position: absolute;
+	top: 0;
+	left: 0;
+	transform-origin: 0 0;
+	padding: 24px;
 }
 
 .tt-node {
@@ -62,12 +105,17 @@ body {
 
 .tt-judgement {
 	font-family: var(--vscode-editor-font-family, monospace);
+	letter-spacing: 0.4px;
+	word-spacing: 2px;
 }
 
-.tt-judgement.tt-clickable {
-	cursor: pointer;
+.tt-judgement.tt-hoverable {
 	text-decoration: underline dotted;
 	text-underline-offset: 3px;
+}
+
+.tt-judgement.tt-hoverable:hover {
+	background: var(--vscode-list-hoverBackground);
 }
 
 .tt-rule {

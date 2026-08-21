@@ -11,8 +11,9 @@ export function createTtWebviewPanel(
 	title: string,
 	scriptFile: string,
 	cssFile: string,
+	column: vscode.ViewColumn = vscode.ViewColumn.Beside,
 ): vscode.WebviewPanel {
-	const panel = vscode.window.createWebviewPanel(viewType, title, vscode.ViewColumn.Beside, {
+	const panel = vscode.window.createWebviewPanel(viewType, title, column, {
 		enableScripts: true,
 		retainContextWhenHidden: true,
 		localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "dist", "webview")],
