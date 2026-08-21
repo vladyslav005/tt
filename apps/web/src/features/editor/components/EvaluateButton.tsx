@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/shared/components/ui/dropdown-menu.tsx";
 import {ButtonGroup} from "@/shared/components/ui/button-group.tsx";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
 import {EvaluationStrategy} from "@vladyslav005/tt-core";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {setEvaluationStrategy} from "@/shared/ui-state/termSlice.ts";
@@ -47,6 +48,7 @@ export function EvaluateButton({
 
   const proofTree = useAppSelector((state) => state.term.proof)
   const disabled = proofTree === undefined;
+  const autoBuild = useAppSelector((state) => state.term.autoBuild);
 
   const strategy = useAppSelector((state) => state.term.evaluationStrategy)
   const setStrategy = (value: EvaluationStrategy) => dispatch(setEvaluationStrategy(value));
@@ -70,20 +72,30 @@ export function EvaluateButton({
         className
       )}
     >
-      <Button
-        onClick={() => handleClick()}
-        className="gap-2 shadow-none"
-        size="default"
-        disabled={disabled}
-      >
-        <Calculator className="h-4 w-4" />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={autoBuild ? undefined : () => handleClick()}
+              aria-disabled={autoBuild}
+              className={cn("gap-2 shadow-none", autoBuild && "opacity-50 cursor-not-allowed")}
+              size="default"
+              disabled={disabled}
+            >
+              <Calculator className="h-4 w-4" />
 
-        Evaluate
+              Evaluate
 
-        <span className="text-xs opacity-70">
-          ({selectedStrategy?.label})
-        </span>
-      </Button>
+              <span className="text-xs opacity-70">
+                ({selectedStrategy?.label})
+              </span>
+            </Button>
+          </TooltipTrigger>
+          {autoBuild && (
+            <TooltipContent side="bottom">Auto-build is on — this runs automatically as you type</TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

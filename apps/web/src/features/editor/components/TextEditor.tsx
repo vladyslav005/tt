@@ -10,10 +10,17 @@ import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
 import {Button} from "@/shared/components/ui/button.tsx";
 import {Maximize2, Minimize2} from "lucide-react";
 import {useAppDispatch, useAppSelector} from "@/shared/hooks/reduxHooks.ts";
-import {setTermText} from "@/shared/ui-state/termSlice.ts";
+import {setAutoBuild, setTermText} from "@/shared/ui-state/termSlice.ts";
 import {EvaluateButton} from "@/features/editor/components/EvaluateButton.tsx";
 import {useTermHooks} from "@/shared/hooks/processTermHooks.ts";
 import type {SourcePosition} from "@vladyslav005/tt-core";
+import {Switch} from "@/shared/components/ui/switch.tsx";
+import {Label} from "@/shared/components/ui/label.tsx";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
+
+// Auto-build debounce: how long to wait after the last keystroke before parsing —
+// short enough to feel immediate, long enough not to re-parse on every keystroke.
+const AUTO_BUILD_DEBOUNCE_MS = 400;
 
 export interface TextEditorProps {
   defaultValue?: string;
@@ -59,8 +66,14 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
   const editorRef = useRef<any>(null);
   const highlightDecorationsRef = useRef<any>(null);
   const dispatch = useAppDispatch()
-  const { parseAndTypeCheck } = useTermHooks();
+  const { parseAndTypeCheck, evaluateTerm } = useTermHooks();
   const errorMarkers = useAppSelector((state) => state.term.errorMarkers);
+  const autoBuild = useAppSelector((state) => state.term.autoBuild);
+  const evaluationStrategy = useAppSelector((state) => state.term.evaluationStrategy);
+  // Gate auto-evaluate on `proof`, not `ast` — matches the Evaluate button's own disabled
+  // condition, so auto-build doesn't try to evaluate declarations with no final term yet.
+  const proof = useAppSelector((state) => state.term.proof);
+  const autoBuildTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const monacoTheme = useMemo(() => {
     if (!appTheme) return "lambda-theme";
@@ -114,6 +127,31 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       onMount(editor, monaco);
     }
   };
+
+  const handleChange: OnChange = (value, ev) => {
+    onChange?.(value, ev);
+
+    if (!autoBuild) return;
+    if (autoBuildTimerRef.current) clearTimeout(autoBuildTimerRef.current);
+    autoBuildTimerRef.current = setTimeout(() => {
+      parseAndTypeCheck(value ?? "");
+    }, AUTO_BUILD_DEBOUNCE_MS);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (autoBuildTimerRef.current) clearTimeout(autoBuildTimerRef.current);
+    };
+  }, []);
+
+  // Auto-build's own parse/type-check just landed a fresh `proof` — evaluate right behind it so
+  // the result appears without a manual Evaluate click. Also re-fires when the strategy chevron
+  // changes while auto-build is on, since the Evaluate button is disabled in that state.
+  useEffect(() => {
+    if (!autoBuild || !proof) return;
+    evaluateTerm(evaluationStrategy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proof, autoBuild, evaluationStrategy]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -214,12 +252,34 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
       >
         <CardHeader>
           <div className="flex items-center gap-2">
-            {!hideActions && (
-              <div className="flex items-center gap-2 flex-wrap flex-1">
-                <TypeCheckButton />
-                <EvaluateButton />
-              </div>
-            )}
+            <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+              {!hideActions && (
+                <>
+                  <TypeCheckButton />
+                  <EvaluateButton />
+                </>
+              )}
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="auto-build"
+                        checked={autoBuild}
+                        onCheckedChange={(checked) => dispatch(setAutoBuild(checked))}
+                      />
+                      <Label htmlFor="auto-build" className="text-sm text-muted-foreground whitespace-nowrap">
+                        Auto-build
+                      </Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    Automatically parse, type-check, and evaluate as you type — disables the Parse &amp; Evaluate buttons
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -244,7 +304,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
               value={value}
               defaultLanguage={language}
               language={language}
-              onChange={onChange}
+              onChange={handleChange}
               beforeMount={handleBeforeMount}
               onMount={handleEditorMount}
               options={editorOptions}

@@ -37,6 +37,9 @@ export interface TermState {
   enabledTheories: TypeTheoryConfig;
   evaluationStrategy: EvaluationStrategy;
   buildMode: BuildModeState;
+  // When on, editor changes auto-trigger parse/type-check/evaluate — see TextEditor's
+  // "Auto-build" switch, which also disables the manual Parse & Evaluate buttons.
+  autoBuild: boolean;
 }
 
 export const initialTermState: TermState = {
@@ -51,6 +54,7 @@ export const initialTermState: TermState = {
   enabledTheories: DEFAULT_TYPE_THEORY_CONFIG,
   evaluationStrategy: EvaluationStrategy.CALL_BY_VALUE,
   buildMode: {active: false},
+  autoBuild: false,
 };
 
 const counterSlice = createSlice({
@@ -63,6 +67,10 @@ const counterSlice = createSlice({
 
     setEvaluationStrategy: (state, action: { payload: EvaluationStrategy }) => {
       state.evaluationStrategy = action.payload;
+    },
+
+    setAutoBuild: (state, action: { payload: boolean }) => {
+      state.autoBuild = action.payload;
     },
 
     setProof: (state, action: { payload: { proof: ProofTree | undefined; theories?: TypeTheoryConfig } }) => {
@@ -180,6 +188,7 @@ export const {
   setEvaluation,
   setTermText,
   setEvaluationStrategy,
+  setAutoBuild,
   setProof,
   setTypeAliases,
   setAst,
