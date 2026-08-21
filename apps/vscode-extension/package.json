@@ -79,6 +79,13 @@
         "uiTheme": "vs-dark",
         "path": "./themes/tt-dark-color-theme.json"
       }
+    ],
+    "iconThemes": [
+      {
+        "id": "tt-icons",
+        "label": "TT (Minimal)",
+        "path": "./fileicons/tt-icon-theme.json"
+      }
     ]
   }
 }
