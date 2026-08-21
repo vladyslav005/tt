@@ -1,463 +1,16 @@
 # @vladyslav005/tt-core
 
-A **pure TypeScript library** for parsing, type-checking, and evaluating Simply Typed Lambda Calculus (STLC) with beautiful proof tree visualization and Curry–Howard correspondence support.
+A pure TypeScript engine for a typed lambda calculus: parser, type checker (STLC + optional
+extensions), evaluator, proof-tree generator, and LaTeX/pretty-printer output. No React, no DOM,
+no side effects — usable from Node, a browser, or any other JS runtime.
 
-No React dependencies. Zero side effects. Framework-agnostic.
-
----
-
-## ✨ Features
-
-- **Lambda Calculus Parser** — ANTLR4-based parser with syntax error recovery
-- **Type Checker** — Full STLC type inference producing complete derivation trees
-- **Evaluator** — Multiple reduction strategies (call-by-value, call-by-name, normal order)
-- **Proof Trees** — Complete typing derivations with error nodes for failed type checks
-- **Curry–Howard** — Transform typing proofs to logical proofs (intuitionistic natural deduction)
-- **Pretty Printing** — Convert AST back to readable lambda calculus syntax
-- **LaTeX Export** — Generate publication-quality proof trees (via ebproof)
-- **Type Utilities** — Type equality, normalization, and string conversion
-
----
-
-## 📦 Installation
+## Install
 
 ```bash
 npm install @vladyslav005/tt-core
 ```
 
-Or with pnpm / yarn:
-
-```bash
-pnpm add @vladyslav005/tt-core
-yarn add @vladyslav005/tt-core
-```
-
----
-
-## 🚀 Quick Start
-
-### Parse a Lambda Term
-
-```typescript
-import { AntlrParserAdapter } from '@vladyslav005/tt-core';
-
-const parser = new AntlrParserAdapter();
-
-// Parse a simple lambda term
-const result = parser.parse('λx.x');
-
-if (!result.hasError) {
-  console.log(result.program);  // AST
-  console.log(result.program.term);  // The lambda term
-} else {
-  console.error(result.errors);  // Syntax errors
-}
-```
-
-### Type-Check a Term
-
-```typescript
-import {
-  AntlrParserAdapter,
-  SLTLCTypeChecker,
-  typeToString,
-} from '@vladyslav005/tt-core';
-
-const parser = new AntlrParserAdapter();
-const typeChecker = new SLTLCTypeChecker();
-
-const parseResult = parser.parse('λx.x');
-const proofTree = typeChecker.check(parseResult.program.term);
-
-console.log('Type:', typeToString(proofTree.type));
-// Output: Type: A → A
-
-if (proofTree.error) {
-  console.error('Type error:', proofTree.error);
-} else {
-  console.log('✓ Well-typed!');
-}
-```
-
-### Evaluate a Term
-
-```typescript
-import {
-  AntlrParserAdapter,
-  SLTLCTypeChecker,
-  Evaluator,
-  EvaluationStrategy,
-} from '@vladyslav005/tt-core';
-
-const parser = new AntlrParserAdapter();
-const typeChecker = new SLTLCTypeChecker();
-const evaluator = new Evaluator();
-
-// Parse and type-check
-const parseResult = parser.parse('(λx.x λy.y)');
-const proofTree = typeChecker.check(parseResult.program.term);
-
-// Only evaluate if well-typed
-if (!proofTree.error) {
-  const result = evaluator.evaluate(
-    parseResult.program.term,
-    EvaluationStrategy.NORMAL
-  );
-
-  console.log('Final term:', result.final);
-  console.log('Reduction steps:', result.steps.length);
-}
-```
-
-### Generate Proof Trees for Visualization
-
-```typescript
-import {
-  AntlrParserAdapter,
-  SLTLCTypeChecker,
-  TexMapper,
-} from '@vladyslav005/tt-core';
-
-const parser = new AntlrParserAdapter();
-const typeChecker = new SLTLCTypeChecker();
-const texMapper = new TexMapper();
-
-const parseResult = parser.parse('λx.x');
-const proofTree = typeChecker.check(parseResult.program.term);
-
-// Generate LaTeX representation
-const texTree = texMapper.mapProofTree(proofTree);
-
-console.log(texTree);  // Structured tree for rendering
-```
-
-### Convert to Logical Proofs (Curry–Howard)
-
-```typescript
-import {
-  AntlrParserAdapter,
-  SLTLCTypeChecker,
-  LogicMapper,
-} from '@vladyslav005/tt-core';
-
-const parser = new AntlrParserAdapter();
-const typeChecker = new SLTLCTypeChecker();
-const logicMapper = new LogicMapper();
-
-const parseResult = parser.parse('λx.λy.x');
-const proofTree = typeChecker.check(parseResult.program.term);
-
-// Transform typing proof to logical proof
-const logicalProof = logicMapper.mapProofTree(proofTree);
-
-console.log(logicalProof);  // Intuitionistic natural deduction
-```
-
----
-
-## 📚 Core APIs
-
-### Parser
-
-```typescript
-interface Parser {
-  parse(text: string): ParseResult;
-}
-
-type ParseResult = {
-  program: Program;
-  hasError: boolean;
-  errors: ParseSyntaxError[];
-};
-```
-
-**Usage:**
-```typescript
-import { AntlrParserAdapter } from '@vladyslav005/tt-core';
-
-const parser = new AntlrParserAdapter();
-const result = parser.parse('λf.λx.f (f x)');
-```
-
----
-
-### Type Checker
-
-```typescript
-class SLTLCTypeChecker {
-  check(term: Term): ProofTree;
-  checkProgram(program: Program): ProofTree;
-}
-
-type ProofTree = {
-  rule: 'Var' | 'Abs' | 'App';
-  premises: ProofTree[];      // Subproofs
-  gamma: Gamma;               // Type context
-  term: Term;                 // The term being typed
-  type: Type;                 // Derived type
-  error?: TypeCheckError;     // Error (if any)
-};
-```
-
-**Usage:**
-```typescript
-import { SLTLCTypeChecker } from '@vladyslav005/tt-core';
-
-const typeChecker = new SLTLCTypeChecker();
-const proof = typeChecker.check(term);
-
-// Traverse the proof tree
-console.log(proof.rule);           // 'Abs', 'App', or 'Var'
-console.log(proof.premises);       // Subproofs
-console.log(proof.type);           // Inferred type
-console.log(proof.gamma);          // Type bindings in context
-```
-
----
-
-### Evaluator
-
-```typescript
-enum EvaluationStrategy {
-  NORMAL = 'NORMAL',
-  CALL_BY_VALUE = 'CALL_BY_VALUE',
-  CALL_BY_NAME = 'CALL_BY_NAME',
-}
-
-class Evaluator {
-  evaluate(term: Term, strategy: EvaluationStrategy): EvaluationResult;
-}
-
-type EvaluationResult = {
-  strategy: EvaluationStrategy;
-  steps: ReductionStep[];     // Trace of reductions
-  final: Term;                // Final term (normal form or stuck)
-  errors?: string[];
-};
-
-type ReductionStep = {
-  term: Term;
-  redex: Term;                // The subterm being reduced
-  contractum: Term;           // Result of reduction
-  explanation: string;
-};
-```
-
-**Usage:**
-```typescript
-import { Evaluator, EvaluationStrategy } from '@vladyslav005/tt-core';
-
-const evaluator = new Evaluator();
-const result = evaluator.evaluate(term, EvaluationStrategy.CALL_BY_VALUE);
-
-console.log(`Took ${result.steps.length} steps`);
-result.steps.forEach((step, i) => {
-  console.log(`Step ${i + 1}: ${step.explanation}`);
-});
-console.log('Final:', result.final);
-```
-
----
-
-### AST Types
-
-```typescript
-type Program = {
-  globalDecls: GlobalDecl[];
-  term: Term;
-};
-
-type GlobalDecl = FunDecl | VarDecl;
-
-type Term
-  = Variable { name: string; id: string }
-  | Abstraction { param: string; body: Term; id: string }
-  | Application { func: Term; arg: Term; id: string }
-  | Literal { value: string; id: string };
-
-type Type
-  = TypeVariable { name: string }
-  | FunctionType { from: Type; to: Type };
-```
-
----
-
-### Utilities
-
-#### Pretty-print Terms
-
-```typescript
-import { astToText, AstPrettyPrinter } from '@vladyslav005/tt-core';
-
-const text = astToText(term);
-console.log(text);  // "λx.x" or "(λx.x λy.y)", etc.
-
-// Or with custom printer
-const printer = new AstPrettyPrinter();
-const formatted = printer.print(term);
-```
-
-#### Type Utilities
-
-```typescript
-import {
-  typeToString,
-  typeEquals,
-  normalizeType,
-  expandTypeAliases,
-  kindToString,
-} from '@vladyslav005/tt-core';
-
-const ty = proofTree.type;
-
-console.log(typeToString(ty));     // "A → B → C"
-console.log(typeEquals(ty1, ty2)); // boolean
-console.log(normalizeType(ty));    // Normalized form
-
-// For type theory with kinds
-const kind = /* ... */;
-console.log(kindToString(kind));   // "*", "* → *", etc.
-```
-
-#### Type Checking Utilities
-
-```typescript
-import { termIndexEquals, termIndexToString } from '@vladyslav005/tt-core';
-
-// Compare term occurrences by structural identity
-const isSame = termIndexEquals(idx1, idx2);
-
-// String representation for debugging
-console.log(termIndexToString(idx));
-```
-
----
-
-### Proof Tree Visitors
-
-Traverse proof trees with the visitor pattern:
-
-```typescript
-import { ProofTreeVisitor } from '@vladyslav005/tt-core';
-
-class MyProofVisitor extends ProofTreeVisitor<string> {
-  visitVar(proof: ProofTree): string {
-    return `Var: ${proof.term.name} : ${typeToString(proof.type)}`;
-  }
-
-  visitAbs(proof: ProofTree): string {
-    const subProof = proof.premises[0].accept(this);
-    return `Abs: [${subProof}]`;
-  }
-
-  visitApp(proof: ProofTree): string {
-    const funcProof = proof.premises[0].accept(this);
-    const argProof = proof.premises[1].accept(this);
-    return `App: (${funcProof}) (${argProof})`;
-  }
-}
-
-const visitor = new MyProofVisitor();
-const result = proofTree.accept(visitor);
-```
-
-### AST Visitors
-
-Traverse terms with the visitor pattern:
-
-```typescript
-import { AstVisitor } from '@vladyslav005/tt-core';
-
-class CountVars extends AstVisitor<number> {
-  visitVar(term: Variable): number {
-    return 1;
-  }
-
-  visitAbs(term: Abstraction): number {
-    return term.body.accept(this);
-  }
-
-  visitApp(term: Application): number {
-    return term.func.accept(this) + term.arg.accept(this);
-  }
-
-  visitLit(term: Literal): number {
-    return 0;
-  }
-}
-
-const counter = new CountVars();
-const varCount = term.accept(counter);
-```
-
----
-
-## 📝 Lambda Calculus Syntax
-
-The parser supports standard lambda calculus notation:
-
-```
-⟨term⟩  ::= ⟨var⟩
-           | λ ⟨var⟩ . ⟨term⟩         # Abstraction
-           | ⟨term⟩ ⟨term⟩            # Application
-           | ( ⟨term⟩ )               # Grouping
-
-⟨type⟩  ::= ⟨tyvar⟩                   # Type variable (A, B, C, ...)
-           | ⟨type⟩ → ⟨type⟩         # Function type (right-associative)
-
-⟨var⟩   ::= [a-zA-Z_][a-zA-Z0-9_]*   # Identifiers
-```
-
-### Examples
-
-```
-λx.x                     # Identity
-λx.λy.x                  # Constant (K combinator)
-λf.λx.f (f x)            # Church numeral 2
-λf.λg.λx.f (g x)         # Composition
-(λx.x) (λy.y)            # Application
-λx.λy.λz.x (y z)         # S combinator
-```
-
----
-
-## 🎯 Architecture
-
-```
-┌─────────────────────────────────────┐
-│      Domain Layer (Pure TS)         │
-│  AST | Type | ProofTree             │
-│  STLCTypeChecker | Evaluator        │
-└─────────────────────────────────────┘
-         ▲
-         │
-┌─────────────────────────────────────┐
-│   Application Layer (Visitors)      │
-│  AstVisitor | ProofTreeVisitor      │
-│  Parser interface                   │
-└─────────────────────────────────────┘
-         ▲
-         │
-┌─────────────────────────────────────┐
-│  Adapter Layer (ANTLR + Mappers)    │
-│  AntlrParserAdapter                 │
-│  TexMapper | LogicMapper             │
-│  AstPrettyPrinter                   │
-└─────────────────────────────────────┘
-         ▲
-         │
-┌─────────────────────────────────────┐
-│      Parser Layer (ANTLR)           │
-│  LambdaLexer | LambdaParser         │
-│  ProgramBuilderVisitor              │
-└─────────────────────────────────────┘
-```
-
----
-
-## 🔄 Workflow Example
-
-Complete end-to-end workflow:
+## Quick start
 
 ```typescript
 import {
@@ -468,175 +21,283 @@ import {
   TexMapper,
   astToText,
   typeToString,
-} from '@vladyslav005/tt-core';
+} from "@vladyslav005/tt-core";
 
-// 1. Parse
+const source = `
+a : T;
+identity = λ x : T . x : T -> T;
+identity a;
+`;
+
+// 1. Parse — throws ParseSyntaxError on invalid syntax.
 const parser = new AntlrParserAdapter();
-const parseResult = parser.parse('(λx.x λy.y)');
+const program = parser.parseExpression(source);
 
-if (parseResult.hasError) {
-  console.error('Syntax error:', parseResult.errors);
-  process.exit(1);
-}
+// 2. Type-check — takes the whole Program (declarations + final term).
+const checker = new SLTLCTypeChecker();
+const proof = checker.check(program);
 
-// 2. Type-check
-const typeChecker = new SLTLCTypeChecker();
-const proofTree = typeChecker.check(parseResult.program.term);
+console.log(typeToString(proof.type));      // "T"
+console.log(checker.getErrors());           // [] — empty when well-typed
 
-if (proofTree.error) {
-  console.error('Type error:', proofTree.error.message);
-  process.exit(1);
-}
-
-console.log('✓ Type:', typeToString(proofTree.type));
-
-// 3. Visualize (LaTeX)
-const texMapper = new TexMapper();
-const proofViz = texMapper.mapProofTree(proofTree);
-console.log('Proof structure:', JSON.stringify(proofViz, null, 2));
-
-// 4. Evaluate
+// 3. Evaluate — also takes the whole Program, so global decls are in scope.
 const evaluator = new Evaluator();
-const evalResult = evaluator.evaluate(
-  parseResult.program.term,
-  EvaluationStrategy.NORMAL
-);
+const result = evaluator.evaluate(program, EvaluationStrategy.CALL_BY_VALUE);
 
-console.log(`✓ Evaluation: ${evalResult.steps.length} steps`);
-console.log('Final term:', astToText(evalResult.final));
+console.log(astToText({ globals: [], term: result.result })); // "a;"
+console.log(result.steps.length);                             // 2
+
+// 4. Render the typing derivation (e.g. for LaTeX/UI rendering).
+const texTree = new TexMapper().visit(proof);
+console.log(texTree.judgement); // "\Gamma_{1} \vdash (identity\ a) : T"
 ```
 
----
+## Language guide
 
-## 🧪 Error Handling
+The parser (ANTLR4, grammar in [`src/antlr/Lambda.g4`](./src/antlr/Lambda.g4)) accepts a program
+as zero or more global declarations followed by an optional final term:
 
-### Parse Errors
+```
+program    ::= declaration* (term ';')?
+
+declaration
+           ::= ID ':' type ';'                  (* declare a free variable's type *)
+             | ID '=' term ':' type ';'          (* define a global value, with its type *)
+             | 'typedef' ID '=' type ';'         (* transparent type alias *)
+             | 'typedef' ID ':' kind ';'         (* opaque type constructor *)
+```
+
+Note the declaration order is `name = term : type`, not `name : type = term`.
+
+### Terms
+
+```
+term ::= ID                                       (* variable *)
+       | 'λ' ID ':' type '.' term                 (* abstraction *)
+       | 'λ' ID '.' term                           (* unannotated abstraction — needs inference *)
+       | 'λ' '_' ':' type '.' term                 (* dummy abstraction, discards its argument *)
+       | term term                                 (* application *)
+       | term ('+'|'-'|'*'|'/') term                (* arithmetic *)
+       | term ('<'|'<='|'>'|'>='|'=='|'!=') term    (* comparison *)
+       | 'if' term 'then' term ('elseif' term 'then' term)* ('else' term)?
+       | 'let' ID '=' term 'in' term
+       | term 'as' type                            (* ascription *)
+       | term ';' term                             (* sequencing *)
+       | term '.' NAT | term '.' ID                (* tuple / record projection *)
+       | '<' term (',' term)* '>'                  (* tuple *)
+       | '<' ID '=' term (',' ID '=' term)* '>'     (* record *)
+       | '[' ID '=' term (',' ID '=' term)* ']' 'as' type   (* labeled variant *)
+       | 'inl' term 'as' type | 'inr' term 'as' type
+       | 'case' term '||' 'inl' ID '=>' term '||' 'inr' ID '=>' term
+       | 'case' term 'of' '[' ID '=' ID ']' '=>' term ('||' '[' ID '=' ID ']' '=>' term)*
+       | 'fix' term
+       | 'nil' '[' type ']' | 'cons' '[' type ']' term term
+       | 'isnil' '[' type ']' term | 'head' '[' type ']' term | 'tail' '[' type ']' term
+       | 'fold' '[' type ']' term | 'unfold' '[' type ']' term
+       | true | True | false | False | unit | Unit | NAT
+       | '(' term ')'
+```
+
+### Types
+
+```
+type ::= ID | 'Nat' | 'Bool' | 'Unit'
+       | type '->' type                            (* right-associative *)
+       | type '+' type                              (* sum type *)
+       | '<' type ('*' type)* '>'                    (* tuple type *)
+       | '[' ID ':' type (',' ID ':' type)* ']'      (* variant type *)
+       | '(' type ')'
+```
+
+Arrows write as `->` or `→`; lambda as `λ` or `\`; `Λ`, `∀`, `Π`, `μ`, `@` are used by the
+extensions below.
+
+### Comments
+
+`// line comment` — no block comments.
+
+### Optional type theories
+
+Plain STLC (the grammar above minus the extension rows) is always on. Six more theories can be
+toggled independently via `SLTLCTypeChecker#setTheories`, each unlocking more grammar:
+
+| Theory | Unlocks | Example |
+| --- | --- | --- |
+| `typeInference` | Omitting a lambda's parameter type — inferred from usage | `(λ x . x) 5;` |
+| `letPolymorphism` | Generalizing a `let`-bound value so it's reusable at different types | `let id = λ x . x in <(id 5), (id true)>;` |
+| `isoRecursiveTypes` | Self-referential types via `μX.T`, introduced/eliminated with `fold`/`unfold` | `typedef NatRec = μX.[zero:Unit, succ:X];` |
+| `systemF` | Explicit polymorphism: type abstraction `ΛX. t` and application `t [T]` | `id = ΛX. λ x : X . x : ∀X. X -> X;` |
+| `systemFOmega` | Types abstracted over types: `λX:K. T`, applied as `F T`, classified by kinds (`K ::= @ \| K→K`) | `typedef Id = λ X : @ . X;` |
+| `systemLambdaP` | Types depending on terms via `Π x:A. B`, and kinds indexed by a type (`K ::= @ \| T→K`) | `typedef Vec : Nat -> @;` |
+
+`setTheories` takes a full `TypeTheoryConfig` (all six flags); `DEFAULT_TYPE_THEORY_CONFIG` has
+everything off. `TYPE_THEORIES` exports the same table above as data (id, label, description) if
+you're building a UI toggle for it.
+
+## API reference
+
+### Parsing
 
 ```typescript
-const result = parser.parse('λx.y.z');  // Invalid syntax
+class AntlrParserAdapter implements Parser {
+  parseExpression(input: string): Program; // throws ParseSyntaxError on invalid syntax
+}
 
-if (result.hasError) {
-  result.errors.forEach(err => {
-    console.log(`Line ${err.line}, Column ${err.column}: ${err.message}`);
-  });
+class ParseSyntaxError extends Error {
+  errors: { line: number; column: number; length: number; message: string }[];
 }
 ```
 
-### Type Errors
+### Type checking
 
 ```typescript
-const proof = typeChecker.check(term);
+class SLTLCTypeChecker {
+  check(program: Program): InferProofTree;       // full derivation tree, error nodes included
+  getErrors(): Error[];                            // every TypeCheckError collected during check()
+  setTheories(theories: TypeTheoryConfig): void;    // enable extensions, see table above
+  getTypeAliases(): { [name: string]: Type };       // resolved `typedef X = T;` bindings
+}
 
-if (proof.error) {
-  console.log('Rule attempted:', proof.error.rule);
-  console.log('Judgment:', proof.error.judgment);
-  console.log('Reason:', proof.error.message);
-  
-  // Inspect partial derivation
-  console.log('Premises:', proof.premises);
+interface ProofTree {
+  rule: Rule;                                // e.g. Rule.Var, Rule.Abs, Rule.App, ...
+  premises: ProofTree[];
+  term: Term;
+  type: Type;
+  gamma: Record<string, Type | TypeScheme>;   // the typing context at this node
+  error?: string;                             // set on this node if it failed to type
 }
 ```
 
----
+A failed program still returns a full tree — errors live on the specific node(s) that failed,
+and `getErrors()` collects them all in one place.
 
-## 🏗️ Building & Publishing
+### Evaluation
 
-### Build
+```typescript
+enum EvaluationStrategy { NORMAL, CALL_BY_VALUE, CALL_BY_NAME }
+
+class Evaluator {
+  constructor(maximumSteps?: number); // default 500
+  evaluate(program: Program, strategy: EvaluationStrategy): EvaluationResult;
+}
+
+interface EvaluationResult {
+  result: Term;                        // final term (normal form, or stuck/limited)
+  steps: ReductionStep[];              // one entry per reduction, with before/after
+  reachedStepLimit: boolean;
+  errors?: { message: string; stuckTermId?: string }[];
+  globals: Record<string, Term>;
+}
+```
+
+### Pretty printing
+
+```typescript
+function astToText(program: Program): string;
+
+class AstPrettyPrinter {
+  printProgram(program: Program): string;
+  printTerm(term: Term): string;
+  printType(type: Type): string;
+}
+```
+
+Output always re-parses with `AntlrParserAdapter` — useful for round-tripping an AST you built or
+edited programmatically back into source.
+
+### Proof-tree rendering (LaTeX / UI)
+
+```typescript
+class TexMapper {
+  visit(proof: ProofTree): TexTree;              // typing derivation → renderable tree
+}
+
+class LogicMapper {
+  visit(proof: ProofTree): TexTree;              // Curry–Howard: typing proof → logical proof
+  // throws NonStlcProofError if the proof uses anything beyond plain STLC
+}
+
+function texTreeToEbproofDocument(tree: TexTree, opts: { expandedKeys: ReadonlySet<string> }): string;
+```
+
+`isPlainStlc(theories: TypeTheoryConfig): boolean` (from the domain layer) tells you up front
+whether `LogicMapper` will accept a given proof. `GammaRegistry` is the shared Γ-numbering helper
+`TexMapper`/`LogicMapper` use internally — exported for anyone building a custom renderer on the
+same `ProofTree`.
+
+### Type utilities
+
+```typescript
+function typeToString(t: Type): string;
+function kindToString(k: Kind): string;
+function typeEquals(a: Type, b: Type): boolean;
+function normalizeType(t: Type): Type;
+function expandTypeAliases(t: Type, aliases: ReadonlyMap<string, Type>): Type;
+function termIndexEquals(a: Term, b: Term): boolean;   // structural identity, ignoring IDs
+function termIndexToString(t: Term): string;
+```
+
+### AST types
+
+`Program`, `Term`, `Type`, `Kind`, and `GlobalDecl` are all exported as discriminated unions —
+every node carries a `kind` field plus a `pos?: SourcePosition`:
+
+```typescript
+interface Program { globals: GlobalDecl[]; term?: Term; }
+
+type GlobalDecl = VarDecl | FunDecl | TypeAliasDecl | TypeConstructorDecl;
+
+type Term = Var | Abs | App | Lit | IfCondition | Let | BinOp | Ascribe
+  | Tuple | TupleProjection | Record | RecordProjection | Sequencing
+  | Variant | VariantCase | Inl | Inr | Case | DummyAbstraction
+  | TypeAbs | TypeApp | Fix | Nil | Cons | IsNil | Head | Tail | Fold | Unfold;
+
+type Type = TyIdentifier | TyArrow | TupleType | SumType | VariantType | RecordType
+  | TyForall | TyConstructorAbs | TyConstructorApp | TyPi | TyIndexApp
+  | ListType | RecursiveType;
+```
+
+The full field list per variant is in the shipped `.d.ts` — every extension's node shape lives
+right next to the plain-STLC ones (e.g. `TyPi` for System λP, `TyConstructorAbs` for System Fω).
+
+### Visitors
+
+`AstVisitor<R>` and `ProofTreeVisitor<R>` are the abstract base classes the checker, evaluator,
+and every mapper above are built on — each requires one `visitX` method per node/rule variant (30+
+for terms, one per `Rule` for proofs). Extend them directly if you need a custom traversal over
+either tree; for anything less than a full traversal, work with the plain `Term`/`Type`/`ProofTree`
+data instead.
+
+## Error handling
+
+```typescript
+import { ParseSyntaxError } from "@vladyslav005/tt-core";
+
+try {
+  parser.parseExpression(source);
+} catch (e) {
+  if (e instanceof ParseSyntaxError) {
+    e.errors.forEach(({ line, column, message }) =>
+      console.log(`${line}:${column} — ${message}`));
+  }
+}
+```
+
+```typescript
+const proof = checker.check(program);
+if (proof.error) console.log("Top-level:", proof.error);
+checker.getErrors().forEach((err) => console.log(err.message));
+```
+
+## Building & regenerating the grammar
 
 ```bash
-npm run build
+npm run build         # tsup -> dist/{index.js, index.cjs, index.d.ts}
+npm run gen-grammar    # regenerate src/antlr/* from src/antlr/Lambda.g4
 ```
 
-Builds to `dist/`:
-- `dist/index.js` — ESM
-- `dist/index.cjs` — CommonJS
-- `dist/index.d.ts` — TypeScript declarations
+## Related
 
-### Regenerate Grammar
-
-If you modify `Lambda.g4`:
-
-```bash
-npm run gen-grammar
-```
-
-This regenerates ANTLR4 files in `src/antlr/`.
-
----
-
-## 📖 Concepts
-
-### Simply Typed Lambda Calculus (STLC)
-
-A minimal functional language:
-- **Variables** (`x`, `y`): refer to bound values
-- **Abstractions** (`λx.e`): anonymous functions
-- **Applications** (`e₁ e₂`): function calls
-- **Types** (`A → B`): ensure type safety at compile time
-
-### Proof Trees
-
-Type checking returns **full derivation trees**, not just yes/no:
-
-```
-    x : A ∈ Γ
-  ─────────────  (Var)
-    Γ ⊢ x : A
-
-
-    Γ, x:A ⊢ e : B
-  ─────────────────  (Abs)
-    Γ ⊢ λx.e : A→B
-
-
-  Γ ⊢ f : A→B    Γ ⊢ a : A
-  ──────────────────────────  (App)
-        Γ ⊢ f a : B
-```
-
-Each node is a `ProofTree` with rule, premises, context, term, and type.
-
-### Evaluation Strategies
-
-- **Normal order** (also "lazy"): Reduce outermost redex first
-- **Call-by-value**: Evaluate arguments before function calls
-- **Call-by-name**: Like normal order but cache results
-
-### Curry–Howard Correspondence
-
-A fundamental isomorphism between:
-- **Types** ↔ **Propositions** (in intuitionistic logic)
-- **Typing proofs** ↔ **Logical proofs**
-- **Lambda terms** ↔ **Programs** (or **constructive proofs**)
-
-Example: `λx.x : A → A` corresponds to the proof `λx.x` of the proposition `A → A`.
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. Follow TypeScript strict mode rules
-2. No `any` types without justification
-3. Add comments only where clarification is needed
-4. Keep core logic pure (no side effects)
-5. Run `npm run build` before submitting
-
----
-
-## 🔗 Related
-
-- **Main project**: [tt](https://github.com/vladyslav005/tt) — Interactive web UI for this library
+- **Main project**: [tt](https://github.com/vladyslav005/tt) — the interactive web UI built on this library
 - **Live demo**: [tt-woad.vercel.app](https://tt-woad.vercel.app/)
-
----
-
-## 📧 Support
-
-- **GitHub Issues**: Report bugs or request features
-- **NPM Package**: [npmjs.com/package/@vladyslav005/tt-core](https://www.npmjs.com/package/@vladyslav005/tt-core)
-
----
-
-**tt-core** — Pure TypeScript lambda calculus toolkit. 🚀
+- **NPM**: [npmjs.com/package/@vladyslav005/tt-core](https://www.npmjs.com/package/@vladyslav005/tt-core)

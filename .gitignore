@@ -12,6 +12,8 @@ node_modules
 
 #
 .github/copilot-instructions.md
+.claude
+CLAUDE.md
 
 # Lock files (shared across workspaces)
 package-lock.json
@@ -48,3 +50,4 @@ desc.md
 .env
 .env.local
 
+/.npmrc
