@@ -11,7 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
 	registerDiagnostics(context);
 	registerCompletions(context);
 
-	let disposable = vscode.commands.registerCommand(
+	const disposable = vscode.commands.registerCommand(
 		"tt-vscode-extension.parseCurrentFile",
 		() => {
 			const editor = vscode.window.activeTextEditor;
@@ -23,24 +23,15 @@ export function activate(context: vscode.ExtensionContext) {
 
 			const source = editor.document.getText();
 
-			console.log("Source:");
-			console.log(source);
-
 			try {
 				const parser = new AntlrParserAdapter();
 
-				const p = parser.parseExpression(source);
-
-				console.warn(p);
-
-				console.log("Parsing successful");
+				parser.parseExpression(source);
 
 				vscode.window.showInformationMessage(
 					"TT: parsing successful",
 				);
 			} catch (error) {
-				console.error(error);
-
 				vscode.window.showErrorMessage(
 					`TT: parsing failed: ${String(error)}`,
 				);
@@ -49,15 +40,6 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(disposable);
-
-
-	disposable = vscode.commands.registerCommand('tt-vscode-extension.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from tt-vscode-extension!');
-	});
-
-	context.subscriptions.push(disposable);
-
-
 }
 
 export function deactivate() {}
