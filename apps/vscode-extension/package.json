@@ -1,7 +1,7 @@
 {
   "name": "tt-vscode-extension",
   "displayName": "tt-vscode-extension",
-  "description": "Syntax highlighting, diagnostics, and completions for the tt (typed lambda calculus) language.",
+  "description": "Syntax highlighting, diagnostics, completions, and interactive AST/proof-tree/evaluation panels for the tt (typed lambda calculus) language.",
   "version": "0.0.1",
   "publisher": "vladyslav005",
   "icon": "icon.png",
@@ -128,6 +128,10 @@
       {
         "command": "tt-vscode-extension.showAstGraph",
         "title": "TT: Show AST Diagram"
+      },
+      {
+        "command": "tt-vscode-extension.exportProofTreeLatex",
+        "title": "TT: Export Proof Tree as LaTeX"
       }
     ],
     "languages": [

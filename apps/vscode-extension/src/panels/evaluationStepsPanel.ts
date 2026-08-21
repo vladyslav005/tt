@@ -87,6 +87,13 @@ export class EvaluationStepsPanel {
 			this.post({ type: "clear" });
 			return;
 		}
+		if (!analysis.program.term) {
+			this.post({
+				type: "invalid",
+				messages: ["No expression to evaluate — add a trailing term after your declarations."],
+			});
+			return;
+		}
 		const result = new Evaluator().evaluate(analysis.program, getEvaluationStrategy());
 		this.post({
 			type: "render",

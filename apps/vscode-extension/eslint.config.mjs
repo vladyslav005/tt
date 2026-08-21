@@ -18,7 +18,8 @@ export default [{
             selector: "import",
             format: ["camelCase", "PascalCase"],
         }],
-
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-implicit-any": "off",
         curly: "warn",
         eqeqeq: "warn",
         "no-throw-literal": "warn",

@@ -78,7 +78,10 @@ export function childrenOf(node: AnyAstNode): ChildEntry[] {
 		case "Program":
 			return [
 				...node.globals.map((g): ChildEntry => ({ child: g, label: g.name })),
-				...(node.term ? [{ child: node.term, label: "result" }] : []),
+				// The trailing expression has no name of its own (unlike a declaration) and no
+				// field-name role to borrow (unlike "func"/"arg"/"body" elsewhere) — "result" was a
+				// made-up label for it. Its own node kind (App, Abs, Var, ...) is the real thing.
+				...(node.term ? [{ child: node.term, label: node.term.kind }] : []),
 			];
 
 		// ---- GlobalDecl ----

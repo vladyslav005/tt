@@ -9,6 +9,7 @@ import {registerCompletions} from "./completions";
 import {registerEvaluateCurrentFileCommand} from "./commands/evaluateCurrentFileCommand";
 import {registerEvaluationStrategyCommand} from "./commands/evaluationStrategyCommand";
 import {registerToggleTypeTheoriesCommand} from "./commands/toggleTypeTheoriesCommand";
+import {registerExportProofTreeLatexCommand} from "./commands/exportProofTreeLatexCommand";
 import {ttOutputChannel} from "./outputChannel";
 import {registerEvaluationStepsCommand} from "./panels/evaluationStepsPanel";
 import {registerProofTreeCommand} from "./panels/proofTreePanel";
@@ -20,6 +21,10 @@ import {registerAutoShowPanels} from "./autoShowPanels";
 
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(ttOutputChannel);
+	// Pre-selects "TT" in the Output panel's channel dropdown from the start, so it's already
+	// there whenever the user opens Output — not just after running a command that writes to it.
+	// preserveFocus keeps this from stealing focus away from the editor on activation.
+	ttOutputChannel.show(true);
 
 	registerDiagnostics(context);
 	registerCompletions(context);
@@ -29,6 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
 	registerStatusBar(context);
 	registerEvaluationStepsCommand(context);
 	registerProofTreeCommand(context);
+	registerExportProofTreeLatexCommand(context);
 	registerAstGraphCommand(context);
 	registerAutoShowPanels(context);
 

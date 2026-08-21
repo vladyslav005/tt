@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { isPlainStlc, LogicMapper, NonStlcProofError, TexMapper, TexTree } from "@vladyslav005/tt-core";
 import { analysisCache } from "../analysis";
+import { computeTexTree } from "../proofTree/computeTexTree";
 import { clearHighlight, highlightPosition } from "../editorHighlight";
 import { toUnicodeRegistry, toUnicodeTree } from "../proofTree/latexToUnicode";
 import { HostToProofTreeMessage, ProofTreePayload, ProofTreeToHostMessage } from "../webviewProtocol";
@@ -90,23 +90,12 @@ export class ProofTreePanel {
 			return;
 		}
 
-		const logicAvailable = isPlainStlc(analysis.theories);
-		const effectiveMode = this.mode === "logic" && !logicAvailable ? "derivation" : this.mode;
-
-		let texTree: TexTree;
-		try {
-			const mapper = effectiveMode === "logic" ? new LogicMapper() : new TexMapper();
-			mapper.setTypeAliases(analysis.typeAliases ?? {});
-			texTree = mapper.visit(analysis.proof);
-		} catch (error) {
-			if (error instanceof NonStlcProofError) {
-				const fallback = new TexMapper();
-				fallback.setTypeAliases(analysis.typeAliases ?? {});
-				texTree = fallback.visit(analysis.proof);
-			} else {
-				throw error;
-			}
-		}
+		const { texTree, effectiveMode, logicAvailable } = computeTexTree(
+			analysis.proof,
+			analysis.theories,
+			analysis.typeAliases,
+			this.mode,
+		);
 
 		const payload: ProofTreePayload = {
 			mode: effectiveMode,
