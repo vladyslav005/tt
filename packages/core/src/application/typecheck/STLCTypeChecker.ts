@@ -225,7 +225,9 @@ export class SLTLCTypeChecker extends AstVisitor<InferProofTree> {
       ? "Unit"
       : (value === "true" || value === "True" || value === "false" || value === "False")
         ? "Bool"
-        : "Nat";
+        : (value.startsWith('"') && value.endsWith('"'))
+          ? "String"
+          : "Nat";
 
     return {kind: "TyIdentifier", id: crypto.randomUUID(), name};
   }

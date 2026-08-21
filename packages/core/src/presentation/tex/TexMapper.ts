@@ -193,6 +193,7 @@ export class TexMapper extends ProofTreeVisitor<TexTree> {
     const value = (node.term as any).value as string
     const rule = (value === "unit" || value === "Unit") ? "T-Unit"
       : (value === "true" || value === "True" || value === "false" || value === "False") ? "T-Bool"
+      : (value.startsWith('"') && value.endsWith('"')) ? "T-String"
       : "T-Nat"
     return {
       ...this.judgements(node),

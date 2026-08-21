@@ -98,7 +98,7 @@ type
     | LT type (MUL type)* MT                                     # TupleType
     | LBRACK ID COLON type (COMMA ID COLON type)* RBRACK         # VariantType
     | LPAREN type RPAREN                                         # ParenType
-    | (GREEK | ID | 'Nat' | 'Bool' | 'Unit')                     # TypeIdentifier
+    | (GREEK | ID | 'Nat' | 'Bool' | 'Unit' | 'String')          # TypeIdentifier
     ;
 
 typeVariable
@@ -113,6 +113,7 @@ constant
     | 'False'
     | 'Unit'
     | 'unit'
+    | STRING_LITERAL
     ;
 
 kind
@@ -194,6 +195,8 @@ SEMI           : ';';
 GREEK          : [\u03B1-\u03C9];
 NATURAL_NUMBER : [1-9] [0-9]*;
 ZERO           : '0';
+
+STRING_LITERAL : '"' ( '\\' . | ~["\\\r\n] )* '"';
 
 ID             : [a-zA-Z_][a-zA-Z0-9_]*;
 

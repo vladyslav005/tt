@@ -6,6 +6,7 @@
 		{ "include": "#comments" },
 		{ "include": "#builtInTypes" },
 		{ "include": "#constants" },
+		{ "include": "#strings" },
 		{ "include": "#numbers" },
 		{ "include": "#keywords" },
 		{ "include": "#doubleArrow" },
@@ -28,12 +29,24 @@
 		"builtInTypes": {
 			"comment": "Matches Monaco's builtInType rule, which runs before the constant rule — so 'Unit' is always a type here, never the constant.",
 			"patterns": [
-				{ "name": "support.type.tt", "match": "\\b(Nat|Bool|Unit)\\b" }
+				{ "name": "support.type.tt", "match": "\\b(Nat|Bool|Unit|String)\\b" }
 			]
 		},
 		"constants": {
 			"patterns": [
 				{ "name": "constant.language.tt", "match": "\\b(true|True|false|False|unit)\\b" }
+			]
+		},
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.tt",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{ "name": "constant.character.escape.tt", "match": "\\\\." }
+					]
+				}
 			]
 		},
 		"numbers": {

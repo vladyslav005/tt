@@ -18,6 +18,7 @@ const KEYWORD_ITEMS: StaticItem[] = [
 	{ label: "false", insertText: "false", detail: "false" },
 	{ label: "unit", insertText: "unit", detail: "unit" },
 	{ label: "Unit", insertText: "Unit", detail: "Unit type" },
+	{ label: "String", insertText: "String", detail: "String type" },
 	{ label: "nil", insertText: "nil[$1]", detail: "nil", snippet: true },
 	{ label: "head", insertText: "head[$1]", detail: "head", snippet: true },
 	{ label: "cons", insertText: "cons[$1]", detail: "cons", snippet: true },

@@ -13,8 +13,9 @@ export function useSetUpEditor() {
       keywords,
       tokenizer: {
         root: [
-          [/\b(Nat|Bool|Unit)\b/, "builtInType"],
+          [/\b(Nat|Bool|Unit|String)\b/, "builtInType"],
           [/true|false|True|False|Unit|unit/, "constant"],
+          [/"(?:\\.|[^"\\])*"/, "string"],
           [/\b\d+(\.\d+)?\b/, "number"],
 
           [/(\b)\w+(\b)/, {
@@ -194,6 +195,7 @@ export function useSetUpEditor() {
       autoClosingPairs: [
         {open: "(", close: ")"},
         {open: "[", close: "]"},
+        {open: "\"", close: "\""},
       ],
     });
 
@@ -281,6 +283,14 @@ export function useSetUpEditor() {
             insertText: 'Unit',
             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
             detail: 'Unit type',
+            range: wordRange,
+          },
+          {
+            label: 'String',
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: 'String',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: 'String type',
             range: wordRange,
           },
           {

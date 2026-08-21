@@ -272,6 +272,7 @@ export class LetPolymorphismTexMapper {
     const rule = (value === "unit" || value === "Unit") ? "CT-Unit"
       : (value === "true" || value === "True") ? "CT-True"
       : (value === "false" || value === "False") ? "CT-False"
+      : (value.startsWith('"') && value.endsWith('"')) ? "CT-String"
       : "CT-Nv";
 
     return {

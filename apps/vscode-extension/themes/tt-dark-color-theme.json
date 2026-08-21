@@ -60,6 +60,10 @@
 			"settings": { "foreground": "#4a92f1", "fontStyle": "bold" }
 		},
 		{
+			"scope": "string.quoted.double.tt",
+			"settings": { "foreground": "#4ade80", "fontStyle": "" }
+		},
+		{
 			"scope": "comment.line.double-slash.tt",
 			"settings": { "foreground": "#64748b", "fontStyle": "italic" }
 		},

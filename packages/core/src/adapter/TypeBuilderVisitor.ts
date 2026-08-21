@@ -23,7 +23,7 @@ export class TypeBuilderVisitor
   visitTypeIdentifier = (ctx: TypeIdentifierContext): TyIdentifier => {
     const text = ctx.getText()
 
-    if (text === "Nat" || text === "Bool" || text === "Unit") {
+    if (text === "Nat" || text === "Bool" || text === "Unit" || text === "String") {
       return { kind: "TyIdentifier", id: crypto.randomUUID(), name: text as any }
     }
 
