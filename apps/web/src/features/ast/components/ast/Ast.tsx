@@ -1,11 +1,13 @@
-import type {Program} from "@vladyslav005/tt-core";
+import type {Program, SourcePosition} from "@vladyslav005/tt-core";
 import {useCallback, useState, useEffect} from "react";
+import type {RefObject} from "react";
 import {applyEdgeChanges, applyNodeChanges, ReactFlow, Background, MiniMap, Panel, useReactFlow, type NodeTypes} from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
 import {useTheme} from "next-themes";
 import {Crosshair, Map} from "lucide-react";
 import {Button} from "@/shared/components/ui/button.tsx";
-import type {AstFlowGraph} from "@/shared/presentation/flow/types.ts";
+import type {AstFlowGraph, AstFlowNode} from "@/shared/presentation/flow/types.ts";
+import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
 import {AbstractionFlowNode} from "@/features/ast/components/ast/flow/AbstractionFlowNode.tsx";
 import {VariableFlowNode} from "@/features/ast/components/ast/flow/VariableFlowNode.tsx";
 import {ApplicationFlowNode} from "@/features/ast/components/ast/flow/ApplicationFlowNode.tsx";
@@ -61,6 +63,8 @@ import {KindArrowFlowNode} from "@/features/ast/components/ast/flow/KindArrowFlo
 
 export interface AstProps {
   AST: Program,
+  editorRef?: RefObject<TextEditorHandle | null>,
+  highlightOnHover?: boolean,
 }
 
 function TypeFlowNodeDispatch(props: any) {
@@ -176,11 +180,27 @@ const nodeTypes: NodeTypes = {
 
 export function Ast({
   AST,
+  editorRef,
+  highlightOnHover = false,
 } : AstProps) {
   const { mapAstToFlow } = useMapAstToFlow()
   const { resolvedTheme } = useTheme();
   const [graph, setGraph] = useState<AstFlowGraph>({ nodes: [], edges: [] });
   const [showMiniMap, setShowMiniMap] = useState(false);
+
+  const handleNodeMouseEnter = useCallback(
+    (_event: unknown, node: AstFlowNode) => {
+      if (!highlightOnHover) return;
+      const pos = (node.data?.term as {pos?: SourcePosition} | undefined)?.pos ?? null;
+      editorRef?.current?.highlightRange?.(pos);
+    },
+    [highlightOnHover, editorRef],
+  );
+
+  const handleNodeMouseLeave = useCallback(() => {
+    if (!highlightOnHover) return;
+    editorRef?.current?.highlightRange?.(null);
+  }, [highlightOnHover, editorRef]);
 
   useEffect(() => {
     const newGraph = mapAstToFlow();
@@ -219,6 +239,8 @@ export function Ast({
         minZoom={0.1}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeMouseEnter={handleNodeMouseEnter}
+        onNodeMouseLeave={handleNodeMouseLeave}
         nodeTypes={nodeTypes}
         nodesConnectable={false}
         colorMode={resolvedTheme === "dark" ? "dark" : "light"}

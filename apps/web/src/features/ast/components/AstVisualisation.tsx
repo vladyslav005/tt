@@ -1,4 +1,4 @@
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useAppSelector} from "@/shared/hooks/reduxHooks.ts";
 import {cn} from "@/shared/lib/utils.ts";
 import {Card, CardContent, CardHeader} from "@/shared/components/ui/card.tsx";
@@ -14,6 +14,8 @@ import {ButtonGroup, ButtonGroupSeparator} from "@/shared/components/ui/button-g
 import {Tabs, TabsList, TabsTrigger} from "@/shared/components/ui/tabs.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/shared/components/ui/tooltip.tsx";
 import {useFullscreen} from "@/shared/hooks/useFullscreen";
+import {Switch} from "@/shared/components/ui/switch.tsx";
+import {Label} from "@/shared/components/ui/label.tsx";
 import type {Program} from "@vladyslav005/tt-core";
 import type {RefObject} from "react";
 import type {TextEditorHandle} from "@/features/editor/components/TextEditor.tsx";
@@ -41,6 +43,14 @@ export function AstVisualisation({
   const astEditorRef = useRef<AstEditorHandle>(null);
   const {isFullscreen, isPseudoFullscreen, toggle} = useFullscreen(containerRef);
   const [activeTab, setActiveTab] = useState<AstTab>("viewer");
+  const [highlightOnHover, setHighlightOnHover] = useState(true);
+
+  // Clear any lingering highlight when leaving the viewer tab or this panel unmounts —
+  // otherwise a stale highlight sticks in the text editor.
+  useEffect(() => {
+    const editor = editorRef?.current;
+    return () => editor?.highlightRange?.(null);
+  }, [activeTab, editorRef]);
 
   const [editorAst, setEditorAst] = useState<Program>({
     id: "program-initial",
@@ -99,6 +109,22 @@ export function AstVisualisation({
                   <TabsTrigger value="editor">Editor</TabsTrigger>
                 </TabsList>
               </Tabs>
+
+              {activeTab === "viewer" && hasViewerAst && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="ast-highlight-on-hover"
+                    checked={highlightOnHover}
+                    onCheckedChange={(checked) => {
+                      setHighlightOnHover(checked);
+                      if (!checked) editorRef?.current?.highlightRange?.(null);
+                    }}
+                  />
+                  <Label htmlFor="ast-highlight-on-hover" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Highlight in editor
+                  </Label>
+                </div>
+              )}
 
               {activeTab === "editor" && (
                 <TooltipProvider>
@@ -161,7 +187,7 @@ export function AstVisualisation({
             hasViewerAst ? (
               <div className="h-full flex flex-col">
                 <div className="flex-1 rounded-b-xl border overflow-hidden bg-muted/30">
-                  <Ast AST={viewerAst}/>
+                  <Ast AST={viewerAst} editorRef={editorRef} highlightOnHover={highlightOnHover}/>
                 </div>
                 {env.VITE_SHOW_DEBUG_DATA && (
                   <details className="group mx-6 mb-6 mt-4">
