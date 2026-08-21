@@ -11,14 +11,20 @@
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
+
   "contributes": {
     "commands": [
       {
         "command": "tt-vscode-extension.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "tt-vscode-extension.parseCurrentFile",
+        "title": "TT: Parse Current File"
       }
     ]
   },
+
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
@@ -43,7 +49,8 @@
     "npm-run-all": "^4.1.5",
     "typescript": "^6.0.3",
     "@vscode/test-cli": "^0.0.15",
-    "@vscode/test-electron": "^3.0.0"
+    "@vscode/test-electron": "^3.0.0",
+    "@vladyslav005/tt-core": "*"
   },
   "overrides": {
     "diff": "^8.0.4",
