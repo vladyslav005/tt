@@ -1,8 +1,0 @@
-{
-	"iconDefinitions": {
-		"tt": { "iconPath": "./tt-file.png" }
-	},
-	"fileExtensions": {
-		"tt": "tt"
-	}
-}

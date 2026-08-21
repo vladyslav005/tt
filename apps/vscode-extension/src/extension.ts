@@ -18,6 +18,7 @@ import {AstTreeProvider} from "./astView/astTreeProvider";
 import {revealPosition} from "./editorReveal";
 import {registerStatusBar} from "./statusBar";
 import {registerAutoShowPanels} from "./autoShowPanels";
+import {registerFileDecoration} from "./fileDecoration";
 
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(ttOutputChannel);
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	registerDiagnostics(context);
 	registerCompletions(context);
+	registerFileDecoration(context);
 	registerToggleTypeTheoriesCommand(context);
 	registerEvaluationStrategyCommand(context);
 	registerEvaluateCurrentFileCommand(context);
