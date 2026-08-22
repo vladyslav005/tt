@@ -1,6 +1,7 @@
 import {motion} from 'framer-motion';
 import {AlertCircle, FileQuestionMark} from 'lucide-react';
 import {FloatingLambdaSymbols} from '@/shared/components/FloatingLambdaSymbols.tsx';
+import {usePageMeta} from '@/shared/hooks/usePageMeta.ts';
 
 const fadeInUp = {
   initial: {opacity: 0, y: 20},
@@ -17,6 +18,7 @@ const staggerContainer = {
 };
 
 export function NotFoundPage() {
+  usePageMeta("Page Not Found — tt", "The page you're looking for doesn't exist.");
 
   return (
     <div className="relative min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden">

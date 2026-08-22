@@ -1,6 +1,8 @@
 import {WorkspaceLayout} from "@/features/workspace/components/WorkspaceLayout.tsx";
+import {usePageMeta} from "@/shared/hooks/usePageMeta.ts";
 
 export function MainPage() {
+  usePageMeta("tt — Interactive Typed Lambda Calculus Playground");
 
   return (
     <div className="mt-[4rem] flex flex-col h-[calc(100dvh-4rem)]">

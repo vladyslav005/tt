@@ -3,6 +3,7 @@ import {cn} from "@/shared/lib/utils.ts";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {EVALUATION_RULE_GROUPS, TYPE_RULE_GROUPS, type RuleDefinition} from "@/features/docs/rules/ruleDefinitions.ts";
 import {RuleCard} from "@/features/docs/rules/RuleCard.tsx";
+import {usePageMeta} from "@/shared/hooks/usePageMeta.ts";
 
 const staggerContainer = {
   animate: {
@@ -71,6 +72,12 @@ function RuleSubsection({label, groups}: {label: string; groups: {id: string; no
 }
 
 export function DocsRulesPage() {
+  usePageMeta(
+    "Rules Reference — tt",
+    "Every typing and evaluation rule referenced across the lectures, grouped by the concept that " +
+    "introduces it, in the same premises-over-conclusion form the Proof Tree panel builds live.",
+  );
+
   return (
     <div className="space-y-12">
       <motion.div initial="initial" animate="animate" variants={fadeInUp}>

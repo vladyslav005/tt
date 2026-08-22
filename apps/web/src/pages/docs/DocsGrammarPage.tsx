@@ -3,6 +3,7 @@ import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {Card, CardContent, CardHeader, CardTitle} from "@/shared/components/ui/card.tsx";
 import {EBNF_GRAMMAR, EBNF_PRECEDENCE_NOTES} from "@/features/docs/grammar/ebnf.ts";
 import {NOTATION_SYMBOLS, TYPED_SYMBOLS, type SymbolEntry} from "@/features/docs/grammar/symbolGlossary.ts";
+import {usePageMeta} from "@/shared/hooks/usePageMeta.ts";
 
 function SymbolTable({symbols, showHowToType}: {symbols: SymbolEntry[]; showHowToType: boolean}) {
   return (
@@ -36,6 +37,12 @@ function SymbolTable({symbols, showHowToType}: {symbols: SymbolEntry[]; showHowT
 }
 
 export function DocsGrammarPage() {
+  usePageMeta(
+    "Grammar & Symbols — tt",
+    "The full EBNF grammar the parser accepts, plus every special symbol used in the editor and in " +
+    "rendered judgements and proof trees, with how to type each one.",
+  );
+
   return (
     <div className="space-y-10">
       <motion.div initial="initial" animate="animate" variants={fadeInUp}>

@@ -5,12 +5,27 @@ import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {EmptyState} from "@/shared/components/EmptyState.tsx";
 import {LECTURE_REGISTRY} from "@/features/docs/lectureRegistry.ts";
 import {LECTURE_CONTENT} from "@/features/docs/lectureContentRegistry.tsx";
+import {usePageMeta, SITE_URL} from "@/shared/hooks/usePageMeta.ts";
 
 export function DocsLecturePage() {
   const {slug} = useParams<{slug: string}>();
   const index = LECTURE_REGISTRY.findIndex((l) => l.slug === slug);
   const lecture = index === -1 ? undefined : LECTURE_REGISTRY[index];
   const Content = slug ? LECTURE_CONTENT[slug] : undefined;
+
+  usePageMeta(
+    lecture ? `${lecture.title} — tt Docs` : "Lecture not found — tt",
+    lecture?.summary,
+    lecture ? {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      headline: lecture.title,
+      description: lecture.summary,
+      url: `${SITE_URL}/docs/${lecture.slug}`,
+      inLanguage: "en",
+      isPartOf: {"@type": "WebSite", name: "tt", url: SITE_URL},
+    } : undefined,
+  );
 
   if (!lecture) {
     return (

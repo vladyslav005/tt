@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card";
 import {FloatingLambdaSymbols} from "@/shared/components/FloatingLambdaSymbols.tsx";
+import {usePageMeta} from "@/shared/hooks/usePageMeta.ts";
 
 const fadeInUp = {
   initial: {opacity: 0, y: 20},
@@ -40,6 +41,13 @@ const staggerContainer = {
 const SHOW_TECH_STACK = false;
 
 export function AboutPage() {
+  usePageMeta(
+    "About — tt",
+    "An interactive environment for experimenting with typed lambda calculus — parsing, AST " +
+    "inspection/editing, type checking and inference, proof tree visualization, and building your " +
+    "own derivations by hand. Built as a Master's thesis project.",
+  );
+
   return (
     <div className="pt-16 min-h-screen bg-gradient-to-b from-background to-muted/40">
       {/* Hero Section */}

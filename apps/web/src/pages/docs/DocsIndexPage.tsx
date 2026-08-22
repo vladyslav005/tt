@@ -10,6 +10,7 @@ import {
 } from "@/shared/components/ui/card.tsx";
 import {fadeInUp} from "@/features/error-output/components/ErrorOutput.tsx";
 import {LECTURE_REGISTRY} from "@/features/docs/lectureRegistry.ts";
+import {usePageMeta, SITE_URL} from "@/shared/hooks/usePageMeta.ts";
 
 const staggerContainer = {
   animate: {
@@ -20,6 +21,23 @@ const staggerContainer = {
 };
 
 export function DocsIndexPage() {
+  usePageMeta(
+    "Docs — tt",
+    "A hands-on introduction to typed lambda calculus, taught alongside the app — lectures, a " +
+    "typing/evaluation rule reference, and the full grammar and symbol glossary.",
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "tt Type Theory Lectures",
+      itemListElement: LECTURE_REGISTRY.map((lecture, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: lecture.title,
+        url: `${SITE_URL}/docs/${lecture.slug}`,
+      })),
+    },
+  );
+
   return (
     <div className="space-y-10">
       <motion.div initial="initial" animate="animate" variants={fadeInUp}>
