@@ -15,9 +15,6 @@ node_modules
 .claude
 CLAUDE.md
 
-# Lock files (shared across workspaces)
-package-lock.json
-
 # Build outputs
 dist
 dist-ssr

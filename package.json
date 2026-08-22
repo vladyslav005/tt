@@ -11,7 +11,9 @@
     "release:core:minor": "npm run release:minor --workspace=@vladyslav005/tt-core",
     "release:core:major": "npm run release:major --workspace=@vladyslav005/tt-core",
     "package:extension": "npm run vsce:package --workspace=tt-vscode-extension",
-    "publish:extension": "npm run vsce:publish --workspace=tt-vscode-extension  -- patch",
+    "release:extension": "npm run release --workspace=tt-vscode-extension",
+    "release:extension:minor": "npm run release:minor --workspace=tt-vscode-extension",
+    "release:extension:major": "npm run release:major --workspace=tt-vscode-extension",
     "dev": "npm run dev --workspace=@vladyslav005/tt-web",
     "lint": "npm run lint --workspace=@vladyslav005/tt-web",
     "preview": "npm run preview --workspace=@vladyslav005/tt-web"

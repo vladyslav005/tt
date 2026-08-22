@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "core-v*"
+      - "vscode-v*"
+
+jobs:
+  publish-core:
+    if: startsWith(github.ref_name, 'core-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: "https://registry.npmjs.org"
+
+      - run: npm ci
+
+      - name: Build core
+        run: npm run build:core
+
+      # Version/tag/commit already happened locally via `npm run release:core` before this
+      # tag was pushed — this step only publishes what's already checked out at the tag.
+      - name: Publish @vladyslav005/tt-core to npm
+        run: npm publish --workspace=@vladyslav005/tt-core --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-extension:
+    if: startsWith(github.ref_name, 'vscode-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # apps/vscode-extension bundles @vladyslav005/tt-core's built dist/ output.
+      - name: Build core
+        run: npm run build:core
+
+      - name: Publish to VS Code Marketplace
+        run: npm run vsce:publish --workspace=tt-vscode-extension -- -p "$VSCE_PAT"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
