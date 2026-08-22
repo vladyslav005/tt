@@ -14,6 +14,7 @@
     "release:extension": "npm run release --workspace=tt-vscode-extension",
     "release:extension:minor": "npm run release:minor --workspace=tt-vscode-extension",
     "release:extension:major": "npm run release:major --workspace=tt-vscode-extension",
+    "release:all": "bash scripts/release-all.sh",
     "dev": "npm run dev --workspace=@vladyslav005/tt-web",
     "lint": "npm run lint --workspace=@vladyslav005/tt-web",
     "preview": "npm run preview --workspace=@vladyslav005/tt-web"
