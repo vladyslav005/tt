@@ -1,6 +1,7 @@
 {
   "name": "tt",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build:core": "npm run build --workspace=@vladyslav005/tt-core",
@@ -9,6 +10,8 @@
     "release:core": "npm run release --workspace=@vladyslav005/tt-core",
     "release:core:minor": "npm run release:minor --workspace=@vladyslav005/tt-core",
     "release:core:major": "npm run release:major --workspace=@vladyslav005/tt-core",
+    "package:extension": "npm run vsce:package --workspace=tt-vscode-extension",
+    "publish:extension": "npm run vsce:publish --workspace=tt-vscode-extension  -- patch",
     "dev": "npm run dev --workspace=@vladyslav005/tt-web",
     "lint": "npm run lint --workspace=@vladyslav005/tt-web",
     "preview": "npm run preview --workspace=@vladyslav005/tt-web"
@@ -19,6 +22,7 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@vscode/vsce": "^3.9.2",
     "typescript": "~5.9.3"
   }
 }
