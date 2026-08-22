@@ -20,6 +20,7 @@ export function EditorPanel({params}: IDockviewPanelProps<EditorPanelParams>) {
   return (
     <div className="h-full p-2">
       <TextEditor
+        // eslint-disable-next-line react-hooks/refs -- ref created via useRef in AppLayout, threaded through dockview panel params
         ref={params.editorRef}
         className="h-full"
         defaultValue={termText ?? "a : T; (λ x : T . (x) ) a;"}

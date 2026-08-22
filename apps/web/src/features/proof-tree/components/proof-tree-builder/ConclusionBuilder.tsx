@@ -27,6 +27,7 @@ interface ConclusionBuilderProps {
 
 // Numbered short form (Γ_n) by default, full recipe when toggled open.
 // `hrefKey`, when given, makes the result independently clickable.
+// eslint-disable-next-line react-refresh/only-export-components -- reused outside this component
 export function gammaRefTex(
   gamma: Record<string, Type | TypeScheme>,
   registry: GammaRegistry,

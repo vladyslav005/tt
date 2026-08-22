@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 
 export interface UseFullscreenOptions {
   /** Prefer element fullscreen on supporting browsers. */
@@ -13,12 +13,6 @@ export function useFullscreen<T extends HTMLElement>(
 ) {
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
-
-  const canNative = useMemo(() => {
-    if (!preferNative) return false;
-    const el = ref.current as any;
-    return !!(el && el.requestFullscreen && document.fullscreenEnabled);
-  }, [preferNative, ref]);
 
   useEffect(() => {
     const onFsChange = () => {
@@ -38,16 +32,18 @@ export function useFullscreen<T extends HTMLElement>(
   }, []);
 
   const enter = useCallback(async () => {
+    const el = ref.current as any;
+    const canNative = preferNative && !!(el && el.requestFullscreen && document.fullscreenEnabled);
     if (canNative) {
       try {
-        await (ref.current as any)?.requestFullscreen();
+        await el.requestFullscreen();
         return;
       } catch {
         // fall through to pseudo
       }
     }
     setIsPseudoFullscreen(true);
-  }, [canNative, ref]);
+  }, [preferNative, ref]);
 
   const exit = useCallback(async () => {
     if (document.fullscreenElement) {

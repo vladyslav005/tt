@@ -7,6 +7,7 @@ export interface ErrorOutputProps {
   className?: string;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared across many feature components
 export const fadeInUp = {
   initial: {opacity: 0, y: 10},
   animate: {opacity: 1, y: 0},

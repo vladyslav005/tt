@@ -45,6 +45,7 @@ function kindToDraftKind(k: Kind): DraftKind {
 }
 
 // Plain-text (not LaTeX) label for a picker chip.
+// eslint-disable-next-line react-refresh/only-export-components -- reused outside this component
 export function typeLabel(type: Type): string {
   switch (type.kind) {
     case "TyArrow": {
@@ -80,6 +81,7 @@ export function typeLabel(type: Type): string {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- reused outside this component
 export function draftToType(draft: DraftType): Type | null {
   switch (draft.kind) {
     case "base": {
@@ -173,6 +175,7 @@ export function draftToType(draft: DraftType): Type | null {
 }
 
 // Reopens the picker pre-filled with an existing value.
+// eslint-disable-next-line react-refresh/only-export-components -- reused outside this component
 export function typeToDraft(type: Type): DraftType {
   switch (type.kind) {
     case "TyArrow":

@@ -1,5 +1,8 @@
 # tt for VS Code
 
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/vladyslav005.tt-vscode-extension)](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)
+[![License: MIT](https://img.shields.io/github/license/vladyslav005/tt)](LICENSE)
+
 **[Install from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)**
 
 Language support for **tt**, a typed lambda calculus playground language, directly in the editor —

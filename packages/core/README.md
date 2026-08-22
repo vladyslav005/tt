@@ -1,5 +1,8 @@
 # @vladyslav005/tt-core
 
+[![npm](https://img.shields.io/npm/v/@vladyslav005/tt-core)](https://www.npmjs.com/package/@vladyslav005/tt-core)
+[![License: MIT](https://img.shields.io/github/license/vladyslav005/tt)](LICENSE)
+
 A pure TypeScript engine for a typed lambda calculus: parser, type checker (STLC + optional
 extensions), evaluator, proof-tree generator, and LaTeX/pretty-printer output. No React, no DOM,
 no side effects — usable from Node, a browser, or any other JS runtime.

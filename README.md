@@ -1,5 +1,10 @@
 # tt — an interactive typed lambda calculus playground
 
+[![CI](https://github.com/vladyslav005/tt/actions/workflows/ci.yml/badge.svg)](https://github.com/vladyslav005/tt/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/vladyslav005/tt)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@vladyslav005/tt-core)](https://www.npmjs.com/package/@vladyslav005/tt-core)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/vladyslav005.tt-vscode-extension)](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)
+
 **Live app: [type-theory.dev](https://type-theory.dev)** /
 **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**
 

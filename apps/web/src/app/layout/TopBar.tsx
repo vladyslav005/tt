@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import type {RefObject} from 'react';
 import {BookType, Github, Menu, Moon, Search, Sun, X} from 'lucide-react';
 import {Button} from '@/shared/components/ui/button';
@@ -29,11 +29,11 @@ export interface TopbarProps {
 }
 
 export function Topbar({editorRef}: TopbarProps) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const {setTheme} = useTheme()
+  const {setTheme, resolvedTheme} = useTheme()
+  const isDarkMode = resolvedTheme === "dark";
   const dispatch = useAppDispatch();
   const {pathname} = useLocation();
   const isEditorPage = pathname === "/main";
@@ -44,17 +44,8 @@ export function Topbar({editorRef}: TopbarProps) {
   };
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
     setTheme(isDarkMode ? "light" : "dark");
   };
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/50 backdrop-blur-md border-b shadow-sm">
