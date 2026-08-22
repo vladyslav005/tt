@@ -1,5 +1,7 @@
 # tt for VS Code
 
+**[Install from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)**
+
 Language support for **tt**, a typed lambda calculus playground language, directly in the editor —
 syntax highlighting, live diagnostics, completions, and the same AST / typing-derivation / evaluation
 views as the web playground ([type-theory.dev](https://type-theory.dev) /

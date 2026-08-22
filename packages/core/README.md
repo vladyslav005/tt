@@ -54,6 +54,10 @@ console.log(texTree.judgement); // "\Gamma_{1} \vdash (identity\ a) : T"
 
 ## Language guide
 
+For an interactive syntax reference, guided lectures, and worked examples, see the web app:
+**[type-theory.dev](https://type-theory.dev)** / **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**.
+What follows here is the terse BNF reference for library consumers.
+
 The parser (ANTLR4, grammar in [`src/antlr/Lambda.g4`](./src/antlr/Lambda.g4)) accepts a program
 as zero or more global declarations followed by an optional final term:
 
@@ -94,14 +98,14 @@ term ::= ID                                       (* variable *)
        | 'nil' '[' type ']' | 'cons' '[' type ']' term term
        | 'isnil' '[' type ']' term | 'head' '[' type ']' term | 'tail' '[' type ']' term
        | 'fold' '[' type ']' term | 'unfold' '[' type ']' term
-       | true | True | false | False | unit | Unit | NAT
+       | true | True | false | False | unit | Unit | NAT | STRING       (* "..." double-quoted, \-escaped *)
        | '(' term ')'
 ```
 
 ### Types
 
 ```
-type ::= ID | 'Nat' | 'Bool' | 'Unit'
+type ::= ID | 'Nat' | 'Bool' | 'Unit' | 'String'
        | type '->' type                            (* right-associative *)
        | type '+' type                              (* sum type *)
        | '<' type ('*' type)* '>'                    (* tuple type *)

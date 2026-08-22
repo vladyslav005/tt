@@ -3,6 +3,8 @@
 **Live app: [type-theory.dev](https://type-theory.dev)** /
 **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**
 
+**VS Code extension: [Type Theory (tt) on the Marketplace](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)**
+
 A web-based environment for writing lambda calculus terms and interactively exploring how they parse,
 type-check, evaluate, and correspond to logical proofs — built on a framework-agnostic language engine
 (`@vladyslav005/tt-core`, published independently on npm) that also powers a
@@ -23,8 +25,9 @@ type-check, evaluate, and correspond to logical proofs — built on a framework-
   logic proofs instead, with LaTeX/ebproof export.
 - **Evaluation** under normal order, call-by-value, or call-by-name, run fully or traced step by step,
   with the active redex highlighted at each step.
-- **VS Code extension** (`apps/vscode-extension`) mirroring the AST/proof-tree/evaluation views as
-  native editor panels, plus syntax highlighting, diagnostics, and completions for `.tt` files.
+- **VS Code extension** ([Marketplace](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension),
+  source in `apps/vscode-extension`) mirroring the AST/proof-tree/evaluation views as native editor
+  panels, plus syntax highlighting, diagnostics, and completions for `.tt` files.
 
 This repo is an npm workspaces monorepo — see [`CLAUDE.md`](CLAUDE.md) for the architecture and
 development commands, `packages/core/README.md` for the language engine's library API and grammar
