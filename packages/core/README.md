@@ -307,6 +307,7 @@ npm run gen-grammar    # regenerate src/antlr/* from src/antlr/Lambda.g4
 
 ## Related
 
+- **Source**: [github.com/vladyslav005/tt/tree/main/packages/core](https://github.com/vladyslav005/tt/tree/main/packages/core)
 - **Main project**: [tt](https://github.com/vladyslav005/tt) — the interactive web UI built on this library
 - **Live demo**: [type-theory.dev](https://type-theory.dev) / [tt-woad.vercel.app](https://tt-woad.vercel.app/)
 - **NPM**: [npmjs.com/package/@vladyslav005/tt-core](https://www.npmjs.com/package/@vladyslav005/tt-core)

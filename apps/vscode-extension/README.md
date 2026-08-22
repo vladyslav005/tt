@@ -88,6 +88,7 @@ None beyond VS Code itself — no external tooling or language server to install
 
 ## Related
 
+- **Source**: [github.com/vladyslav005/tt/tree/main/apps/vscode-extension](https://github.com/vladyslav005/tt/tree/main/apps/vscode-extension)
 - Web playground: **[type-theory.dev](https://type-theory.dev)** /
   **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**
 - [`@vladyslav005/tt-core`](https://www.npmjs.com/package/@vladyslav005/tt-core) — the language engine

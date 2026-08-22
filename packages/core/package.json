@@ -9,8 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vladyslav005/tt.git",
-    "directory": "packages/core"
+    "url": "https://github.com/vladyslav005/tt/tree/main/packages/core"
   },
   "homepage": "https://github.com/vladyslav005/tt/tree/main/packages/core",
   "keywords": [

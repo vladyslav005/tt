@@ -32,8 +32,18 @@ independently on npm) that also powers a [VS Code extension](apps/vscode-extensi
   source in `apps/vscode-extension`) mirroring the AST/proof-tree/evaluation views as native editor
   panels, plus syntax highlighting, diagnostics, and completions for `.tt` files.
 
-This repo is an npm workspaces monorepo — see `packages/core/README.md` for the language engine's
-library API and grammar reference, and `apps/vscode-extension/README.md` for the extension.
+## Structure
+
+This repo is an **npm workspaces monorepo** with three packages:
+
+- [`apps/web`](apps/web) — `@vladyslav005/tt-web`, the React/Vite frontend (the live app above)
+- [`apps/vscode-extension`](apps/vscode-extension) — `tt-vscode-extension`, the
+  [VS Code extension](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)
+  — see its own [README](apps/vscode-extension/README.md) for details
+- [`packages/core`](packages/core) — `@vladyslav005/tt-core`, the framework-agnostic language engine
+  (parser, type checker, evaluator) that both of the above build on, published independently on
+  [npm](https://www.npmjs.com/package/@vladyslav005/tt-core) — see its own
+  [README](packages/core/README.md) for the library API and grammar reference
 
 ---
 
