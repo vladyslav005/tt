@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # apps/web and apps/vscode-extension both import the built dist/ output of
+      # @vladyslav005/tt-core (not its source), so core has to build first.
+      - name: Build core
+        run: npm run build:core
+
+      - name: Build web
+        run: npm run build:web
+
+      - name: Lint web
+        run: npm run lint
+
+      - name: Check types & lint VS Code extension
+        run: npm run compile --workspace=tt-vscode-extension
