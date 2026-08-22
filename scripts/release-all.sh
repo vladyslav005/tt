@@ -22,28 +22,41 @@ release_package() {
   local tag_prefix="$3"
   local commit_scope="$4"
 
-  npm version "$BUMP" --no-git-tag-version --workspace="$workspace_name"
+  # Redirect these commands' own stdout to stderr so it still shows live in the
+  # terminal, but doesn't get swept into the `$(...)` capture of this function's
+  # only real return value: the tag name, printed last.
+  npm version "$BUMP" --no-git-tag-version --workspace="$workspace_name" >&2
 
   local new_version
   new_version="$(node -p "require('./$package_dir/package.json').version")"
   local tag="${tag_prefix}${new_version}"
 
   git add "$package_dir/package.json" package-lock.json
-  git commit -m "chore($commit_scope): release $tag"
+  git commit -m "chore($commit_scope): release $tag" >&2
   git tag "$tag"
 
-  echo "Tagged $tag"
+  echo "$tag"
 }
 
-release_package "@vladyslav005/tt-core" "packages/core" "core-v" "core"
-release_package "tt-vscode-extension" "apps/vscode-extension" "vscode-v" "extension"
+CORE_TAG="$(release_package "@vladyslav005/tt-core" "packages/core" "core-v" "core")"
+echo "Tagged $CORE_TAG"
+
+EXT_TAG="$(release_package "tt-vscode-extension" "apps/vscode-extension" "vscode-v" "extension")"
+echo "Tagged $EXT_TAG"
 
 echo
 echo "Both packages bumped, committed, and tagged locally."
 read -r -p "Push now to trigger the actual publish? [y/N] " reply
 if [[ "$reply" =~ ^[Yy]$ ]]; then
-  git push origin main --follow-tags
-  echo "Pushed. Check the Actions tab on GitHub for the publish runs."
+  # Push the branch and each tag as SEPARATE `git push` calls — pushing multiple tags
+  # together in one push can make GitHub only fire a workflow run for one of them.
+  git push origin main
+  git push origin "$CORE_TAG"
+  git push origin "$EXT_TAG"
+  echo "Pushed. Check the Actions tab on GitHub — you should see two separate publish runs."
 else
-  echo "Not pushed. Run 'git push origin main --follow-tags' whenever you're ready."
+  echo "Not pushed. When ready, push the branch and each tag separately:"
+  echo "  git push origin main"
+  echo "  git push origin $CORE_TAG"
+  echo "  git push origin $EXT_TAG"
 fi
