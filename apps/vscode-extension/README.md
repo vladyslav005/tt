@@ -90,7 +90,7 @@ None beyond VS Code itself — no external tooling or language server to install
 
 - Web playground: **[type-theory.dev](https://type-theory.dev)** /
   **[tt-woad.vercel.app](https://tt-woad.vercel.app/)**
-- `@vladyslav005/tt-core` — the language engine this extension and the web app both build on, published
-  independently on npm.
+- [`@vladyslav005/tt-core`](https://www.npmjs.com/package/@vladyslav005/tt-core) — the language engine
+  this extension and the web app both build on, published independently on npm.
 
 **Enjoy!**

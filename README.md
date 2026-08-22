@@ -5,10 +5,13 @@
 
 **VS Code extension: [Type Theory (tt) on the Marketplace](https://marketplace.visualstudio.com/items?itemName=vladyslav005.tt-vscode-extension)**
 
+**npm package: [@vladyslav005/tt-core](https://www.npmjs.com/package/@vladyslav005/tt-core)**
+
 A web-based environment for writing lambda calculus terms and interactively exploring how they parse,
 type-check, evaluate, and correspond to logical proofs — built on a framework-agnostic language engine
-(`@vladyslav005/tt-core`, published independently on npm) that also powers a
-[VS Code extension](apps/vscode-extension) for working with `.tt` files locally.
+([`@vladyslav005/tt-core`](https://www.npmjs.com/package/@vladyslav005/tt-core), published
+independently on npm) that also powers a [VS Code extension](apps/vscode-extension) for working with
+`.tt` files locally.
 
 ## What's implemented today
 
@@ -29,9 +32,8 @@ type-check, evaluate, and correspond to logical proofs — built on a framework-
   source in `apps/vscode-extension`) mirroring the AST/proof-tree/evaluation views as native editor
   panels, plus syntax highlighting, diagnostics, and completions for `.tt` files.
 
-This repo is an npm workspaces monorepo — see [`CLAUDE.md`](CLAUDE.md) for the architecture and
-development commands, `packages/core/README.md` for the language engine's library API and grammar
-reference, and `apps/vscode-extension/README.md` for the extension.
+This repo is an npm workspaces monorepo — see `packages/core/README.md` for the language engine's
+library API and grammar reference, and `apps/vscode-extension/README.md` for the extension.
 
 ---
 
