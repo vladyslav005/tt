@@ -128,6 +128,11 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
     }
   };
 
+  const handleAutoBuildToggle = (checked: boolean) => {
+    dispatch(setAutoBuild(checked));
+    if (checked) parseAndTypeCheck();
+  };
+
   const handleChange: OnChange = (value, ev) => {
     onChange?.(value, ev);
 
@@ -267,7 +272,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(function
                       <Switch
                         id="auto-build"
                         checked={autoBuild}
-                        onCheckedChange={(checked) => dispatch(setAutoBuild(checked))}
+                        onCheckedChange={handleAutoBuildToggle}
                       />
                       <Label htmlFor="auto-build" className="text-sm text-muted-foreground whitespace-nowrap">
                         Auto-build
