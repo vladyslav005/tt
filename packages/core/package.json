@@ -40,9 +40,9 @@
     "build": "tsup",
     "gen-grammar": "bash gen_lang_proc.sh",
     "prepublishOnly": "npm run build",
-    "release": "npm version patch --tag-version-prefix=core-v -m \"chore(core): release core-v%s\" && npm publish --access public",
-    "release:minor": "npm version minor --tag-version-prefix=core-v -m \"chore(core): release core-v%s\" && npm publish --access public",
-    "release:major": "npm version major --tag-version-prefix=core-v -m \"chore(core): release core-v%s\" && npm publish --access public"
+    "release": "npm version patch --tag-version-prefix=core-v -m \"chore(core): release core-v%s\"",
+    "release:minor": "npm version minor --tag-version-prefix=core-v -m \"chore(core): release core-v%s\"",
+    "release:major": "npm version major --tag-version-prefix=core-v -m \"chore(core): release core-v%s\""
   },
   "dependencies": {
     "antlr4": "^4.13.2"

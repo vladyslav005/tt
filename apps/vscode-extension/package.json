@@ -50,9 +50,9 @@
     "test": "vscode-test",
     "vsce:package": "vsce package --no-dependencies",
     "vsce:publish": "vsce publish --no-dependencies",
-    "release": "npm version patch --tag-version-prefix=vscode-v -m \"chore(extension): release vscode-v%s\" && npm run vsce:publish",
-    "release:minor": "npm version minor --tag-version-prefix=vscode-v -m \"chore(extension): release vscode-v%s\" && npm run vsce:publish",
-    "release:major": "npm version major --tag-version-prefix=vscode-v -m \"chore(extension): release vscode-v%s\" && npm run vsce:publish"
+    "release": "npm version patch --tag-version-prefix=vscode-v -m \"chore(extension): release vscode-v%s\"",
+    "release:minor": "npm version minor --tag-version-prefix=vscode-v -m \"chore(extension): release vscode-v%s\"",
+    "release:major": "npm version major --tag-version-prefix=vscode-v -m \"chore(extension): release vscode-v%s\""
   },
   "devDependencies": {
     "@types/vscode": "^1.134.0",
